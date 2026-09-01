@@ -1,0 +1,210 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://prototype_controller.gd" id="1_controller"]
+[ext_resource type="Script" path="res://dancer.gd" id="2_dancer"]
+[ext_resource type="Script" path="res://hand_connection.gd" id="3_connection"]
+[ext_resource type="Script" path="res://debug_overlay.gd" id="4_debug"]
+[ext_resource type="Script" path="res://pause_menu.gd" id="5_pause"]
+
+[sub_resource type="CircleShape2D" id="CircleShape_dancer"]
+radius = 28.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_horizontal"]
+size = Vector2(1280, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_vertical"]
+size = Vector2(20, 720)
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_debug"]
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+bg_color = Color(0.12, 0.12, 0.12, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.82, 0.82, 0.82, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="Prototype" type="Node2D"]
+script = ExtResource("1_controller")
+
+[node name="LeftDancer" type="RigidBody2D" parent="."]
+position = Vector2(390, 360)
+mass = 1.2
+gravity_scale = 0.0
+continuous_cd = 2
+contact_monitor = true
+max_contacts_reported = 4
+script = ExtResource("2_dancer")
+dancer_name = "MAN"
+body_color = Color(0.05, 0.05, 0.05, 1)
+detail_color = Color(0.95, 0.95, 0.95, 1)
+intended_spin_direction = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftDancer"]
+shape = SubResource("CircleShape_dancer")
+
+[node name="RightDancer" type="RigidBody2D" parent="."]
+position = Vector2(890, 360)
+mass = 1.2
+gravity_scale = 0.0
+continuous_cd = 2
+contact_monitor = true
+max_contacts_reported = 4
+script = ExtResource("2_dancer")
+dancer_name = "WOMAN"
+body_color = Color(0.95, 0.95, 0.95, 1)
+detail_color = Color(0.05, 0.05, 0.05, 1)
+flip_body_symbol = true
+hand_line_offset = -24.0
+shoulder_half_width = 10.0
+upper_arm_length = 55.0
+forearm_length = 55.0
+intended_spin_direction = -1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightDancer"]
+shape = SubResource("CircleShape_dancer")
+
+[node name="HandConnection" type="Node2D" parent="." node_paths=PackedStringArray("dancer_a", "dancer_b")]
+script = ExtResource("3_connection")
+dancer_a = NodePath("../LeftDancer")
+dancer_b = NodePath("../RightDancer")
+
+[node name="ArenaWalls" type="StaticBody2D" parent="."]
+physics_material_override = null
+
+[node name="Top" type="CollisionShape2D" parent="ArenaWalls"]
+position = Vector2(640, 10)
+shape = SubResource("RectangleShape_horizontal")
+
+[node name="Bottom" type="CollisionShape2D" parent="ArenaWalls"]
+position = Vector2(640, 710)
+shape = SubResource("RectangleShape_horizontal")
+
+[node name="Left" type="CollisionShape2D" parent="ArenaWalls"]
+position = Vector2(10, 360)
+shape = SubResource("RectangleShape_vertical")
+
+[node name="Right" type="CollisionShape2D" parent="ArenaWalls"]
+position = Vector2(1270, 360)
+shape = SubResource("RectangleShape_vertical")
+
+[node name="DebugOverlay" type="CanvasLayer" parent="." node_paths=PackedStringArray("left_dancer", "right_dancer", "hand_connection")]
+process_mode = 3
+script = ExtResource("4_debug")
+start_visible = false
+left_dancer = NodePath("../LeftDancer")
+right_dancer = NodePath("../RightDancer")
+hand_connection = NodePath("../HandConnection")
+
+[node name="LeftReadout" type="Label" parent="DebugOverlay"]
+offset_left = 22.0
+offset_top = 20.0
+offset_right = 390.0
+offset_bottom = 250.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.96, 0.96, 0.96, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 15
+text = "LEFT TELEMETRY"
+
+[node name="RightReadout" type="Label" parent="DebugOverlay"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -390.0
+offset_top = 20.0
+offset_right = -22.0
+offset_bottom = 250.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_colors/font_outline_color = Color(0.86, 0.86, 0.86, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 15
+text = "RIGHT TELEMETRY"
+horizontal_alignment = 2
+
+[node name="ConnectionReadout" type="Label" parent="DebugOverlay"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 240.0
+offset_top = -52.0
+offset_right = -240.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
+theme_override_colors/font_outline_color = Color(0.88, 0.88, 0.88, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 15
+text = "HAND CONNECTION"
+horizontal_alignment = 1
+
+[node name="PauseMenu" type="CanvasLayer" parent="." node_paths=PackedStringArray("debug_overlay")]
+process_mode = 3
+layer = 20
+visible = false
+script = ExtResource("5_pause")
+debug_overlay = NodePath("../DebugOverlay")
+
+[node name="Dim" type="ColorRect" parent="PauseMenu"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.05, 0.05, 0.05, 0.46)
+
+[node name="Center" type="CenterContainer" parent="PauseMenu"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="PauseMenu/Center"]
+custom_minimum_size = Vector2(380, 300)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBox_debug")
+
+[node name="Menu" type="VBoxContainer" parent="PauseMenu/Center/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Title" type="Label" parent="PauseMenu/Center/Panel/Menu"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
+theme_override_font_sizes/font_size = 28
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="Resume" type="Button" parent="PauseMenu/Center/Panel/Menu"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 19
+text = "RESUME"
+
+[node name="Telemetry" type="CheckButton" parent="PauseMenu/Center/Panel/Menu"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.92, 0.92, 1)
+theme_override_font_sizes/font_size = 17
+text = "SHOW TELEMETRY"
+
+[node name="Quit" type="Button" parent="PauseMenu/Center/Panel/Menu"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 19
+text = "QUIT"
