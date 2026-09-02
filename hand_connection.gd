@@ -9,8 +9,9 @@ signal connection_changed(is_connected: bool)
 @export var release_cooldown := 0.35
 
 @export_category("Connection")
-@export var spring_stiffness := 18.0
-@export var spring_damping := 2.2
+@export var spring_stiffness := 32.0
+@export var spring_damping := 6.0
+@export var maximum_hand_separation := 36.0
 @export var maximum_numerical_safety_force := 4200.0
 
 @export var dancer_a: Dancer
@@ -20,6 +21,9 @@ var is_connected := false
 var distance_error := 0.0
 var relative_hand_velocity := 0.0
 var connection_force := 0.0
+var separation_limit_active := false
+var separation_position_correction := 0.0
+var separation_velocity_impulse := 0.0
 var _cooldown_remaining := 0.0
 var _connected_hand_a := 1
 var _connected_hand_b := 1
@@ -33,12 +37,26 @@ func _physics_process(delta: float) -> void:
 		return
 
 	connection_force = 0.0
+	separation_limit_active = false
+	separation_position_correction = 0.0
+	separation_velocity_impulse = 0.0
 
 	if is_connected:
 		var hand_a := dancer_a.get_hand_world_position(_connected_hand_a)
 		var hand_b := dancer_b.get_hand_world_position(_connected_hand_b)
 		var hand_velocity_a := dancer_a.get_hand_velocity(_connected_hand_a)
 		var hand_velocity_b := dancer_b.get_hand_velocity(_connected_hand_b)
+		_enforce_maximum_separation(
+			hand_a,
+			hand_b,
+			hand_velocity_a,
+			hand_velocity_b,
+			delta
+		)
+		hand_a = dancer_a.get_hand_world_position(_connected_hand_a)
+		hand_b = dancer_b.get_hand_world_position(_connected_hand_b)
+		hand_velocity_a = dancer_a.get_hand_velocity(_connected_hand_a)
+		hand_velocity_b = dancer_b.get_hand_velocity(_connected_hand_b)
 		var delta_position := hand_b - hand_a
 		var delta_velocity := hand_velocity_b - hand_velocity_a
 		distance_error = delta_position.length()
@@ -67,9 +85,75 @@ func release_hands() -> void:
 	# velocity or transform is touched, so the existing throw carries through.
 	is_connected = false
 	connection_force = 0.0
+	separation_limit_active = false
+	separation_position_correction = 0.0
+	separation_velocity_impulse = 0.0
 	_cooldown_remaining = release_cooldown
 	connection_changed.emit(false)
 	queue_redraw()
+
+
+func get_connected_hand_sides() -> Array[int]:
+	return [_connected_hand_a, _connected_hand_b]
+
+
+func get_cooldown_remaining() -> float:
+	return _cooldown_remaining
+
+
+func _enforce_maximum_separation(
+	hand_a: Vector2,
+	hand_b: Vector2,
+	hand_velocity_a: Vector2,
+	hand_velocity_b: Vector2,
+	delta: float
+) -> void:
+	if maximum_hand_separation <= 0.0:
+		return
+
+	var separation := hand_b - hand_a
+	var distance := separation.length()
+	if distance <= 0.001:
+		return
+
+	var direction := separation / distance
+	var inverse_mass_a := 1.0 / maxf(dancer_a.mass, 0.001)
+	var inverse_mass_b := 1.0 / maxf(dancer_b.mass, 0.001)
+	var inverse_mass_sum := inverse_mass_a + inverse_mass_b
+	var excess_distance := maxf(0.0, distance - maximum_hand_separation)
+	if excess_distance > 0.0:
+		# This is a positional safety correction, not the ordinary hand spring.
+		# Split it by inverse mass so a connected pair cannot visibly stretch
+		# beyond two hand widths while arm anchors move or players push apart.
+		dancer_a.global_position += (
+			direction * excess_distance * inverse_mass_a / inverse_mass_sum
+		)
+		dancer_b.global_position -= (
+			direction * excess_distance * inverse_mass_b / inverse_mass_sum
+		)
+		separation_limit_active = true
+		separation_position_correction = excess_distance
+		distance = maximum_hand_separation
+
+	var relative_velocity := hand_velocity_b - hand_velocity_a
+	var separating_speed := relative_velocity.dot(direction)
+	var allowed_separating_speed := 0.0
+	if delta > 0.0 and distance < maximum_hand_separation:
+		allowed_separating_speed = (
+			(maximum_hand_separation - distance) / delta
+		)
+	if separating_speed <= allowed_separating_speed:
+		return
+
+	# Cancel only the excess separating component. Tangential motion and
+	# reconvergence remain untouched, preserving rotation and throw behavior.
+	var impulse_magnitude := (
+		(separating_speed - allowed_separating_speed) / inverse_mass_sum
+	)
+	dancer_a.apply_central_impulse(direction * impulse_magnitude)
+	dancer_b.apply_central_impulse(-direction * impulse_magnitude)
+	separation_limit_active = true
+	separation_velocity_impulse = impulse_magnitude
 
 
 func _apply_constraint_force(delta_position: Vector2, delta_velocity: Vector2) -> void:

@@ -1,10 +1,11 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://prototype_controller.gd" id="1_controller"]
 [ext_resource type="Script" path="res://dancer.gd" id="2_dancer"]
 [ext_resource type="Script" path="res://hand_connection.gd" id="3_connection"]
 [ext_resource type="Script" path="res://debug_overlay.gd" id="4_debug"]
 [ext_resource type="Script" path="res://pause_menu.gd" id="5_pause"]
+[ext_resource type="Script" path="res://telemetry_recorder.gd" id="6_telemetry"]
 
 [sub_resource type="CircleShape2D" id="CircleShape_dancer"]
 radius = 28.0
@@ -31,6 +32,10 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_dancer"]
+friction = 0.0
+bounce = 0.0
+
 [node name="Prototype" type="Node2D"]
 script = ExtResource("1_controller")
 
@@ -41,6 +46,7 @@ gravity_scale = 0.0
 continuous_cd = 2
 contact_monitor = true
 max_contacts_reported = 4
+physics_material_override = SubResource("PhysicsMaterial_dancer")
 script = ExtResource("2_dancer")
 dancer_name = "MAN"
 body_color = Color(0.05, 0.05, 0.05, 1)
@@ -57,6 +63,7 @@ gravity_scale = 0.0
 continuous_cd = 2
 contact_monitor = true
 max_contacts_reported = 4
+physics_material_override = SubResource("PhysicsMaterial_dancer")
 script = ExtResource("2_dancer")
 dancer_name = "WOMAN"
 body_color = Color(0.95, 0.95, 0.95, 1)
@@ -64,8 +71,8 @@ detail_color = Color(0.05, 0.05, 0.05, 1)
 flip_body_symbol = true
 hand_line_offset = -24.0
 shoulder_half_width = 10.0
-upper_arm_length = 55.0
-forearm_length = 55.0
+upper_arm_length = 38.5
+forearm_length = 38.5
 intended_spin_direction = -1
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RightDancer"]
@@ -94,6 +101,13 @@ shape = SubResource("RectangleShape_vertical")
 [node name="Right" type="CollisionShape2D" parent="ArenaWalls"]
 position = Vector2(1270, 360)
 shape = SubResource("RectangleShape_vertical")
+
+[node name="TelemetryRecorder" type="Node" parent="." node_paths=PackedStringArray("left_dancer", "right_dancer", "hand_connection", "controller")]
+script = ExtResource("6_telemetry")
+left_dancer = NodePath("../LeftDancer")
+right_dancer = NodePath("../RightDancer")
+hand_connection = NodePath("../HandConnection")
+controller = NodePath("..")
 
 [node name="DebugOverlay" type="CanvasLayer" parent="." node_paths=PackedStringArray("left_dancer", "right_dancer", "hand_connection")]
 process_mode = 3
@@ -151,12 +165,14 @@ theme_override_font_sizes/font_size = 15
 text = "HAND CONNECTION"
 horizontal_alignment = 1
 
-[node name="PauseMenu" type="CanvasLayer" parent="." node_paths=PackedStringArray("debug_overlay")]
+[node name="PauseMenu" type="CanvasLayer" parent="." node_paths=PackedStringArray("debug_overlay", "telemetry_recorder", "controller")]
 process_mode = 3
 layer = 20
 visible = false
 script = ExtResource("5_pause")
 debug_overlay = NodePath("../DebugOverlay")
+telemetry_recorder = NodePath("../TelemetryRecorder")
+controller = NodePath("..")
 
 [node name="Dim" type="ColorRect" parent="PauseMenu"]
 anchors_preset = 15
@@ -175,13 +191,13 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="PanelContainer" parent="PauseMenu/Center"]
-custom_minimum_size = Vector2(380, 300)
+custom_minimum_size = Vector2(620, 600)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBox_debug")
 
 [node name="Menu" type="VBoxContainer" parent="PauseMenu/Center/Panel"]
 layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="PauseMenu/Center/Panel/Menu"]
 layout_mode = 2
@@ -190,21 +206,164 @@ theme_override_font_sizes/font_size = 28
 text = "PAUSED"
 horizontal_alignment = 1
 
-[node name="Resume" type="Button" parent="PauseMenu/Center/Panel/Menu"]
+[node name="Tabs" type="TabContainer" parent="PauseMenu/Center/Panel/Menu"]
+custom_minimum_size = Vector2(560, 470)
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+current_tab = 0
+tab_alignment = 1
+
+[node name="GENERAL" type="VBoxContainer" parent="PauseMenu/Center/Panel/Menu/Tabs"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Resume" type="Button" parent="PauseMenu/Center/Panel/Menu/Tabs/GENERAL"]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 19
 text = "RESUME"
 
-[node name="Telemetry" type="CheckButton" parent="PauseMenu/Center/Panel/Menu"]
+[node name="Telemetry" type="CheckButton" parent="PauseMenu/Center/Panel/Menu/Tabs/GENERAL"]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.92, 0.92, 1)
 theme_override_font_sizes/font_size = 17
 text = "SHOW TELEMETRY"
 
-[node name="Quit" type="Button" parent="PauseMenu/Center/Panel/Menu"]
+[node name="SaveTelemetry" type="Button" parent="PauseMenu/Center/Panel/Menu/Tabs/GENERAL"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "SAVE TELEMETRY (LAST 12 SECONDS)"
+
+[node name="CaptureStatus" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/GENERAL"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.82, 0.82, 1)
+theme_override_font_sizes/font_size = 13
+text = ""
+autowrap_mode = 2
+
+[node name="Quit" type="Button" parent="PauseMenu/Center/Panel/Menu/Tabs/GENERAL"]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 19
 text = "QUIT"
+
+[node name="TUNING" type="VBoxContainer" parent="PauseMenu/Center/Panel/Menu/Tabs"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Description" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.84, 0.84, 0.84, 1)
+theme_override_font_sizes/font_size = 14
+text = "Higher sensitivity responds earlier while preserving full input range.\nSpin / move ratio controls how strongly tucking boosts travel speed."
+horizontal_alignment = 1
+
+[node name="TuningGrid" type="GridContainer" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 16
+columns = 3
+
+[node name="SpinSpeedLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "SPIN SPEED"
+
+[node name="SpinSpeed" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(300, 42)
+layout_mode = 2
+min_value = 0.5
+max_value = 2.0
+step = 0.05
+value = 1.0
+
+[node name="SpinSpeedValue" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(62, 0)
+layout_mode = 2
+text = "1.00x"
+horizontal_alignment = 2
+
+[node name="MoveSpeedLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "MOVE SPEED"
+
+[node name="MoveSpeed" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(300, 42)
+layout_mode = 2
+min_value = 0.5
+max_value = 2.0
+step = 0.05
+value = 1.0
+
+[node name="MoveSpeedValue" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(62, 0)
+layout_mode = 2
+text = "1.00x"
+horizontal_alignment = 2
+
+[node name="SpinMoveRatioLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "SPIN / MOVE RATIO"
+
+[node name="SpinMoveRatio" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(300, 42)
+layout_mode = 2
+max_value = 1.5
+step = 0.05
+value = 1.0
+
+[node name="SpinMoveRatioValue" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(62, 0)
+layout_mode = 2
+text = "1.00"
+horizontal_alignment = 2
+
+[node name="TriggerSensitivityLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "TRIGGER SENSITIVITY"
+
+[node name="TriggerSensitivity" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(300, 42)
+layout_mode = 2
+min_value = 0.5
+max_value = 2.0
+step = 0.05
+value = 1.0
+
+[node name="TriggerSensitivityValue" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(62, 0)
+layout_mode = 2
+text = "1.00x"
+horizontal_alignment = 2
+
+[node name="StickSensitivityLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "STICK SENSITIVITY"
+
+[node name="StickSensitivity" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(300, 42)
+layout_mode = 2
+min_value = 0.5
+max_value = 2.0
+step = 0.05
+value = 1.0
+
+[node name="StickSensitivityValue" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
+custom_minimum_size = Vector2(62, 0)
+layout_mode = 2
+text = "1.00x"
+horizontal_alignment = 2
+
+[node name="TabHint" type="Label" parent="PauseMenu/Center/Panel/Menu"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.72, 0.72, 1)
+theme_override_font_sizes/font_size = 13
+text = "LB / RB: CHANGE TAB    •    B: BACK"
+horizontal_alignment = 1

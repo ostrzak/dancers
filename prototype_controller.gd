@@ -6,6 +6,13 @@ extends Node2D
 @export var stick_deadzone := 0.16
 @export var bumper_chord_window := 0.085
 
+@export_category("Runtime Tuning")
+@export_range(0.5, 2.0, 0.05) var spin_speed_scale := 1.0
+@export_range(0.5, 2.0, 0.05) var move_speed_scale := 1.0
+@export_range(0.0, 1.5, 0.05) var spin_move_ratio := 1.0
+@export_range(0.5, 2.0, 0.05) var trigger_sensitivity := 1.0
+@export_range(0.5, 2.0, 0.05) var stick_sensitivity := 1.0
+
 @onready var left_dancer: Dancer = $LeftDancer
 @onready var right_dancer: Dancer = $RightDancer
 @onready var hand_connection: HandConnection = $HandConnection
@@ -23,6 +30,7 @@ const RIGHT_BUMPER := 1
 func _ready() -> void:
 	_select_gamepad()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+	_apply_runtime_tuning()
 	queue_redraw()
 
 
@@ -45,6 +53,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if get_tree() != null and get_tree().paused:
+		return
 	if event is InputEventJoypadButton and event.pressed:
 		if _gamepad_device >= 0 and event.device != _gamepad_device:
 			return
@@ -117,13 +127,53 @@ func _read_stick(axis_x: int, axis_y: int) -> Vector2:
 	if magnitude <= stick_deadzone:
 		return Vector2.ZERO
 	var scaled_magnitude := inverse_lerp(stick_deadzone, 1.0, minf(magnitude, 1.0))
-	return value.normalized() * scaled_magnitude
+	return value.normalized() * _apply_input_sensitivity(
+		scaled_magnitude,
+		stick_sensitivity
+	)
 
 
 func _read_trigger(axis: int) -> float:
 	if _gamepad_device < 0:
 		return 0.0
-	return clampf(Input.get_joy_axis(_gamepad_device, axis), 0.0, 1.0)
+	return _apply_input_sensitivity(
+		clampf(Input.get_joy_axis(_gamepad_device, axis), 0.0, 1.0),
+		trigger_sensitivity
+	)
+
+
+func set_runtime_tuning(
+	new_spin_speed_scale: float,
+	new_move_speed_scale: float,
+	new_spin_move_ratio: float,
+	new_trigger_sensitivity: float,
+	new_stick_sensitivity: float
+) -> void:
+	spin_speed_scale = clampf(new_spin_speed_scale, 0.5, 2.0)
+	move_speed_scale = clampf(new_move_speed_scale, 0.5, 2.0)
+	spin_move_ratio = clampf(new_spin_move_ratio, 0.0, 1.5)
+	trigger_sensitivity = clampf(new_trigger_sensitivity, 0.5, 2.0)
+	stick_sensitivity = clampf(new_stick_sensitivity, 0.5, 2.0)
+	_apply_runtime_tuning()
+
+
+func _apply_runtime_tuning() -> void:
+	left_dancer.set_runtime_tuning(
+		spin_speed_scale,
+		move_speed_scale,
+		spin_move_ratio
+	)
+	right_dancer.set_runtime_tuning(
+		spin_speed_scale,
+		move_speed_scale,
+		spin_move_ratio
+	)
+
+
+func _apply_input_sensitivity(value: float, sensitivity: float) -> float:
+	if value <= 0.0:
+		return 0.0
+	return pow(clampf(value, 0.0, 1.0), 1.0 / maxf(sensitivity, 0.001))
 
 
 func _read_keyboard_vector(left: int, right: int, up: int, down: int) -> Vector2:

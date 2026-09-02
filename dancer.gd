@@ -21,17 +21,19 @@ extends RigidBody2D
 @export_enum("Clockwise:1", "Counterclockwise:-1") var intended_spin_direction := 1
 
 @export_category("Arm")
-@export var minimum_arm_length := 48.0
-@export var maximum_arm_length := 118.0
-@export var arm_interpolation_speed := 180.0
+@export var minimum_arm_length := 33.6
+@export var maximum_arm_length := 82.6
+@export var arm_interpolation_speed := 126.0
 @export var hand_line_offset := 0.0
 @export var shoulder_half_width := 17.0
-@export var upper_arm_length := 52.0
-@export var forearm_length := 52.0
-@export_range(0.0, 90.0, 1.0) var minimum_abduction_degrees := 30.0
+@export var upper_arm_length := 36.4
+@export var forearm_length := 36.4
+@export_range(0.0, 90.0, 1.0) var minimum_abduction_degrees := 0.0
 @export_range(0.0, 90.0, 1.0) var maximum_abduction_degrees := 84.0
 @export_range(0.0, 180.0, 1.0) var minimum_elbow_flexion_degrees := 12.0
 @export_range(0.0, 180.0, 1.0) var maximum_elbow_flexion_degrees := 145.0
+@export_range(0.0, 90.0, 1.0) var minimum_forearm_out_of_plane_degrees := 0.0
+@export_range(0.0, 90.0, 1.0) var maximum_forearm_out_of_plane_degrees := 80.0
 @export var base_effective_inertia := 320.0
 @export var arm_inertia_scale := 0.015
 @export var effective_inertia_influence := 1.0
@@ -40,8 +42,14 @@ var movement_input := Vector2.ZERO
 var trigger_value := 0.0
 var current_arm_length := 118.0
 var target_angular_velocity := 2.2
+var diagnostic_movement_force := Vector2.ZERO
+var diagnostic_spin_torque := 0.0
+var spin_speed_scale := 1.0
+var move_speed_scale := 1.0
+var spin_move_ratio := 1.0
 
 const HAND_RADIUS := 9.0
+const ELBOW_RADIUS := 5.0
 
 
 func _ready() -> void:
@@ -70,6 +78,16 @@ func set_control_input(new_movement_input: Vector2, new_trigger_value: float) ->
 	trigger_value = clampf(new_trigger_value, 0.0, 1.0)
 
 
+func set_runtime_tuning(
+	new_spin_speed_scale: float,
+	new_move_speed_scale: float,
+	new_spin_move_ratio: float
+) -> void:
+	spin_speed_scale = maxf(new_spin_speed_scale, 0.0)
+	move_speed_scale = maxf(new_move_speed_scale, 0.0)
+	spin_move_ratio = maxf(new_spin_move_ratio, 0.0)
+
+
 func reverse_spin() -> void:
 	intended_spin_direction *= -1
 
@@ -90,7 +108,7 @@ func get_hand_velocity(side: int = 1) -> Vector2:
 func get_hand_local_position(side: int = 1) -> Vector2:
 	return (
 		get_elbow_local_position(side)
-		+ get_forearm_local_direction(side) * forearm_length
+		+ get_forearm_local_direction(side) * get_projected_forearm_length()
 	)
 
 
@@ -126,6 +144,30 @@ func get_elbow_flexion_degrees() -> float:
 	)
 
 
+func get_forearm_out_of_plane_degrees() -> float:
+	return lerpf(
+		minimum_forearm_out_of_plane_degrees,
+		maximum_forearm_out_of_plane_degrees,
+		get_arm_flexion()
+	)
+
+
+func get_projected_forearm_length() -> float:
+	# As the humerus reorients the elbow hinge, more of the forearm's flexion arc
+	# leaves the screen plane. Cosine projection makes shortening continuous but
+	# naturally more visible toward the fully adducted endpoint.
+	return (
+		forearm_length
+		* cos(deg_to_rad(get_forearm_out_of_plane_degrees()))
+	)
+
+
+func get_elbow_joint_radius() -> float:
+	# At full adduction the elbow overlaps the shoulder in projection. Enlarge
+	# that single visible joint into a compact, hand-sized shoulder cap.
+	return lerpf(ELBOW_RADIUS, HAND_RADIUS, get_arm_flexion())
+
+
 func get_dorsal_local_direction() -> Vector2:
 	# Both pictograms face toward their heads at the top of the body, so their
 	# anatomical back is down in body-local space.
@@ -150,24 +192,47 @@ func get_forearm_local_direction(side: int = 1) -> Vector2:
 	return outward.rotated(deg_to_rad(get_elbow_flexion_degrees()) * side_sign)
 
 
+func get_spin_move_scale() -> float:
+	var minimum_spin := maxf(minimum_target_angular_velocity, 0.001)
+	var pose_spin_ratio := lerpf(
+		minimum_target_angular_velocity,
+		maximum_target_angular_velocity,
+		get_arm_flexion()
+	) / minimum_spin
+	return 1.0 + (pose_spin_ratio - 1.0) * spin_move_ratio
+
+
+func get_effective_move_scale() -> float:
+	return move_speed_scale * get_spin_move_scale()
+
+
 func _apply_movement_force() -> void:
+	diagnostic_movement_force = Vector2.ZERO
 	if movement_input.is_zero_approx():
 		return
+	var effective_move_scale := get_effective_move_scale()
 	var force_scale := 1.0
 	if maximum_input_speed > 0.0:
 		var along_input := linear_velocity.dot(movement_input.normalized())
-		if along_input > maximum_input_speed:
+		if along_input > maximum_input_speed * effective_move_scale:
 			force_scale = 0.0
-	apply_central_force(movement_input * movement_force * force_scale)
+	diagnostic_movement_force = (
+		movement_input * movement_force * effective_move_scale * force_scale
+	)
+	apply_central_force(diagnostic_movement_force)
 
 
 func _apply_spin_torque() -> void:
 	var tuck := get_arm_flexion()
-	var target_speed := lerpf(minimum_target_angular_velocity, maximum_target_angular_velocity, tuck)
+	var target_speed := (
+		lerpf(minimum_target_angular_velocity, maximum_target_angular_velocity, tuck)
+		* spin_speed_scale
+	)
 	target_angular_velocity = target_speed * float(intended_spin_direction)
 	var velocity_error := target_angular_velocity - angular_velocity
 	var requested_torque := velocity_error * spin_response_gain
-	apply_torque(clampf(requested_torque, -spin_torque, spin_torque))
+	diagnostic_spin_torque = clampf(requested_torque, -spin_torque, spin_torque)
+	apply_torque(diagnostic_spin_torque)
 
 
 func _update_effective_inertia() -> void:
@@ -183,7 +248,7 @@ func _draw() -> void:
 		var hand := get_hand_local_position(side)
 		draw_line(shoulder, elbow, body_color, 8.0, true)
 		draw_line(elbow, hand, body_color, 8.0, true)
-		draw_circle(elbow, 5.0, body_color)
+		draw_circle(elbow, get_elbow_joint_radius(), body_color)
 		draw_circle(hand, HAND_RADIUS, body_color)
 	_draw_simple_body()
 
