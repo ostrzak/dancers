@@ -30,6 +30,8 @@ extends RigidBody2D
 @export var forearm_length := 52.0
 @export_range(0.0, 90.0, 1.0) var minimum_abduction_degrees := 30.0
 @export_range(0.0, 90.0, 1.0) var maximum_abduction_degrees := 84.0
+@export_range(0.0, 180.0, 1.0) var minimum_elbow_flexion_degrees := 12.0
+@export_range(0.0, 180.0, 1.0) var maximum_elbow_flexion_degrees := 145.0
 @export var base_effective_inertia := 320.0
 @export var arm_inertia_scale := 0.015
 @export var effective_inertia_influence := 1.0
@@ -86,20 +88,42 @@ func get_hand_velocity(side: int = 1) -> Vector2:
 
 
 func get_hand_local_position(side: int = 1) -> Vector2:
-	return Vector2(current_arm_length * signi(side), hand_line_offset)
+	return (
+		get_elbow_local_position(side)
+		+ get_forearm_local_direction(side) * forearm_length
+	)
 
 
 func get_shoulder_local_position(side: int = 1) -> Vector2:
 	return Vector2(shoulder_half_width * signi(side), hand_line_offset)
 
 
+func get_arm_flexion() -> float:
+	return clampf(
+		inverse_lerp(maximum_arm_length, minimum_arm_length, current_arm_length),
+		0.0,
+		1.0
+	)
+
+
 func get_abduction_degrees() -> float:
-	var flexion := inverse_lerp(maximum_arm_length, minimum_arm_length, current_arm_length)
-	return lerpf(maximum_abduction_degrees, minimum_abduction_degrees, flexion)
+	return lerpf(
+		maximum_abduction_degrees,
+		minimum_abduction_degrees,
+		get_arm_flexion()
+	)
 
 
 func get_projected_upper_arm_length() -> float:
 	return upper_arm_length * sin(deg_to_rad(get_abduction_degrees()))
+
+
+func get_elbow_flexion_degrees() -> float:
+	return lerpf(
+		minimum_elbow_flexion_degrees,
+		maximum_elbow_flexion_degrees,
+		get_arm_flexion()
+	)
 
 
 func get_dorsal_local_direction() -> Vector2:
@@ -109,36 +133,21 @@ func get_dorsal_local_direction() -> Vector2:
 
 
 func get_elbow_local_position(side: int = 1) -> Vector2:
-	var shoulder := get_shoulder_local_position(side)
-	var hand := get_hand_local_position(side)
-	var projected_upper_arm_length := get_projected_upper_arm_length()
-	var shoulder_to_hand := hand - shoulder
-	var distance := shoulder_to_hand.length()
-	if distance <= 0.001:
-		return shoulder + Vector2.UP * projected_upper_arm_length
-
-	var direction := shoulder_to_hand / distance
-	var reachable_distance := clampf(
-		distance,
-		absf(projected_upper_arm_length - forearm_length) + 0.001,
-		projected_upper_arm_length + forearm_length - 0.001
+	# Abduction happens outside the top-down viewing plane. Keep the humerus
+	# radial on screen and communicate that motion through its projected length.
+	var outward := Vector2.RIGHT * float(signi(side))
+	return (
+		get_shoulder_local_position(side)
+		+ outward * get_projected_upper_arm_length()
 	)
-	var along_distance := (
-		projected_upper_arm_length * projected_upper_arm_length
-		- forearm_length * forearm_length
-		+ reachable_distance * reachable_distance
-	) / (2.0 * reachable_distance)
-	var perpendicular_distance := sqrt(maxf(
-		projected_upper_arm_length * projected_upper_arm_length - along_distance * along_distance,
-		0.0
-	))
-	# Of the two valid IK solutions, choose the one toward the dancer's back.
-	# This keeps both elbows anatomically dorsal instead of choosing by screen
-	# chirality and accidentally creating a pinwheel-like pose.
-	var tangent := Vector2(-direction.y, direction.x)
-	if tangent.dot(get_dorsal_local_direction()) < 0.0:
-		tangent = -tangent
-	return shoulder + direction * along_distance + tangent * perpendicular_distance
+
+
+func get_forearm_local_direction(side: int = 1) -> Vector2:
+	# Mirror the elbow rotation so both forearms fold through the dancer's dorsal
+	# side and eventually point back inward toward the torso.
+	var side_sign := float(signi(side))
+	var outward := Vector2.RIGHT * side_sign
+	return outward.rotated(deg_to_rad(get_elbow_flexion_degrees()) * side_sign)
 
 
 func _apply_movement_force() -> void:
@@ -153,7 +162,7 @@ func _apply_movement_force() -> void:
 
 
 func _apply_spin_torque() -> void:
-	var tuck := inverse_lerp(maximum_arm_length, minimum_arm_length, current_arm_length)
+	var tuck := get_arm_flexion()
 	var target_speed := lerpf(minimum_target_angular_velocity, maximum_target_angular_velocity, tuck)
 	target_angular_velocity = target_speed * float(intended_spin_direction)
 	var velocity_error := target_angular_velocity - angular_velocity
@@ -162,10 +171,7 @@ func _apply_spin_torque() -> void:
 
 
 func _update_effective_inertia() -> void:
-	var effective_radius_squared := (
-		current_arm_length * current_arm_length
-		+ hand_line_offset * hand_line_offset
-	)
+	var effective_radius_squared := get_hand_local_position(1).length_squared()
 	var arm_inertia := arm_inertia_scale * effective_radius_squared
 	inertia = maxf(1.0, base_effective_inertia + arm_inertia * effective_inertia_influence)
 

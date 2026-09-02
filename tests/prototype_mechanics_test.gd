@@ -36,28 +36,25 @@ func _run() -> void:
 	])
 	_expect(_left.angular_velocity > 0.5, "left dancer accelerates clockwise")
 	_expect(_right.angular_velocity < -0.5, "right dancer accelerates counterclockwise")
-	_expect(_arm_segments_match(_left) and _arm_segments_match(_right), "IK uses projected upper-arm and fixed forearm lengths")
-	_expect(_elbows_bend_dorsally(_left) and _elbows_bend_dorsally(_right), "both arms bend their elbows dorsally")
+	_expect(_arm_segments_match(_left) and _arm_segments_match(_right), "arms use projected upper-arm and fixed forearm lengths")
+	_expect(_upper_arms_project_radially(_left) and _upper_arms_project_radially(_right), "upper arms stay radial in the top-down projection")
 	_expect(
 		_left.get_projected_upper_arm_length() < _left.upper_arm_length
 		and _left.get_projected_upper_arm_length() > _left.upper_arm_length * 0.95,
 		"maximum abduction exposes almost the full anatomical upper arm"
 	)
 	_expect(
-		_shoulder_hand_distance(_left, 1) < _left.get_projected_upper_arm_length() + _left.forearm_length - 1.0
-		and _shoulder_hand_distance(_right, 1) < _right.get_projected_upper_arm_length() + _right.forearm_length - 1.0,
-		"released triggers retain a slight natural elbow bend"
+		_forearms_bend_dorsally(_left, true)
+		and _forearms_bend_dorsally(_right, true),
+		"released triggers retain a slight mirrored elbow bend"
 	)
 	_expect(is_equal_approx(_left.global_position.y, 360.0), "left dancer has no downward gravity drift")
 	_expect(is_equal_approx(_right.global_position.y, 360.0), "right dancer has no downward gravity drift")
-	var opposite_hands_midpoint := (
-		_left.get_hand_world_position(-1) + _left.get_hand_world_position(1)
-	) * 0.5
-	_expect(opposite_hands_midpoint.is_equal_approx(_left.global_position), "two hands remain opposite around the body")
-	_expect(is_equal_approx(
-		_left.get_hand_world_position(-1).distance_to(_left.get_hand_world_position(1)),
-		_left.current_arm_length * 2.0
-	), "both visible hands use the controlled arm radius")
+	_expect(_hands_are_mirrored(_left), "two hands remain mirrored across the body axis")
+	_expect(
+		absf(_left.get_hand_local_position(1).x) > _left.maximum_arm_length - 2.0,
+		"released arms retain their broad lateral reach"
+	)
 	_left.reverse_spin()
 	await _wait_physics_frames(1)
 	_expect(_left.angular_velocity > 0.5, "reversal does not instantly flip angular velocity")
@@ -75,21 +72,25 @@ func _run() -> void:
 	_expect(_left.current_arm_length < _left.maximum_arm_length - 40.0, "trigger contracts the arm continuously")
 	_expect(_left.inertia < extended_inertia, "contracted arm lowers effective inertia")
 	_expect(absf(_left.target_angular_velocity) > _left.minimum_target_angular_velocity, "contracted arm raises target spin speed")
-	_expect(_arm_segments_match(_left), "flexed IK preserves projected upper-arm and forearm lengths")
+	_expect(_arm_segments_match(_left), "flexed pose preserves projected upper-arm and forearm lengths")
 	_expect(
 		is_equal_approx(_left.upper_arm_length, anatomical_upper_arm_length)
 		and _left.get_projected_upper_arm_length() < anatomical_upper_arm_length * 0.6
 		and _left.get_projected_upper_arm_length() > anatomical_upper_arm_length * 0.45,
 		"adduction halves visible humerus length without changing anatomy"
 	)
+	_expect(_forearms_bend_dorsally(_left, false), "adducted forearms fold inward through the elbows")
+	_expect(
+		_left.get_hand_local_position(1).length() < 40.0,
+		"combined upper-arm adduction and elbow flexion place the hand near the body"
+	)
 
 	_left.set_control_input(Vector2.ZERO, 0.0)
 	_left.global_position = Vector2(500.0, 360.0)
 	_left.global_rotation = 0.0
 	_right.global_rotation = PI
-	_right.global_position = _left.global_position + Vector2(
-		_left.current_arm_length + _right.current_arm_length,
-		0.0
+	_right.global_position = (
+		_left.get_hand_world_position(1) - _right.get_hand_offset(1)
 	)
 	_left.linear_velocity = Vector2.ZERO
 	_right.linear_velocity = Vector2.ZERO
@@ -160,7 +161,7 @@ func _run() -> void:
 	_expect(not paused and not _pause_menu.visible, "resume closes the menu and unpauses")
 
 	if _failures.is_empty():
-		print("PROTOTYPE MECHANICS: 49/49 checks passed")
+		print("PROTOTYPE MECHANICS: 51/51 checks passed")
 		quit(0)
 	else:
 		for failure in _failures:
@@ -198,16 +199,33 @@ func _arm_segments_match(dancer: Dancer) -> bool:
 	return true
 
 
-func _shoulder_hand_distance(dancer: Dancer, side: int) -> float:
-	return dancer.get_shoulder_local_position(side).distance_to(
-		dancer.get_hand_local_position(side)
-	)
-
-
-func _elbows_bend_dorsally(dancer: Dancer) -> bool:
+func _upper_arms_project_radially(dancer: Dancer) -> bool:
 	for side in [-1, 1]:
 		var shoulder := dancer.get_shoulder_local_position(side)
 		var elbow := dancer.get_elbow_local_position(side)
-		if (elbow - shoulder).dot(dancer.get_dorsal_local_direction()) <= 0.0:
+		var outward := Vector2.RIGHT * float(side)
+		var upper_arm := elbow - shoulder
+		if absf(upper_arm.cross(outward)) > 0.05 or upper_arm.dot(outward) <= 0.0:
 			return false
 	return true
+
+
+func _forearms_bend_dorsally(dancer: Dancer, should_still_point_outward: bool) -> bool:
+	for side in [-1, 1]:
+		var elbow := dancer.get_elbow_local_position(side)
+		var forearm := dancer.get_hand_local_position(side) - elbow
+		var outward := Vector2.RIGHT * float(side)
+		if forearm.dot(dancer.get_dorsal_local_direction()) <= 0.0:
+			return false
+		if should_still_point_outward != (forearm.dot(outward) > 0.0):
+			return false
+	return true
+
+
+func _hands_are_mirrored(dancer: Dancer) -> bool:
+	var left_hand := dancer.get_hand_local_position(-1)
+	var right_hand := dancer.get_hand_local_position(1)
+	return (
+		is_equal_approx(left_hand.x, -right_hand.x)
+		and is_equal_approx(left_hand.y, right_hand.y)
+	)

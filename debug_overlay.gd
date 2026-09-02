@@ -34,14 +34,15 @@ func set_telemetry_visible(is_visible: bool) -> void:
 
 func _format_dancer(dancer: Dancer) -> String:
 	var direction := "CW (+1)" if dancer.intended_spin_direction > 0 else "CCW (-1)"
-	return "speed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nspin         %s\nreach        %7.2f px\nupper proj   %5.1f px @ %4.1f deg\ntrigger      %7.2f\nhand L / R   %6.2f / %6.2f px/s\nconnected    %s" % [
+	return "speed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nspin         %s\nreach        %7.2f px\nupper proj   %5.1f px @ %4.1f deg\nelbow flex   %5.1f deg\ntrigger      %7.2f\nhand L / R   %6.2f / %6.2f px/s\nconnected    %s" % [
 		dancer.linear_velocity.length(),
 		dancer.angular_velocity,
 		dancer.target_angular_velocity,
 		direction,
-		dancer.current_arm_length,
+		dancer.get_hand_local_position(1).length(),
 		dancer.get_projected_upper_arm_length(),
 		dancer.get_abduction_degrees(),
+		dancer.get_elbow_flexion_degrees(),
 		dancer.trigger_value,
 		dancer.get_hand_velocity(-1).length(),
 		dancer.get_hand_velocity(1).length(),
