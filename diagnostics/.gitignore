@@ -1,3 +1,4 @@
 *.json
 *.png
+*.png.import
 !.gitignore
