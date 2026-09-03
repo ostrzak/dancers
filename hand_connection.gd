@@ -32,6 +32,12 @@ signal grip_state_changed
 @export_range(1, 4, 1) var velocity_projection_iterations := 1
 @export var maximum_constraint_force := 4200.0
 
+@export_category("Rigid Double Hold")
+@export_range(1, 32, 1) var rigid_position_iterations := 16
+@export_range(1, 8, 1) var rigid_velocity_iterations := 3
+@export var rigid_span_tolerance := 0.02
+@export_range(1, 12, 1) var rigid_span_projection_iterations := 6
+
 @export var dancer_a: Dancer
 @export var dancer_b: Dancer
 
@@ -58,6 +64,9 @@ var primary_snap_remaining := 0.0
 var secondary_snap_remaining := 0.0
 var double_hold_orbital_angular_velocity := 0.0
 var double_hold_alignment_error := 0.0
+var double_hold_primary_permission := 0.0
+var double_hold_secondary_permission := 0.0
+var double_hold_maximum_effort := 0.0
 
 var _connected_hand_a := 1
 var _connected_hand_b := 1
@@ -75,6 +84,9 @@ var _cooldown_a := {-1: 0.0, 1: 0.0}
 var _cooldown_b := {-1: 0.0, 1: 0.0}
 var _primary_compliance := 0.0
 var _secondary_compliance := 0.0
+var _double_hold_was_active := false
+var _double_hold_primary_flexion := 0.0
+var _double_hold_secondary_flexion := 0.0
 
 const HAND_SIDES := [-1, 1]
 
@@ -91,6 +103,7 @@ func _physics_process(delta: float) -> void:
 
 	_try_connect_waiting_hands()
 	var double_hold_active := is_connected and is_secondary_connected
+	_update_double_hold_arm_frame(double_hold_active, delta)
 	_update_hold_compliance(delta, double_hold_active)
 	if is_connected:
 		primary_snap_remaining = maxf(0.0, primary_snap_remaining - delta)
@@ -219,7 +232,7 @@ func get_hold_mode() -> String:
 
 
 func get_solver_mode() -> String:
-	return "spring"
+	return "hybrid"
 
 
 func is_mutual_body_collision_disabled() -> bool:
@@ -373,6 +386,11 @@ func _process_hold_pair(
 	double_hold_active: bool,
 	delta: float
 ) -> float:
+	# A double hold is a rigid two-point frame. Its positional and velocity
+	# constraints are solved together below; adding either spring here would make
+	# the two contacts compete and recreate the oscillation this mode removes.
+	if double_hold_active:
+		return 0.0
 	var hand_a := dancer_a.get_hand_world_position(hand_a_side)
 	var hand_b := dancer_b.get_hand_world_position(hand_b_side)
 	var delta_position := hand_b - hand_a
@@ -530,17 +548,29 @@ func _next_pair_compliance(
 
 
 func _solve_active_hold_constraints(delta: float) -> void:
+	var double_hold_active := is_connected and is_secondary_connected
 	primary_allowed_separation = (
-		_get_pair_allowed_separation(_connected_hand_a, _connected_hand_b)
+		(0.0 if double_hold_active else _get_pair_allowed_separation(
+			_connected_hand_a,
+			_connected_hand_b
+		))
 		if is_connected
 		else 0.0
 	)
 	secondary_allowed_separation = (
-		_get_pair_allowed_separation(_secondary_hand_a, _secondary_hand_b)
+		(0.0 if double_hold_active else _get_pair_allowed_separation(
+			_secondary_hand_a,
+			_secondary_hand_b
+		))
 		if is_secondary_connected
 		else 0.0
 	)
-	for _iteration in separation_projection_iterations:
+	var position_iterations := (
+		rigid_position_iterations
+		if double_hold_active
+		else separation_projection_iterations
+	)
+	for _iteration in position_iterations:
 		var corrected_any := false
 		if is_connected:
 			corrected_any = (
@@ -564,23 +594,217 @@ func _solve_active_hold_constraints(delta: float) -> void:
 			)
 		if not corrected_any:
 			break
-	for _iteration in velocity_projection_iterations:
+	var velocity_iterations := (
+		rigid_velocity_iterations
+		if double_hold_active
+		else velocity_projection_iterations
+	)
+	for _iteration in velocity_iterations:
 		if is_connected:
-			_solve_pair_velocity(
-				_connected_hand_a,
-				_connected_hand_b,
-				primary_allowed_separation,
-				delta,
-				1
-			)
+			if double_hold_active:
+				_solve_rigid_pair_velocity(
+					_connected_hand_a,
+					_connected_hand_b,
+					delta,
+					1
+				)
+			else:
+				_solve_pair_velocity(
+					_connected_hand_a,
+					_connected_hand_b,
+					primary_allowed_separation,
+					delta,
+					1
+				)
 		if is_secondary_connected:
-			_solve_pair_velocity(
-				_secondary_hand_a,
-				_secondary_hand_b,
-				secondary_allowed_separation,
-				delta,
-				2
+			if double_hold_active:
+				_solve_rigid_pair_velocity(
+					_secondary_hand_a,
+					_secondary_hand_b,
+					delta,
+					2
+				)
+			else:
+				_solve_pair_velocity(
+					_secondary_hand_a,
+					_secondary_hand_b,
+					secondary_allowed_separation,
+					delta,
+					2
+				)
+
+
+func _update_double_hold_arm_frame(active: bool, delta: float) -> void:
+	if not active:
+		if _double_hold_was_active:
+			dancer_a.clear_double_hold_arm_states()
+			dancer_b.clear_double_hold_arm_states()
+		_double_hold_was_active = false
+		double_hold_primary_permission = 0.0
+		double_hold_secondary_permission = 0.0
+		double_hold_maximum_effort = 0.0
+		return
+
+	double_hold_primary_permission = minf(
+		dancer_a.get_trigger_value(_connected_hand_a),
+		dancer_b.get_trigger_value(_connected_hand_b)
+	)
+	double_hold_secondary_permission = minf(
+		dancer_a.get_trigger_value(_secondary_hand_a),
+		dancer_b.get_trigger_value(_secondary_hand_b)
+	)
+	if not _double_hold_was_active:
+		_double_hold_primary_flexion = minf(
+			dancer_a.get_arm_flexion(_connected_hand_a),
+			dancer_b.get_arm_flexion(_connected_hand_b)
+		)
+		_double_hold_secondary_flexion = minf(
+			dancer_a.get_arm_flexion(_secondary_hand_a),
+			dancer_b.get_arm_flexion(_secondary_hand_b)
+		)
+	_double_hold_was_active = true
+
+	var normalized_rate := minf(
+		dancer_a.arm_interpolation_speed
+		/ maxf(dancer_a.maximum_arm_length - dancer_a.minimum_arm_length, 0.001),
+		dancer_b.arm_interpolation_speed
+		/ maxf(dancer_b.maximum_arm_length - dancer_b.minimum_arm_length, 0.001)
+	)
+	_double_hold_primary_flexion = move_toward(
+		_double_hold_primary_flexion,
+		double_hold_primary_permission,
+		normalized_rate * maxf(delta, 0.0)
+	)
+	_double_hold_secondary_flexion = move_toward(
+		_double_hold_secondary_flexion,
+		double_hold_secondary_permission,
+		normalized_rate * maxf(delta, 0.0)
+	)
+
+	# Begin with the mutually permitted flexion for each contact. Then make only
+	# the tiny anatomical adjustment required for both dancers' two hand spans to
+	# match. Equal spans are what make two exact point contacts geometrically
+	# possible without welding either dancer's body orientation.
+	var flexions := [
+		_double_hold_primary_flexion,
+		_double_hold_primary_flexion,
+		_double_hold_secondary_flexion,
+		_double_hold_secondary_flexion,
+	]
+	_project_double_hold_spans(flexions)
+	_apply_double_hold_flexions(flexions, true)
+	double_hold_maximum_effort = maxf(
+		maxf(
+			dancer_a.get_double_hold_arm_effort(_connected_hand_a),
+			dancer_b.get_double_hold_arm_effort(_connected_hand_b)
+		),
+		maxf(
+			dancer_a.get_double_hold_arm_effort(_secondary_hand_a),
+			dancer_b.get_double_hold_arm_effort(_secondary_hand_b)
+		)
+	)
+
+
+func _project_double_hold_spans(flexions: Array) -> void:
+	const SAMPLE_STEP := 0.01
+	for _iteration in rigid_span_projection_iterations:
+		_apply_double_hold_flexions(flexions, false)
+		var error := _get_double_hold_span_error()
+		if absf(error) <= rigid_span_tolerance:
+			return
+		var gradient := [0.0, 0.0, 0.0, 0.0]
+		var denominator := 0.0
+		for index in 4:
+			var original: float = flexions[index]
+			var sample := clampf(original + SAMPLE_STEP, 0.0, 1.0)
+			if is_equal_approx(sample, original):
+				sample = clampf(original - SAMPLE_STEP, 0.0, 1.0)
+			if is_equal_approx(sample, original):
+				continue
+			flexions[index] = sample
+			_apply_double_hold_flexions(flexions, false)
+			gradient[index] = (_get_double_hold_span_error() - error) / (sample - original)
+			denominator += gradient[index] * gradient[index]
+			flexions[index] = original
+		if denominator <= 0.000001:
+			break
+		var scale := -error / denominator
+		for index in 4:
+			flexions[index] = clampf(
+				float(flexions[index]) + scale * float(gradient[index]),
+				0.0,
+				1.0
 			)
+	_apply_double_hold_flexions(flexions, false)
+
+
+func _apply_double_hold_flexions(flexions: Array, record_effort: bool) -> void:
+	var request_a_primary := (
+		dancer_a.get_trigger_value(_connected_hand_a)
+		if record_effort else float(flexions[0])
+	)
+	var request_b_primary := (
+		dancer_b.get_trigger_value(_connected_hand_b)
+		if record_effort else float(flexions[1])
+	)
+	var request_a_secondary := (
+		dancer_a.get_trigger_value(_secondary_hand_a)
+		if record_effort else float(flexions[2])
+	)
+	var request_b_secondary := (
+		dancer_b.get_trigger_value(_secondary_hand_b)
+		if record_effort else float(flexions[3])
+	)
+	dancer_a.set_double_hold_arm_state(
+		_connected_hand_a,
+		float(flexions[0]),
+		request_a_primary
+	)
+	dancer_b.set_double_hold_arm_state(
+		_connected_hand_b,
+		float(flexions[1]),
+		request_b_primary
+	)
+	dancer_a.set_double_hold_arm_state(
+		_secondary_hand_a,
+		float(flexions[2]),
+		request_a_secondary
+	)
+	dancer_b.set_double_hold_arm_state(
+		_secondary_hand_b,
+		float(flexions[3]),
+		request_b_secondary
+	)
+
+
+func _get_double_hold_span_error() -> float:
+	var span_a := dancer_a.get_hand_local_position(_connected_hand_a).distance_to(
+		dancer_a.get_hand_local_position(_secondary_hand_a)
+	)
+	var span_b := dancer_b.get_hand_local_position(_connected_hand_b).distance_to(
+		dancer_b.get_hand_local_position(_secondary_hand_b)
+	)
+	return span_a - span_b
+
+
+func _solve_rigid_pair_velocity(
+	hand_a_side: int,
+	hand_b_side: int,
+	delta: float,
+	slot: int
+) -> void:
+	for axis in [Vector2.RIGHT, Vector2.DOWN]:
+		var relative_speed := (
+			_get_predicted_hand_velocity(dancer_b, hand_b_side, delta)
+			- _get_predicted_hand_velocity(dancer_a, hand_a_side, delta)
+		).dot(axis)
+		_apply_pair_velocity_axis(
+			hand_a_side,
+			hand_b_side,
+			axis,
+			relative_speed,
+			slot
+		)
 
 
 func _get_pair_allowed_separation(hand_a_side: int, hand_b_side: int) -> float:

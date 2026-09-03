@@ -73,8 +73,10 @@ func _run() -> void:
 		and sample["hand_connection"].has("dorsal_limit_active")
 		and sample["hand_connection"].has("double_hold_orbital_angular_velocity")
 		and sample["hand_connection"].has("double_hold_alignment_error")
-		and sample["hand_connection"]["solver_mode"] == "spring",
-		"connection samples identify the spring solver and its safety corrections"
+		and sample["hand_connection"].has("double_hold_primary_permission")
+		and sample["hand_connection"].has("double_hold_maximum_effort")
+		and sample["hand_connection"]["solver_mode"] == "hybrid",
+		"connection samples identify the single-spring double-rigid solver"
 	)
 	_expect(sample["left_dancer"]["input"]["movement"] == [0.25, -0.75], "effective LS input is recorded")
 	_expect(sample["left_dancer"]["input"]["facing"] == [1.0, 0.0], "effective RS facing input is recorded")
@@ -99,6 +101,7 @@ func _run() -> void:
 		sample["left_dancer"]["arms"].has("left")
 		and sample["left_dancer"]["arms"].has("right")
 		and sample["left_dancer"]["arms"].has("extended_stance")
+		and sample["left_dancer"]["arms"]["left"].has("double_hold_effort")
 		and not sample["left_dancer"]["arms"]["left"].has("connected_flexion_target")
 		and float(sample["left_dancer"]["arms"]["extended_stance"]["elbow_flexion_degrees"]) == 23.0
 		and float(sample["left_dancer"]["arms"]["extended_stance"]["forward_sweep_degrees"]) == 15.0,
@@ -112,7 +115,7 @@ func _run() -> void:
 	)
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
-	_expect(payload["schema"] == "dancers-coop-telemetry-v8", "payload uses the versioned co-op schema")
+	_expect(payload["schema"] == "dancers-coop-telemetry-v9", "payload uses the versioned co-op schema")
 	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
 	_expect(payload["configuration"].has("controller"), "payload includes exact controller tuning")
 	_expect(
@@ -123,18 +126,19 @@ func _run() -> void:
 		"payload records preferred and live two-controller assignments"
 	)
 	_expect(
-		payload["configuration"]["controller"].has("spin_speed_scale")
-		and payload["configuration"]["controller"].has("move_speed_scale")
-		and payload["configuration"]["controller"].has("spin_move_ratio")
-		and payload["configuration"]["controller"].has("trigger_sensitivity")
-		and payload["configuration"]["controller"].has("stick_sensitivity"),
-		"payload includes all live tuning controls"
+		payload["configuration"]["controller"].has("trigger_sensitivity")
+		and payload["configuration"]["controller"].has("stick_sensitivity")
+		and payload["configuration"]["controller"].has("man_weight_kg")
+		and payload["configuration"]["controller"].has("woman_weight_kg")
+		and not payload["configuration"]["controller"].has("spin_speed_scale"),
+		"payload includes sensitivity and kilogram tuning without obsolete speed scales"
 	)
 	_expect(payload["configuration"].has("hand_connection"), "payload includes exact connection tuning")
 	_expect(
 		payload["configuration"]["left_dancer"].has("position_lock_stiffness")
-		and payload["configuration"]["left_dancer"].has("rotation_lock_stiffness"),
-		"capture includes physical L3 and R3 lock tuning"
+		and payload["configuration"]["left_dancer"].has("rotation_lock_stiffness")
+		and float(payload["configuration"]["left_dancer"]["weight_kg"]) == 75.0,
+		"capture includes physical locks and real-world dancer weight"
 	)
 	_expect(
 		payload["configuration"]["left_dancer"].has("minimum_extended_elbow_flexion_degrees")
@@ -164,8 +168,10 @@ func _run() -> void:
 		and payload["configuration"]["hand_connection"].has("elastic_response_rate")
 		and payload["configuration"]["hand_connection"].has("compliance_open_rate")
 		and payload["configuration"]["hand_connection"].has("compliance_close_rate")
-		and payload["configuration"]["hand_connection"]["solver_mode"] == "spring",
-		"capture records the conservative-to-elastic spring tuning"
+		and payload["configuration"]["hand_connection"].has("rigid_position_iterations")
+		and payload["configuration"]["hand_connection"].has("rigid_span_tolerance")
+		and payload["configuration"]["hand_connection"]["solver_mode"] == "hybrid",
+		"capture records both the one-hand spring and rigid double-frame tuning"
 	)
 	_expect(
 		not payload["configuration"]["hand_connection"].has("closed_hold_minimum_body_distance"),
@@ -186,7 +192,7 @@ func _run() -> void:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saved_path))
 		_expect(parsed is Dictionary, "saved capture is valid JSON")
 		if parsed is Dictionary:
-			_expect(parsed["schema"] == "dancers-coop-telemetry-v8", "saved JSON retains the co-op schema")
+			_expect(parsed["schema"] == "dancers-coop-telemetry-v9", "saved JSON retains the co-op schema")
 			_expect(int(parsed["sample_count"]) >= 1, "saved JSON contains telemetry samples")
 		DirAccess.remove_absolute(saved_path)
 	_pause_menu._resume()

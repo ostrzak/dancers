@@ -31,6 +31,13 @@ func _run() -> void:
 	_expect(_right.body_color.get_luminance() > 0.5, "player two controls the white dancer")
 	_expect(_left.body_style == 0 and _right.body_style == 1, "the dancers use distinct top-down man and woman silhouettes")
 	_expect(
+		is_equal_approx(_left.weight_kg, 75.0)
+		and is_equal_approx(_right.weight_kg, 75.0)
+		and is_equal_approx(_left.mass, 1.2)
+		and is_equal_approx(_right.mass, 1.2),
+		"both dancers begin at the reference 75 kg physical weight"
+	)
+	_expect(
 		Dancer.BODY_REAR_Y >= Dancer.HEAD_CENTER.y - Dancer.HEAD_RADIUS
 		and Dancer.BODY_FORWARD_Y <= Dancer.HEAD_CENTER.y + Dancer.HEAD_RADIUS,
 		"the upright torso footprint stays completely beneath the head lengthwise"
@@ -624,28 +631,57 @@ func _run() -> void:
 	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 1.0, 0.0)
 	_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 	await _wait_physics_frames(60)
-	_expect(_left.get_arm_flexion(-1) > 0.9 and _left.get_arm_flexion(1) < 0.1, "black dancer retains asymmetric arm control in a double hold")
-	_expect(_right.get_arm_flexion(-1) < 0.1 and _right.get_arm_flexion(1) < 0.1, "white dancer's arms ignore the black dancer's trigger in a double hold")
-	var coupled_primary := _connection.get_connected_hand_sides()
-	var coupled_secondary := _connection.get_secondary_connected_hand_sides()
 	_expect(
-		absf(
-			_left.get_arm_flexion(coupled_primary[0])
-			- _right.get_arm_flexion(coupled_primary[1])
-		) > 0.5
-		or absf(
-			_left.get_arm_flexion(coupled_secondary[0])
-			- _right.get_arm_flexion(coupled_secondary[1])
-		) > 0.5,
-		"connected arm flexion remains independent across dancers"
+		_left.get_trigger_value(-1) > 0.9
+		and _right.get_trigger_value(1) < 0.1,
+		"a double hold preserves each partner's independent trigger request"
 	)
 	_expect(
-		_connection.get_solver_mode() == "spring"
-		and _connection.primary_allowed_separation
-		<= _connection.maximum_hand_separation
-		and _connection.secondary_allowed_separation
-		<= _connection.maximum_hand_separation,
-		"a two-hand frame uses conservative independent springs inside the hard tether"
+		_left.get_arm_flexion(-1) < 0.25
+		and _left.get_double_hold_arm_effort(-1) > 0.7
+		and _connection.double_hold_maximum_effort > 0.7,
+		"unmatched trigger flexion becomes visible effort instead of breaking the frame"
+	)
+	_expect(
+		_connection.get_solver_mode() == "hybrid"
+		and is_zero_approx(_connection.primary_allowed_separation)
+		and is_zero_approx(_connection.secondary_allowed_separation)
+		and _connected_gap(1) <= 0.1
+		and _connected_gap(2) <= 0.1,
+		"a two-hand hold is one rigid two-point frame"
+	)
+	var unequal_flex_peak_gap := 0.0
+	var unequal_flex_peak_position_correction := 0.0
+	for frame in 240:
+		match int(frame / 60):
+			0:
+				_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 1.0, 0.0)
+				_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+			1:
+				_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 1.0)
+				_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+			2:
+				_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+				_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 1.0, 0.0)
+			_:
+				_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+				_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 1.0)
+		await physics_frame
+		unequal_flex_peak_gap = maxf(
+			unequal_flex_peak_gap,
+			maxf(_connected_gap(1), _connected_gap(2))
+		)
+		unequal_flex_peak_position_correction = maxf(
+			unequal_flex_peak_position_correction,
+			maxf(
+				_connection.primary_position_correction,
+				_connection.secondary_position_correction
+			)
+		)
+	_expect(
+		unequal_flex_peak_gap <= 0.15
+		and unequal_flex_peak_position_correction <= 0.15,
+		"rapid unequal trigger requests neither stretch nor kick the rigid frame"
 	)
 	_expect(_connection.get_active_connection_count() == 2, "independent player motion does not auto-release either grip")
 	_expect(_left.linear_velocity.is_finite() and _right.linear_velocity.is_finite(), "double-hold motion remains numerically finite")
@@ -736,21 +772,45 @@ func _run() -> void:
 	)
 	_pause_menu._input(_joy_button_event(JOY_BUTTON_RIGHT_SHOULDER, 5))
 	_expect(_pause_menu.tabs.current_tab == 1, "RB opens the tuning tab while gameplay is paused")
-	_pause_menu.spin_speed_slider.value = 1.5
-	_pause_menu.move_speed_slider.value = 1.25
-	_pause_menu.spin_move_ratio_slider.value = 0.5
 	_pause_menu.trigger_sensitivity_slider.value = 2.0
 	_pause_menu.stick_sensitivity_slider.value = 0.75
+	_pause_menu.man_weight_slider.value = 100.0
+	_pause_menu.woman_weight_slider.value = 50.0
 	_expect(
-		is_equal_approx(_root.spin_speed_scale, 1.5)
-		and is_equal_approx(_root.move_speed_scale, 1.25)
-		and is_equal_approx(_root.spin_move_ratio, 0.5)
-		and is_equal_approx(_root.trigger_sensitivity, 2.0)
+		is_equal_approx(_root.trigger_sensitivity, 2.0)
 		and is_equal_approx(_root.stick_sensitivity, 0.75)
-		and is_equal_approx(_left.spin_speed_scale, 1.5)
-		and is_equal_approx(_right.move_speed_scale, 1.25),
-		"runtime tuning still updates both co-op dancers"
+		and is_equal_approx(_left.weight_kg, 100.0)
+		and is_equal_approx(_right.weight_kg, 50.0)
+		and is_equal_approx(_left.mass, 1.6)
+		and is_equal_approx(_right.mass, 0.8),
+		"runtime tuning applies kilogram weights and both input response curves"
 	)
+	_left.linear_velocity = Vector2.ZERO
+	_right.linear_velocity = Vector2.ZERO
+	_left.set_control_input(Vector2.RIGHT, Vector2.ZERO, 0.0, 0.0)
+	_right.set_control_input(Vector2.RIGHT, Vector2.ZERO, 0.0, 0.0)
+	_left._apply_movement_force()
+	_right._apply_movement_force()
+	_expect(
+		is_equal_approx(
+			_left.diagnostic_movement_force.x / _left.mass,
+			_right.diagnostic_movement_force.x / _right.mass
+		),
+		"weight does not make a dancer's own LS control sluggish"
+	)
+	_left.set_rotation_lock_enabled(true)
+	_right.set_rotation_lock_enabled(true)
+	var heavy_before := _left.global_position
+	var light_before := _right.global_position
+	_connection._apply_pair_position_axis(-1, 1, Vector2.RIGHT, 12.0)
+	var heavy_displacement := _left.global_position.distance_to(heavy_before)
+	var light_displacement := _right.global_position.distance_to(light_before)
+	_expect(
+		is_equal_approx(heavy_displacement / light_displacement, 0.5),
+		"a 100 kg partner yields half as far as a 50 kg partner to the same hold correction"
+	)
+	_left.set_rotation_lock_enabled(false)
+	_right.set_rotation_lock_enabled(false)
 	_pause_menu._resume()
 	_expect(not paused and not _pause_menu.visible, "resume closes the menu and unpauses")
 

@@ -7,6 +7,9 @@ extends RigidBody2D
 @export var detail_color := Color("f2f2f2")
 @export_enum("Man", "Woman") var body_style := 0
 
+@export_category("Physical Weight")
+@export_range(40.0, 150.0, 1.0) var weight_kg := 75.0
+
 @export_category("Movement")
 @export var movement_force := 900.0
 @export var movement_linear_damping := 2.2
@@ -65,9 +68,6 @@ var diagnostic_movement_force := Vector2.ZERO
 var diagnostic_spin_torque := 0.0
 var diagnostic_position_lock_force := Vector2.ZERO
 var diagnostic_rotation_lock_torque := 0.0
-var spin_speed_scale := 1.0
-var move_speed_scale := 1.0
-var spin_move_ratio := 1.0
 var position_lock_active := false
 var rotation_lock_active := false
 var position_lock_anchor := Vector2.ZERO
@@ -77,6 +77,8 @@ var _current_arm_lengths := {
 	-1: 82.6,
 	1: 82.6,
 }
+var _double_hold_arm_active := {-1: false, 1: false}
+var _double_hold_arm_effort := {-1: 0.0, 1: 0.0}
 var _unwrapped_rotation := 0.0
 var _previous_wrapped_rotation := 0.0
 var _desired_facing_rotation := 0.0
@@ -91,10 +93,13 @@ const BODY_REAR_Y := -10.0
 const BODY_FORWARD_Y := 9.0
 const NECK_REAR_Y := -14.0
 const NOSE_TIP_Y := 19.0
+const REFERENCE_WEIGHT_KG := 75.0
+const REFERENCE_BODY_MASS := 1.2
 
 
 func _ready() -> void:
 	gravity_scale = 0.0
+	set_physical_weight_kg(weight_kg)
 	linear_damp = movement_linear_damping
 	angular_damp = spin_angular_damping
 	_current_arm_lengths[-1] = maximum_arm_length
@@ -120,6 +125,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_unwrapped_rotation()
 	for side in HAND_SIDES:
+		if bool(_double_hold_arm_active[side]):
+			continue
 		var current_length := get_current_arm_length(side)
 		var desired_length := lerpf(
 			maximum_arm_length,
@@ -182,14 +189,42 @@ func set_rotation_lock_enabled(is_enabled: bool) -> void:
 	rotation_lock_active = is_enabled
 
 
-func set_runtime_tuning(
-	new_spin_speed_scale: float,
-	new_move_speed_scale: float,
-	new_spin_move_ratio: float
+func set_physical_weight_kg(new_weight_kg: float) -> void:
+	weight_kg = clampf(new_weight_kg, 40.0, 150.0)
+	mass = REFERENCE_BODY_MASS * get_weight_scale()
+	_update_effective_inertia()
+
+
+func get_weight_scale() -> float:
+	return weight_kg / REFERENCE_WEIGHT_KG
+
+
+func set_double_hold_arm_state(
+	side: int,
+	achieved_flexion: float,
+	requested_flexion: float
 ) -> void:
-	spin_speed_scale = maxf(new_spin_speed_scale, 0.0)
-	move_speed_scale = maxf(new_move_speed_scale, 0.0)
-	spin_move_ratio = maxf(new_spin_move_ratio, 0.0)
+	var signed_side := signi(side)
+	var flexion := clampf(achieved_flexion, 0.0, 1.0)
+	_double_hold_arm_active[signed_side] = true
+	_double_hold_arm_effort[signed_side] = maxf(
+		0.0,
+		clampf(requested_flexion, 0.0, 1.0) - flexion
+	)
+	set_current_arm_length(
+		signed_side,
+		lerpf(maximum_arm_length, minimum_arm_length, flexion)
+	)
+
+
+func clear_double_hold_arm_states() -> void:
+	for side in HAND_SIDES:
+		_double_hold_arm_active[side] = false
+		_double_hold_arm_effort[side] = 0.0
+
+
+func get_double_hold_arm_effort(side: int) -> float:
+	return float(_double_hold_arm_effort[signi(side)])
 
 
 func adjust_extended_arm_pose(
@@ -232,13 +267,10 @@ func get_average_arm_flexion() -> float:
 
 
 func get_turn_speed_limit() -> float:
-	return (
-		lerpf(
-			minimum_target_angular_velocity,
-			maximum_target_angular_velocity,
-			get_average_arm_flexion()
-		)
-		* spin_speed_scale
+	return lerpf(
+		minimum_target_angular_velocity,
+		maximum_target_angular_velocity,
+		get_average_arm_flexion()
 	)
 
 
@@ -378,11 +410,11 @@ func get_spin_move_scale() -> float:
 		maximum_target_angular_velocity,
 		get_average_arm_flexion()
 	) / minimum_spin
-	return 1.0 + (pose_spin_ratio - 1.0) * spin_move_ratio
+	return pose_spin_ratio
 
 
 func get_effective_move_scale() -> float:
-	return move_speed_scale * get_spin_move_scale()
+	return get_spin_move_scale()
 
 
 func _apply_movement_force() -> void:
@@ -396,7 +428,11 @@ func _apply_movement_force() -> void:
 		if along_input > maximum_input_speed * effective_move_scale:
 			force_scale = 0.0
 	diagnostic_movement_force = (
-		movement_input * movement_force * effective_move_scale * force_scale
+		movement_input
+		* movement_force
+		* get_weight_scale()
+		* effective_move_scale
+		* force_scale
 	)
 	apply_central_force(diagnostic_movement_force)
 
@@ -405,10 +441,12 @@ func _apply_position_lock_force() -> void:
 	diagnostic_position_lock_force = Vector2.ZERO
 	if not position_lock_active:
 		return
-	diagnostic_position_lock_force = (
+	diagnostic_position_lock_force = ((
 		(position_lock_anchor - global_position) * position_lock_stiffness
 		- linear_velocity * position_lock_damping
-	).limit_length(maximum_position_lock_force)
+	) * get_weight_scale()).limit_length(
+		maximum_position_lock_force * get_weight_scale()
+	)
 	apply_central_force(diagnostic_position_lock_force)
 
 
@@ -455,9 +493,9 @@ func _apply_rotation_lock_torque() -> void:
 		- angular_velocity * rotation_lock_damping
 	)
 	diagnostic_rotation_lock_torque = clampf(
-		requested_torque,
-		-maximum_rotation_lock_torque,
-		maximum_rotation_lock_torque
+		requested_torque * get_weight_scale(),
+		-maximum_rotation_lock_torque * get_weight_scale(),
+		maximum_rotation_lock_torque * get_weight_scale()
 	)
 	apply_torque(diagnostic_rotation_lock_torque)
 
@@ -478,7 +516,11 @@ func _update_effective_inertia() -> void:
 		+ get_hand_local_position(1).length_squared()
 	) * 0.5
 	var arm_inertia := arm_inertia_scale * average_radius_squared
-	inertia = maxf(1.0, base_effective_inertia + arm_inertia * effective_inertia_influence)
+	inertia = maxf(
+		1.0,
+		(base_effective_inertia + arm_inertia * effective_inertia_influence)
+		* get_weight_scale()
+	)
 
 
 func _draw() -> void:
@@ -490,6 +532,19 @@ func _draw() -> void:
 		draw_line(elbow, hand, body_color, 8.0, true)
 		draw_circle(elbow, get_elbow_joint_radius(side), body_color)
 		draw_circle(hand, HAND_RADIUS, body_color)
+		var effort := get_double_hold_arm_effort(side)
+		if effort > 0.025:
+			var side_sign := float(signi(side))
+			draw_arc(
+				elbow,
+				get_elbow_joint_radius(side) + 3.0,
+				-PI * 0.55 * side_sign,
+				PI * 0.35 * side_sign,
+				10,
+				detail_color,
+				lerpf(1.0, 2.5, effort),
+				true
+			)
 	_draw_simple_body()
 
 
@@ -644,3 +699,21 @@ func _draw_overhead_head(has_long_hair: bool) -> void:
 		var crown_outline := bald_crown.duplicate()
 		crown_outline.append(bald_crown[0])
 		draw_polyline(crown_outline, body_color, 1.25, true)
+		# One stubborn little curl survives on the otherwise bald crown.
+		draw_line(
+			Vector2(-0.8, -5.6),
+			Vector2(1.0, -3.5),
+			body_color,
+			1.5,
+			true
+		)
+		draw_arc(
+			Vector2(0.3, -2.2),
+			2.1,
+			-PI * 0.35,
+			PI * 1.05,
+			10,
+			body_color,
+			1.5,
+			true
+		)

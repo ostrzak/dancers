@@ -11,16 +11,14 @@ extends CanvasLayer
 @onready var save_telemetry_button: Button = $Center/Panel/Menu/Tabs/GENERAL/SaveTelemetry
 @onready var capture_status: Label = $Center/Panel/Menu/Tabs/GENERAL/CaptureStatus
 @onready var quit_button: Button = $Center/Panel/Menu/Tabs/GENERAL/Quit
-@onready var spin_speed_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/SpinSpeed
-@onready var move_speed_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/MoveSpeed
-@onready var spin_move_ratio_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/SpinMoveRatio
 @onready var trigger_sensitivity_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/TriggerSensitivity
 @onready var stick_sensitivity_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/StickSensitivity
-@onready var spin_speed_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/SpinSpeedValue
-@onready var move_speed_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/MoveSpeedValue
-@onready var spin_move_ratio_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/SpinMoveRatioValue
+@onready var man_weight_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/ManWeight
+@onready var woman_weight_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/WomanWeight
 @onready var trigger_sensitivity_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/TriggerSensitivityValue
 @onready var stick_sensitivity_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/StickSensitivityValue
+@onready var man_weight_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/ManWeightValue
+@onready var woman_weight_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/WomanWeightValue
 
 
 func _ready() -> void:
@@ -32,11 +30,10 @@ func _ready() -> void:
 	telemetry_toggle.toggled.connect(_on_telemetry_toggled)
 	telemetry_toggle.set_pressed_no_signal(debug_overlay.visible)
 	for slider: HSlider in [
-		spin_speed_slider,
-		move_speed_slider,
-		spin_move_ratio_slider,
 		trigger_sensitivity_slider,
 		stick_sensitivity_slider,
+		man_weight_slider,
+		woman_weight_slider,
 	]:
 		slider.value_changed.connect(_on_tuning_changed)
 	_sync_tuning_controls()
@@ -100,17 +97,16 @@ func _switch_tab(direction: int) -> void:
 	if tabs.current_tab == 0:
 		resume_button.grab_focus()
 	else:
-		spin_speed_slider.grab_focus()
+		trigger_sensitivity_slider.grab_focus()
 
 
 func _sync_tuning_controls() -> void:
 	if not is_instance_valid(controller):
 		return
-	spin_speed_slider.set_value_no_signal(controller.spin_speed_scale)
-	move_speed_slider.set_value_no_signal(controller.move_speed_scale)
-	spin_move_ratio_slider.set_value_no_signal(controller.spin_move_ratio)
 	trigger_sensitivity_slider.set_value_no_signal(controller.trigger_sensitivity)
 	stick_sensitivity_slider.set_value_no_signal(controller.stick_sensitivity)
+	man_weight_slider.set_value_no_signal(controller.man_weight_kg)
+	woman_weight_slider.set_value_no_signal(controller.woman_weight_kg)
 	_refresh_tuning_labels()
 
 
@@ -118,21 +114,19 @@ func _on_tuning_changed(_value: float) -> void:
 	if not is_instance_valid(controller):
 		return
 	controller.set_runtime_tuning(
-		spin_speed_slider.value,
-		move_speed_slider.value,
-		spin_move_ratio_slider.value,
 		trigger_sensitivity_slider.value,
-		stick_sensitivity_slider.value
+		stick_sensitivity_slider.value,
+		man_weight_slider.value,
+		woman_weight_slider.value
 	)
 	_refresh_tuning_labels()
 
 
 func _refresh_tuning_labels() -> void:
-	spin_speed_value.text = "%.2fx" % spin_speed_slider.value
-	move_speed_value.text = "%.2fx" % move_speed_slider.value
-	spin_move_ratio_value.text = "%.2f" % spin_move_ratio_slider.value
 	trigger_sensitivity_value.text = "%.2fx" % trigger_sensitivity_slider.value
 	stick_sensitivity_value.text = "%.2fx" % stick_sensitivity_slider.value
+	man_weight_value.text = "%d kg" % int(man_weight_slider.value)
+	woman_weight_value.text = "%d kg" % int(woman_weight_slider.value)
 
 
 func _activate_focused_control() -> void:

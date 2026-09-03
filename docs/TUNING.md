@@ -7,17 +7,21 @@ defaults whenever the project starts.
 
 ## Controls
 
-- **Turn speed** multiplies the maximum kinematic rate used to approach the
-  absolute RS angle. It does not add momentum or change the stick deadzone.
-- **Move speed** multiplies movement force and the input-speed ceiling.
-- **Arm / move ratio** controls how strongly the faster tucked-arm state also
-  boosts movement. Both arms contribute through their average flexion, so one
-  tucked arm gives an intermediate benefit.
 - **Trigger sensitivity** changes the response curve shared by LT and RT on
   both controllers.
 - **Stick sensitivity** changes post-deadzone LS magnitude. RS discards
   magnitude after the deadzone, so partial and full travel at one angle give the
   same facing target.
+- **Man weight** and **woman weight** set physical body weight from 40 to 150 kg
+  in one-kilogram steps. Both default to 75 kg.
+
+Seventy-five kilograms maps to the original body mass of 1.2. Mass and
+rotational inertia scale proportionally, so a 100 kg partner yields half as far
+as a 50 kg partner to the same hand-contact correction. Each dancer's own LS
+force and physical lock authority scale with their weight, preserving the same
+self-controlled acceleration. Weight therefore changes how readily a dancer is
+moved by the partner, not how responsive their own controller feels. It does
+not change visual body size.
 
 During unpaused play, each controller's D-pad changes only that dancer's
 extended arm stance: left/right narrow or widen both arms and up/down sweep both
@@ -50,9 +54,10 @@ damping, and maximum torque. The two toggles are independent and may both be on.
 
 ## Telemetry
 
-Every capture records all five live tuning values plus both preferred and live
-controller assignments. Applied movement force already includes move-speed and
-arm-to-move scaling, so captures show the actual force used by gameplay. Hold
-telemetry additionally records the 27 px hard limit, the current single-hold
-authorized length, mutual-dorsal blocking, compliance, solver mode, and hard
-safety corrections.
+Every capture records both sensitivity values, both kilogram weights, derived
+mass and inertia, and both preferred and live controller assignments. Applied
+movement force includes weight scaling, so captures show the actual force used
+by gameplay. Hold telemetry additionally records the 27 px one-hand hard limit,
+the current single-hold authorized length, mutual-dorsal blocking, compliance,
+hybrid solver mode, rigid double-hold permissions and effort, and hard safety
+corrections.

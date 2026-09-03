@@ -43,6 +43,9 @@ func _run() -> void:
 
 	_initialize_from_sample(samples[0])
 	var maximum_gap := 0.0
+	var maximum_settled_double_gap := 0.0
+	var double_hold_age := 0
+	var settled_double_frames := 0
 	var maximum_relative_hand_speed := 0.0
 	var maximum_body_speed := 0.0
 	var maximum_absolute_spin := 0.0
@@ -65,6 +68,16 @@ func _run() -> void:
 			await physics_frame
 			var current_gap := _maximum_connected_gap()
 			maximum_gap = maxf(maximum_gap, current_gap)
+			if _connection.get_active_connection_count() == 2:
+				double_hold_age += 1
+				if double_hold_age > 5:
+					settled_double_frames += 1
+					maximum_settled_double_gap = maxf(
+						maximum_settled_double_gap,
+						current_gap
+					)
+			else:
+				double_hold_age = 0
 			maximum_relative_hand_speed = maxf(
 				maximum_relative_hand_speed,
 				_connection.relative_hand_velocity
@@ -103,11 +116,12 @@ func _run() -> void:
 			)
 
 	print(
-		"TELEMETRY REPLAY %s solver=%s max_gap=%.3f px max_hand_speed=%.3f px/s max_body_speed=%.3f px/s max_spin=%.3f rad/s max_spin_step=%.3f reversals=%d dorsal_frames=%d"
+		"TELEMETRY REPLAY %s solver=%s max_gap=%.3f px settled_double_gap=%.3f px max_hand_speed=%.3f px/s max_body_speed=%.3f px/s max_spin=%.3f rad/s max_spin_step=%.3f reversals=%d dorsal_frames=%d"
 		% [
 			capture_path.get_file(),
 			_connection.get_solver_mode(),
 			maximum_gap,
+			maximum_settled_double_gap,
 			maximum_relative_hand_speed,
 			maximum_body_speed,
 			maximum_absolute_spin,
@@ -120,6 +134,10 @@ func _run() -> void:
 	_expect(
 		maximum_gap <= _connection.maximum_hand_separation + 0.1,
 		"replay respects the 1.5-hand hard tether"
+	)
+	_expect(
+		settled_double_frames == 0 or maximum_settled_double_gap <= 0.25,
+		"replayed double holds settle to rigid fingertip contact"
 	)
 	_expect(maximum_body_speed < 2000.0, "replay avoids emergency body velocity")
 	_expect(maximum_absolute_spin < 30.0, "replay avoids wild angular velocity")

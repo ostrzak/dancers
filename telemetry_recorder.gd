@@ -120,7 +120,7 @@ func save_capture(reason: String = "manual") -> String:
 
 func build_capture_payload(reason: String = "manual") -> Dictionary:
 	return {
-		"schema": "dancers-coop-telemetry-v8",
+		"schema": "dancers-coop-telemetry-v9",
 		"reason": reason,
 		"captured_at": Time.get_datetime_string_from_system(),
 		"captured_at_utc": Time.get_datetime_string_from_system(true),
@@ -217,6 +217,9 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 func _build_arm_sample(dancer: Dancer, side: int) -> Dictionary:
 	return {
 		"trigger": _float_for_json(dancer.get_trigger_value(side)),
+		"double_hold_effort": _float_for_json(
+			dancer.get_double_hold_arm_effort(side)
+		),
 		"current_length": _float_for_json(dancer.get_current_arm_length(side)),
 		"flexion_ratio": _float_for_json(dancer.get_arm_flexion(side)),
 		"projected_upper_arm_length": _float_for_json(
@@ -307,6 +310,15 @@ func _build_connection_sample() -> Dictionary:
 		"double_hold_alignment_error": _float_for_json(
 			hand_connection.double_hold_alignment_error
 		),
+		"double_hold_primary_permission": _float_for_json(
+			hand_connection.double_hold_primary_permission
+		),
+		"double_hold_secondary_permission": _float_for_json(
+			hand_connection.double_hold_secondary_permission
+		),
+		"double_hold_maximum_effort": _float_for_json(
+			hand_connection.double_hold_maximum_effort
+		),
 		"separation_limit_active": hand_connection.separation_limit_active,
 		"dorsal_limit_active": hand_connection.dorsal_limit_active,
 		"primary_snap_remaining": _float_for_json(
@@ -373,6 +385,12 @@ func _build_configuration() -> Dictionary:
 				hand_connection.velocity_projection_iterations
 			),
 			"maximum_constraint_force": hand_connection.maximum_constraint_force,
+			"rigid_position_iterations": hand_connection.rigid_position_iterations,
+			"rigid_velocity_iterations": hand_connection.rigid_velocity_iterations,
+			"rigid_span_tolerance": hand_connection.rigid_span_tolerance,
+			"rigid_span_projection_iterations": (
+				hand_connection.rigid_span_projection_iterations
+			),
 			"solver_mode": hand_connection.get_solver_mode(),
 		},
 	}
@@ -383,11 +401,10 @@ func _build_configuration() -> Dictionary:
 			"assigned_player_one_device": controller.get_player_one_device(),
 			"assigned_player_two_device": controller.get_player_two_device(),
 			"stick_deadzone": controller.stick_deadzone,
-			"spin_speed_scale": controller.spin_speed_scale,
-			"move_speed_scale": controller.move_speed_scale,
-			"spin_move_ratio": controller.spin_move_ratio,
 			"trigger_sensitivity": controller.trigger_sensitivity,
 			"stick_sensitivity": controller.stick_sensitivity,
+			"man_weight_kg": controller.man_weight_kg,
+			"woman_weight_kg": controller.woman_weight_kg,
 		}
 	return configuration
 
@@ -396,6 +413,8 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 	return {
 		"name": dancer.dancer_name,
 		"body_style": dancer.body_style,
+		"weight_kg": dancer.weight_kg,
+		"reference_weight_kg": dancer.REFERENCE_WEIGHT_KG,
 		"mass": dancer.mass,
 		"movement_force": dancer.movement_force,
 		"movement_linear_damping": dancer.movement_linear_damping,
@@ -447,9 +466,6 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 		"base_effective_inertia": dancer.base_effective_inertia,
 		"arm_inertia_scale": dancer.arm_inertia_scale,
 		"effective_inertia_influence": dancer.effective_inertia_influence,
-		"spin_speed_scale": dancer.spin_speed_scale,
-		"move_speed_scale": dancer.move_speed_scale,
-		"spin_move_ratio": dancer.spin_move_ratio,
 	}
 
 

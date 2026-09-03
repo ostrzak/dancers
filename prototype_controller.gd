@@ -7,11 +7,10 @@ extends Node2D
 @export var stick_deadzone := 0.16
 
 @export_category("Runtime Tuning")
-@export_range(0.5, 2.0, 0.05) var spin_speed_scale := 1.0
-@export_range(0.5, 2.0, 0.05) var move_speed_scale := 1.0
-@export_range(0.0, 1.5, 0.05) var spin_move_ratio := 1.0
 @export_range(0.5, 2.0, 0.05) var trigger_sensitivity := 1.0
 @export_range(0.5, 2.0, 0.05) var stick_sensitivity := 1.0
+@export_range(40.0, 150.0, 1.0) var man_weight_kg := 75.0
+@export_range(40.0, 150.0, 1.0) var woman_weight_kg := 75.0
 
 @onready var left_dancer: Dancer = $LeftDancer
 @onready var right_dancer: Dancer = $RightDancer
@@ -140,17 +139,15 @@ func _read_dpad(device: int) -> Vector2:
 
 
 func set_runtime_tuning(
-	new_spin_speed_scale: float,
-	new_move_speed_scale: float,
-	new_spin_move_ratio: float,
 	new_trigger_sensitivity: float,
-	new_stick_sensitivity: float
+	new_stick_sensitivity: float,
+	new_man_weight_kg: float,
+	new_woman_weight_kg: float
 ) -> void:
-	spin_speed_scale = clampf(new_spin_speed_scale, 0.5, 2.0)
-	move_speed_scale = clampf(new_move_speed_scale, 0.5, 2.0)
-	spin_move_ratio = clampf(new_spin_move_ratio, 0.0, 1.5)
 	trigger_sensitivity = clampf(new_trigger_sensitivity, 0.5, 2.0)
 	stick_sensitivity = clampf(new_stick_sensitivity, 0.5, 2.0)
+	man_weight_kg = clampf(new_man_weight_kg, 40.0, 150.0)
+	woman_weight_kg = clampf(new_woman_weight_kg, 40.0, 150.0)
 	_apply_runtime_tuning()
 
 
@@ -163,16 +160,8 @@ func get_player_two_device() -> int:
 
 
 func _apply_runtime_tuning() -> void:
-	left_dancer.set_runtime_tuning(
-		spin_speed_scale,
-		move_speed_scale,
-		spin_move_ratio
-	)
-	right_dancer.set_runtime_tuning(
-		spin_speed_scale,
-		move_speed_scale,
-		spin_move_ratio
-	)
+	left_dancer.set_physical_weight_kg(man_weight_kg)
+	right_dancer.set_physical_weight_kg(woman_weight_kg)
 
 
 func _apply_input_sensitivity(value: float, sensitivity: float) -> float:

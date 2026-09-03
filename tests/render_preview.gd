@@ -12,6 +12,16 @@ func _run() -> void:
 		output_path = arguments[0]
 	var scene: Node = load("res://prototype.tscn").instantiate()
 	get_root().add_child(scene)
+	if arguments.size() > 1:
+		match arguments[1]:
+			"effort":
+				var man: Dancer = scene.get_node("LeftDancer")
+				man.set_double_hold_arm_state(-1, 0.25, 1.0)
+			"menu":
+				var pause_menu: PauseMenu = scene.get_node("PauseMenu")
+				pause_menu._pause()
+				pause_menu.tabs.current_tab = 1
+				pause_menu.trigger_sensitivity_slider.grab_focus()
 	for _frame in 4:
 		await process_frame
 	var image := get_root().get_texture().get_image()
