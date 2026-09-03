@@ -28,10 +28,10 @@ func _ready() -> void:
 	queue_redraw()
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_select_gamepads_if_needed()
-	_apply_player_input(left_dancer, _player_one_device)
-	_apply_player_input(right_dancer, _player_two_device)
+	_apply_player_input(left_dancer, _player_one_device, delta)
+	_apply_player_input(right_dancer, _player_two_device, delta)
 
 
 func _input(event: InputEvent) -> void:
@@ -45,24 +45,26 @@ func _input(event: InputEvent) -> void:
 		return
 	match event.button_index:
 		JOY_BUTTON_LEFT_SHOULDER:
-			hand_connection.set_grip_active(dancer, -1, event.pressed)
+			hand_connection.set_grip_button_state(dancer, -1, event.pressed)
 		JOY_BUTTON_RIGHT_SHOULDER:
-			hand_connection.set_grip_active(dancer, 1, event.pressed)
+			hand_connection.set_grip_button_state(dancer, 1, event.pressed)
 
 
-func _apply_player_input(dancer: Dancer, device: int) -> void:
+func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
 	if not is_instance_valid(dancer):
 		return
-	hand_connection.set_grip_active(
+	hand_connection.set_grip_button_state(
 		dancer,
 		-1,
 		_read_button(device, JOY_BUTTON_LEFT_SHOULDER)
 	)
-	hand_connection.set_grip_active(
+	hand_connection.set_grip_button_state(
 		dancer,
 		1,
 		_read_button(device, JOY_BUTTON_RIGHT_SHOULDER)
 	)
+	var dpad := _read_dpad(device)
+	dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
 	dancer.set_control_input(
 		_read_stick(device, JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y),
 		_read_stick(device, JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y),
@@ -105,6 +107,21 @@ func _read_trigger(device: int, axis: int) -> float:
 
 func _read_button(device: int, button: int) -> bool:
 	return device >= 0 and Input.is_joy_button_pressed(device, button)
+
+
+func _read_dpad(device: int) -> Vector2:
+	if device < 0:
+		return Vector2.ZERO
+	return Vector2(
+		float(
+			int(_read_button(device, JOY_BUTTON_DPAD_RIGHT))
+			- int(_read_button(device, JOY_BUTTON_DPAD_LEFT))
+		),
+		float(
+			int(_read_button(device, JOY_BUTTON_DPAD_UP))
+			- int(_read_button(device, JOY_BUTTON_DPAD_DOWN))
+		)
+	)
 
 
 func set_runtime_tuning(

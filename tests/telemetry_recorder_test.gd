@@ -48,6 +48,9 @@ func _run() -> void:
 	left.diagnostic_movement_force = Vector2(225.0, -675.0)
 	left.diagnostic_spin_torque = 1234.0
 	left.diagnostic_position_lock_force = Vector2(-45.0, 12.0)
+	left.extended_elbow_flexion_degrees = 23.0
+	left.extended_forward_sweep_degrees = 15.0
+	_recorder.hand_connection.set_grip_button_state(left, -1, true)
 	_recorder.record_current_sample()
 	var sample: Dictionary = _recorder.get_samples()[0]
 	_expect(sample.has("left_dancer") and sample.has("right_dancer"), "each sample contains both dancers")
@@ -56,8 +59,10 @@ func _run() -> void:
 		sample["hand_connection"].has("connection_count")
 		and sample["hand_connection"].has("hold_mode")
 		and sample["hand_connection"].has("primary_snap_remaining")
-		and sample["hand_connection"].has("secondary_snap_remaining"),
-		"connection samples expose free, single, double, and snap state"
+		and sample["hand_connection"].has("secondary_snap_remaining")
+		and sample["hand_connection"].has("primary_elastic_blend")
+		and sample["hand_connection"].has("secondary_elastic_blend"),
+		"connection samples expose free, single, double, snap, and adaptive spring state"
 	)
 	_expect(sample["left_dancer"]["input"]["movement"] == [0.25, -0.75], "effective LS input is recorded")
 	_expect(sample["left_dancer"]["input"]["facing"] == [1.0, 0.0], "effective RS facing input is recorded")
@@ -81,17 +86,20 @@ func _run() -> void:
 	_expect(
 		sample["left_dancer"]["arms"].has("left")
 		and sample["left_dancer"]["arms"].has("right")
-		and sample["left_dancer"]["arms"]["left"].has("current_length"),
-		"telemetry keeps separate left and right arm state"
+		and sample["left_dancer"]["arms"].has("extended_stance")
+		and float(sample["left_dancer"]["arms"]["extended_stance"]["elbow_flexion_degrees"]) == 23.0
+		and float(sample["left_dancer"]["arms"]["extended_stance"]["forward_sweep_degrees"]) == 15.0,
+		"telemetry keeps separate arms and the shared D-pad stance"
 	)
 	_expect(
-		sample["left_dancer"]["hands"]["left"].has("ready")
-		and sample["left_dancer"]["hands"]["right"].has("ready"),
-		"each hand sample exposes its held-bumper readiness"
+		sample["left_dancer"]["hands"]["left"]["button_down"]
+		and sample["left_dancer"]["hands"]["left"]["primed"]
+		and sample["left_dancer"]["hands"]["left"].has("release_tap_armed"),
+		"each hand sample separates its button, priming, and release-tap state"
 	)
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
-	_expect(payload["schema"] == "dancers-coop-telemetry-v3", "payload uses the versioned co-op schema")
+	_expect(payload["schema"] == "dancers-coop-telemetry-v5", "payload uses the versioned co-op schema")
 	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
 	_expect(payload["configuration"].has("controller"), "payload includes exact controller tuning")
 	_expect(
@@ -116,8 +124,16 @@ func _run() -> void:
 		"capture includes physical L3 and R3 lock tuning"
 	)
 	_expect(
+		payload["configuration"]["left_dancer"].has("minimum_extended_elbow_flexion_degrees")
+		and payload["configuration"]["left_dancer"].has("maximum_extended_forward_sweep_degrees")
+		and payload["configuration"]["left_dancer"].has("arm_stance_adjustment_rate_degrees"),
+		"capture includes anatomical D-pad stance limits and adjustment rate"
+	)
+	_expect(
 		float(payload["configuration"]["hand_connection"]["catch_radius"]) == 54.0
-		and float(payload["configuration"]["hand_connection"]["maximum_hand_separation"]) == 36.0,
+		and float(payload["configuration"]["hand_connection"]["maximum_hand_separation"]) == 36.0
+		and float(payload["configuration"]["hand_connection"]["separation_projection_margin"]) == 0.75
+		and int(payload["configuration"]["hand_connection"]["separation_projection_iterations"]) == 8,
 		"capture records the catch-assist and firm-hold distances"
 	)
 	_expect(
@@ -125,6 +141,15 @@ func _run() -> void:
 		and payload["configuration"]["hand_connection"].has("snap_stiffness")
 		and payload["configuration"]["hand_connection"].has("snap_damping"),
 		"capture records the magnetic snap tuning"
+	)
+	_expect(
+		payload["configuration"]["hand_connection"].has("weld_speed_threshold")
+		and payload["configuration"]["hand_connection"].has("elastic_speed_threshold")
+		and payload["configuration"]["hand_connection"].has("weld_stiffness")
+		and payload["configuration"]["hand_connection"].has("elastic_stiffness")
+		and payload["configuration"]["hand_connection"].has("weld_normal_damping")
+		and payload["configuration"]["hand_connection"].has("elastic_tangential_damping"),
+		"capture records the low-speed weld and high-speed elastic tuning"
 	)
 	_expect(
 		not payload["configuration"]["hand_connection"].has("closed_hold_minimum_body_distance"),
@@ -145,7 +170,7 @@ func _run() -> void:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saved_path))
 		_expect(parsed is Dictionary, "saved capture is valid JSON")
 		if parsed is Dictionary:
-			_expect(parsed["schema"] == "dancers-coop-telemetry-v3", "saved JSON retains the co-op schema")
+			_expect(parsed["schema"] == "dancers-coop-telemetry-v5", "saved JSON retains the co-op schema")
 			_expect(int(parsed["sample_count"]) >= 1, "saved JSON contains telemetry samples")
 		DirAccess.remove_absolute(saved_path)
 	_pause_menu._resume()

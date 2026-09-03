@@ -9,13 +9,21 @@ signal grip_state_changed
 @export var maximum_relative_catch_velocity := 280.0
 @export var release_cooldown := 0.35
 @export var snap_duration := 0.22
-@export var snap_stiffness := 64.0
-@export var snap_damping := 10.0
+@export var snap_stiffness := 120.0
+@export var snap_damping := 20.0
 
 @export_category("Physical Hold")
-@export var spring_stiffness := 42.0
-@export var spring_damping := 8.0
+@export var weld_speed_threshold := 80.0
+@export var elastic_speed_threshold := 500.0
+@export var weld_stiffness := 96.0
+@export var weld_normal_damping := 16.0
+@export var weld_tangential_damping := 12.0
+@export var elastic_stiffness := 42.0
+@export var elastic_normal_damping := 2.0
+@export var elastic_tangential_damping := 0.5
 @export var maximum_hand_separation := 36.0
+@export var separation_projection_margin := 0.75
+@export_range(1, 16, 1) var separation_projection_iterations := 8
 @export var separation_stiffness := 120.0
 @export var separation_damping := 12.0
 @export var maximum_constraint_force := 4200.0
@@ -30,6 +38,8 @@ var relative_hand_velocity := 0.0
 var connection_force := 0.0
 var primary_connection_force := 0.0
 var secondary_connection_force := 0.0
+var primary_elastic_blend := 0.0
+var secondary_elastic_blend := 0.0
 var separation_limit_active := false
 var primary_snap_remaining := 0.0
 var secondary_snap_remaining := 0.0
@@ -40,6 +50,12 @@ var _secondary_hand_a := -1
 var _secondary_hand_b := -1
 var _grip_a := {-1: false, 1: false}
 var _grip_b := {-1: false, 1: false}
+var _button_down_a := {-1: false, 1: false}
+var _button_down_b := {-1: false, 1: false}
+var _release_tap_armed_a := {-1: false, 1: false}
+var _release_tap_armed_b := {-1: false, 1: false}
+var _button_consumed_a := {-1: false, 1: false}
+var _button_consumed_b := {-1: false, 1: false}
 var _cooldown_a := {-1: 0.0, 1: 0.0}
 var _cooldown_b := {-1: 0.0, 1: 0.0}
 
@@ -57,19 +73,22 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_try_connect_waiting_hands()
+	_enforce_active_maximum_separations(delta)
 	if is_connected:
 		primary_snap_remaining = maxf(0.0, primary_snap_remaining - delta)
 		primary_connection_force = _process_hold_pair(
 			_connected_hand_a,
 			_connected_hand_b,
-			primary_snap_remaining > 0.0
+			primary_snap_remaining > 0.0,
+			1
 		)
 	if is_secondary_connected:
 		secondary_snap_remaining = maxf(0.0, secondary_snap_remaining - delta)
 		secondary_connection_force = _process_hold_pair(
 			_secondary_hand_a,
 			_secondary_hand_b,
-			secondary_snap_remaining > 0.0
+			secondary_snap_remaining > 0.0,
+			2
 		)
 	if not has_any_connection():
 		_update_free_hand_metrics()
@@ -77,50 +96,84 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
-func set_grip_active(dancer: Dancer, hand_side: int, active: bool) -> bool:
+func set_grip_button_state(
+	dancer: Dancer,
+	hand_side: int,
+	is_pressed: bool
+) -> void:
 	var side := signi(hand_side)
 	var endpoint := _endpoint_for_dancer(dancer)
 	if endpoint == 0:
-		return false
-	if _get_grip(endpoint, side) == active:
-		return active
+		return
+	if _get_button_down(endpoint, side) == is_pressed:
+		return
 
+	_set_button_down(endpoint, side, is_pressed)
 	var slot := _connection_slot_for_endpoint(endpoint, side)
-	_set_grip(endpoint, side, active)
-	if not active and slot == 1:
-		_release_pair(1, _connected_hand_a, _connected_hand_b)
-	elif not active and slot == 2:
-		_release_pair(2, _secondary_hand_a, _secondary_hand_b)
-	elif active:
+	if slot != 0:
+		_set_grip(endpoint, side, false)
+		if is_pressed and _get_release_tap_armed(endpoint, side):
+			_set_button_consumed(endpoint, side, true)
+			_set_release_tap_armed(endpoint, side, false)
+			if slot == 1:
+				_release_pair(1, _connected_hand_a, _connected_hand_b)
+			else:
+				_release_pair(2, _secondary_hand_a, _secondary_hand_b)
+		else:
+			# The button-up following a successful catch arms a future tap; it does
+			# not release the latched physical connection.
+			_set_release_tap_armed(endpoint, side, not is_pressed)
+			if not is_pressed:
+				_set_button_consumed(endpoint, side, false)
+			grip_state_changed.emit()
+			queue_redraw()
+		return
+
+	if is_pressed:
+		if _get_button_consumed(endpoint, side):
+			return
+		_set_grip(endpoint, side, true)
 		if not _try_connect_for_endpoint(endpoint, side):
 			grip_state_changed.emit()
 			queue_redraw()
 	else:
+		_set_grip(endpoint, side, false)
+		_set_button_consumed(endpoint, side, false)
+		_set_release_tap_armed(endpoint, side, false)
 		grip_state_changed.emit()
 		queue_redraw()
-	return active
 
 
-func is_grip_active(dancer: Dancer, hand_side: int) -> bool:
+func is_hand_primed(dancer: Dancer, hand_side: int) -> bool:
 	var endpoint := _endpoint_for_dancer(dancer)
 	if endpoint == 0:
 		return false
 	return _get_grip(endpoint, signi(hand_side))
 
 
+func is_grip_button_down(dancer: Dancer, hand_side: int) -> bool:
+	var endpoint := _endpoint_for_dancer(dancer)
+	if endpoint == 0:
+		return false
+	return _get_button_down(endpoint, signi(hand_side))
+
+
+func is_release_tap_armed(dancer: Dancer, hand_side: int) -> bool:
+	var endpoint := _endpoint_for_dancer(dancer)
+	if endpoint == 0:
+		return false
+	return _get_release_tap_armed(endpoint, signi(hand_side))
+
+
 func release_hands() -> void:
 	if not is_connected:
 		return
-	_set_grip(1, _connected_hand_a, false)
-	_set_grip(2, _connected_hand_b, false)
 	_release_pair(1, _connected_hand_a, _connected_hand_b)
 
 
 func release_secondary_hands() -> void:
 	if not is_secondary_connected:
 		return
-	_set_grip(1, _secondary_hand_a, false)
-	_set_grip(2, _secondary_hand_b, false)
 	_release_pair(2, _secondary_hand_a, _secondary_hand_b)
 
 
@@ -141,6 +194,14 @@ func get_hold_mode() -> String:
 	return "free"
 
 
+func is_mutual_body_collision_disabled() -> bool:
+	return (
+		is_instance_valid(dancer_a)
+		and is_instance_valid(dancer_b)
+		and dancer_a.get_collision_exceptions().has(dancer_b)
+	)
+
+
 func get_connected_hand_sides() -> Array[int]:
 	return [_connected_hand_a, _connected_hand_b]
 
@@ -155,6 +216,16 @@ func get_cooldown_remaining() -> float:
 		remaining = maxf(remaining, float(_cooldown_a[side]))
 		remaining = maxf(remaining, float(_cooldown_b[side]))
 	return remaining
+
+
+func get_elastic_blend_for_speed(speed: float) -> float:
+	var blend := inverse_lerp(
+		weld_speed_threshold,
+		maxf(weld_speed_threshold + 0.001, elastic_speed_threshold),
+		maxf(0.0, speed)
+	)
+	blend = clampf(blend, 0.0, 1.0)
+	return blend * blend * (3.0 - 2.0 * blend)
 
 
 func _try_connect_waiting_hands() -> void:
@@ -222,6 +293,7 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 	else:
 		return false
 
+	_consume_catch_input(hand_a_side, hand_b_side)
 	_update_dancer_collision_exception()
 	connection_changed.emit(true)
 	grip_state_changed.emit()
@@ -230,6 +302,7 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 
 
 func _release_pair(slot: int, hand_a_side: int, hand_b_side: int) -> void:
+	_consume_release_input(hand_a_side, hand_b_side)
 	if slot == 1:
 		is_connected = false
 		primary_snap_remaining = 0.0
@@ -245,10 +318,27 @@ func _release_pair(slot: int, hand_a_side: int, hand_b_side: int) -> void:
 	queue_redraw()
 
 
+func _consume_catch_input(hand_a_side: int, hand_b_side: int) -> void:
+	for endpoint in [1, 2]:
+		var side := hand_a_side if endpoint == 1 else hand_b_side
+		_set_grip(endpoint, side, false)
+		_set_button_consumed(endpoint, side, true)
+		_set_release_tap_armed(endpoint, side, false)
+
+
+func _consume_release_input(hand_a_side: int, hand_b_side: int) -> void:
+	for endpoint in [1, 2]:
+		var side := hand_a_side if endpoint == 1 else hand_b_side
+		_set_grip(endpoint, side, false)
+		_set_button_consumed(endpoint, side, _get_button_down(endpoint, side))
+		_set_release_tap_armed(endpoint, side, false)
+
+
 func _process_hold_pair(
 	hand_a_side: int,
 	hand_b_side: int,
-	is_snapping: bool
+	is_snapping: bool,
+	slot: int
 ) -> float:
 	var hand_a := dancer_a.get_hand_world_position(hand_a_side)
 	var hand_b := dancer_b.get_hand_world_position(hand_b_side)
@@ -260,17 +350,48 @@ func _process_hold_pair(
 	distance_error = maxf(distance_error, separation_length)
 	relative_hand_velocity = maxf(relative_hand_velocity, delta_velocity.length())
 
-	var stiffness := snap_stiffness if is_snapping else spring_stiffness
-	var damping := snap_damping if is_snapping else spring_damping
-	var force := delta_position * stiffness + delta_velocity * damping
-	if separation_length > maximum_hand_separation and separation_length > 0.001:
-		var direction := delta_position / separation_length
-		var separating_speed := maxf(0.0, delta_velocity.dot(direction))
-		force += direction * (
-			(separation_length - maximum_hand_separation) * separation_stiffness
-			+ separating_speed * separation_damping
+	var elastic_blend := get_elastic_blend_for_speed(delta_velocity.length())
+	if slot == 1:
+		primary_elastic_blend = elastic_blend
+	else:
+		secondary_elastic_blend = elastic_blend
+	var stiffness := lerpf(weld_stiffness, elastic_stiffness, elastic_blend)
+	var normal_damping := lerpf(
+		weld_normal_damping,
+		elastic_normal_damping,
+		elastic_blend
+	)
+	var tangential_damping := lerpf(
+		weld_tangential_damping,
+		elastic_tangential_damping,
+		elastic_blend
+	)
+	if is_snapping:
+		stiffness = maxf(stiffness, lerpf(snap_stiffness, elastic_stiffness, elastic_blend))
+		normal_damping = maxf(
+			normal_damping,
+			lerpf(snap_damping, elastic_normal_damping, elastic_blend)
 		)
-		separation_limit_active = true
+
+	var force := Vector2.ZERO
+	if separation_length > 0.001:
+		var direction := delta_position / separation_length
+		var normal_speed := delta_velocity.dot(direction)
+		var tangential_velocity := delta_velocity - direction * normal_speed
+		force = direction * (
+			separation_length * stiffness
+			+ normal_speed * normal_damping
+		)
+		force += tangential_velocity * tangential_damping
+		if separation_length > maximum_hand_separation:
+			separation_limit_active = true
+			var separating_speed := maxf(0.0, normal_speed)
+			force += direction * (
+				(separation_length - maximum_hand_separation) * separation_stiffness
+				+ separating_speed * separation_damping
+			)
+	else:
+		force = delta_velocity * tangential_damping
 	force = force.limit_length(maximum_constraint_force)
 
 	var offset_a := hand_a - dancer_a.global_position
@@ -278,6 +399,85 @@ func _process_hold_pair(
 	dancer_a.apply_force(force, offset_a)
 	dancer_b.apply_force(-force, offset_b)
 	return force.length()
+
+
+func _enforce_active_maximum_separations(delta: float) -> void:
+	for _iteration in separation_projection_iterations:
+		var corrected_any_pair := false
+		if is_connected:
+			corrected_any_pair = (
+				_enforce_maximum_separation(_connected_hand_a, _connected_hand_b, delta)
+				or corrected_any_pair
+			)
+		if is_secondary_connected:
+			corrected_any_pair = (
+				_enforce_maximum_separation(_secondary_hand_a, _secondary_hand_b, delta)
+				or corrected_any_pair
+			)
+		if not corrected_any_pair:
+			break
+
+
+func _enforce_maximum_separation(
+	hand_a_side: int,
+	hand_b_side: int,
+	delta: float
+) -> bool:
+	var hand_a := dancer_a.get_hand_world_position(hand_a_side)
+	var hand_b := dancer_b.get_hand_world_position(hand_b_side)
+	var delta_position := hand_b - hand_a
+	var separation_length := delta_position.length()
+	if separation_length <= 0.001:
+		return false
+
+	var direction := delta_position / separation_length
+	var inverse_mass_a := (
+		0.0 if dancer_a.position_lock_active else 1.0 / maxf(dancer_a.mass, 0.001)
+	)
+	var inverse_mass_b := (
+		0.0 if dancer_b.position_lock_active else 1.0 / maxf(dancer_b.mass, 0.001)
+	)
+	var inverse_mass_sum := inverse_mass_a + inverse_mass_b
+	if inverse_mass_sum <= 0.001:
+		return false
+
+	var corrected := false
+	var projection_limit := maxf(
+		0.0,
+		maximum_hand_separation - separation_projection_margin
+	)
+	var excess := maxf(0.0, separation_length - projection_limit)
+	if excess > 0.0:
+		separation_limit_active = true
+		corrected = true
+		# Correct translation only. Off-centre spring forces remain the sole source
+		# of body rotation, so the safety solve cannot inject a turn.
+		dancer_a.global_position += direction * excess * inverse_mass_a / inverse_mass_sum
+		dancer_b.global_position -= direction * excess * inverse_mass_b / inverse_mass_sum
+
+	hand_a = dancer_a.get_hand_world_position(hand_a_side)
+	hand_b = dancer_b.get_hand_world_position(hand_b_side)
+	delta_position = hand_b - hand_a
+	if delta_position.length_squared() > 0.001:
+		direction = delta_position.normalized()
+	var corrected_velocity_a := dancer_a.get_hand_velocity(hand_a_side)
+	var corrected_velocity_b := dancer_b.get_hand_velocity(hand_b_side)
+	var separating_speed := (corrected_velocity_b - corrected_velocity_a).dot(direction)
+	var allowed_separating_speed := 0.0
+	var corrected_distance := delta_position.length()
+	if delta > 0.0 and corrected_distance < projection_limit:
+		allowed_separating_speed = (
+			(projection_limit - corrected_distance) / delta
+		)
+	if separating_speed > allowed_separating_speed:
+		separation_limit_active = true
+		corrected = true
+		var velocity_impulse := (
+			(separating_speed - allowed_separating_speed) / inverse_mass_sum
+		)
+		dancer_a.linear_velocity += direction * velocity_impulse * inverse_mass_a
+		dancer_b.linear_velocity -= direction * velocity_impulse * inverse_mass_b
+	return corrected
 
 
 func _update_free_hand_metrics() -> void:
@@ -336,12 +536,11 @@ func _endpoint_can_be_caught(endpoint: int, side: int) -> bool:
 func _update_dancer_collision_exception() -> void:
 	if not is_instance_valid(dancer_a) or not is_instance_valid(dancer_b):
 		return
-	if get_active_connection_count() >= 2:
-		dancer_a.add_collision_exception_with(dancer_b)
-		dancer_b.add_collision_exception_with(dancer_a)
-	else:
-		dancer_a.remove_collision_exception_with(dancer_b)
-		dancer_b.remove_collision_exception_with(dancer_a)
+	# The 12 px circles are intentionally small enough for a proper two-hand
+	# frame. Keeping them active prevents a double hold from collapsing both body
+	# centres into the same space when the two constraints briefly disagree.
+	dancer_a.remove_collision_exception_with(dancer_b)
+	dancer_b.remove_collision_exception_with(dancer_a)
 
 
 func _get_grip(endpoint: int, side: int) -> bool:
@@ -353,6 +552,51 @@ func _set_grip(endpoint: int, side: int, active: bool) -> void:
 		_grip_a[signi(side)] = active
 	else:
 		_grip_b[signi(side)] = active
+
+
+func _get_button_down(endpoint: int, side: int) -> bool:
+	return (
+		bool(_button_down_a[side])
+		if endpoint == 1
+		else bool(_button_down_b[side])
+	)
+
+
+func _set_button_down(endpoint: int, side: int, is_down: bool) -> void:
+	if endpoint == 1:
+		_button_down_a[signi(side)] = is_down
+	else:
+		_button_down_b[signi(side)] = is_down
+
+
+func _get_release_tap_armed(endpoint: int, side: int) -> bool:
+	return (
+		bool(_release_tap_armed_a[side])
+		if endpoint == 1
+		else bool(_release_tap_armed_b[side])
+	)
+
+
+func _set_release_tap_armed(endpoint: int, side: int, armed: bool) -> void:
+	if endpoint == 1:
+		_release_tap_armed_a[signi(side)] = armed
+	else:
+		_release_tap_armed_b[signi(side)] = armed
+
+
+func _get_button_consumed(endpoint: int, side: int) -> bool:
+	return (
+		bool(_button_consumed_a[side])
+		if endpoint == 1
+		else bool(_button_consumed_b[side])
+	)
+
+
+func _set_button_consumed(endpoint: int, side: int, consumed: bool) -> void:
+	if endpoint == 1:
+		_button_consumed_a[signi(side)] = consumed
+	else:
+		_button_consumed_b[signi(side)] = consumed
 
 
 func _get_cooldown(endpoint: int, side: int) -> float:
@@ -382,6 +626,8 @@ func _reset_diagnostics() -> void:
 	connection_force = 0.0
 	primary_connection_force = 0.0
 	secondary_connection_force = 0.0
+	primary_elastic_blend = 0.0
+	secondary_elastic_blend = 0.0
 	separation_limit_active = false
 
 

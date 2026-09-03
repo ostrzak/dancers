@@ -120,7 +120,7 @@ func save_capture(reason: String = "manual") -> String:
 
 func build_capture_payload(reason: String = "manual") -> Dictionary:
 	return {
-		"schema": "dancers-coop-telemetry-v3",
+		"schema": "dancers-coop-telemetry-v5",
 		"reason": reason,
 		"captured_at": Time.get_datetime_string_from_system(),
 		"captured_at_utc": Time.get_datetime_string_from_system(true),
@@ -194,6 +194,14 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 		"arms": {
 			"left": _build_arm_sample(dancer, -1),
 			"right": _build_arm_sample(dancer, 1),
+			"extended_stance": {
+				"elbow_flexion_degrees": _float_for_json(
+					dancer.extended_elbow_flexion_degrees
+				),
+				"forward_sweep_degrees": _float_for_json(
+					dancer.extended_forward_sweep_degrees
+				),
+			},
 			"average_flexion_ratio": _float_for_json(
 				dancer.get_average_arm_flexion()
 			),
@@ -233,7 +241,9 @@ func _build_hand_sample(dancer: Dancer, side: int) -> Dictionary:
 		"world_position": _vector2_for_json(dancer.get_hand_world_position(side)),
 		"velocity": _vector2_for_json(velocity),
 		"speed": _float_for_json(velocity.length()),
-		"ready": hand_connection.is_grip_active(dancer, side),
+		"button_down": hand_connection.is_grip_button_down(dancer, side),
+		"primed": hand_connection.is_hand_primed(dancer, side),
+		"release_tap_armed": hand_connection.is_release_tap_armed(dancer, side),
 	}
 
 
@@ -260,6 +270,12 @@ func _build_connection_sample() -> Dictionary:
 		"secondary_constraint_force": _float_for_json(
 			hand_connection.secondary_connection_force
 		),
+		"primary_elastic_blend": _float_for_json(
+			hand_connection.primary_elastic_blend
+		),
+		"secondary_elastic_blend": _float_for_json(
+			hand_connection.secondary_elastic_blend
+		),
 		"separation_limit_active": hand_connection.separation_limit_active,
 		"primary_snap_remaining": _float_for_json(
 			hand_connection.primary_snap_remaining
@@ -271,7 +287,7 @@ func _build_connection_sample() -> Dictionary:
 			hand_connection.get_cooldown_remaining()
 		),
 		"mutual_body_collision_disabled": (
-			hand_connection.get_active_connection_count() >= 2
+			hand_connection.is_mutual_body_collision_disabled()
 		),
 	}
 
@@ -289,9 +305,21 @@ func _build_configuration() -> Dictionary:
 			"snap_duration": hand_connection.snap_duration,
 			"snap_stiffness": hand_connection.snap_stiffness,
 			"snap_damping": hand_connection.snap_damping,
-			"spring_stiffness": hand_connection.spring_stiffness,
-			"spring_damping": hand_connection.spring_damping,
+			"weld_speed_threshold": hand_connection.weld_speed_threshold,
+			"elastic_speed_threshold": hand_connection.elastic_speed_threshold,
+			"weld_stiffness": hand_connection.weld_stiffness,
+			"weld_normal_damping": hand_connection.weld_normal_damping,
+			"weld_tangential_damping": hand_connection.weld_tangential_damping,
+			"elastic_stiffness": hand_connection.elastic_stiffness,
+			"elastic_normal_damping": hand_connection.elastic_normal_damping,
+			"elastic_tangential_damping": hand_connection.elastic_tangential_damping,
 			"maximum_hand_separation": hand_connection.maximum_hand_separation,
+			"separation_projection_margin": (
+				hand_connection.separation_projection_margin
+			),
+			"separation_projection_iterations": (
+				hand_connection.separation_projection_iterations
+			),
 			"separation_stiffness": hand_connection.separation_stiffness,
 			"separation_damping": hand_connection.separation_damping,
 			"maximum_constraint_force": hand_connection.maximum_constraint_force,
@@ -341,8 +369,24 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 		"forearm_length": dancer.forearm_length,
 		"minimum_abduction_degrees": dancer.minimum_abduction_degrees,
 		"maximum_abduction_degrees": dancer.maximum_abduction_degrees,
-		"minimum_elbow_flexion_degrees": dancer.minimum_elbow_flexion_degrees,
 		"maximum_elbow_flexion_degrees": dancer.maximum_elbow_flexion_degrees,
+		"extended_elbow_flexion_degrees": dancer.extended_elbow_flexion_degrees,
+		"minimum_extended_elbow_flexion_degrees": (
+			dancer.minimum_extended_elbow_flexion_degrees
+		),
+		"maximum_extended_elbow_flexion_degrees": (
+			dancer.maximum_extended_elbow_flexion_degrees
+		),
+		"extended_forward_sweep_degrees": dancer.extended_forward_sweep_degrees,
+		"minimum_extended_forward_sweep_degrees": (
+			dancer.minimum_extended_forward_sweep_degrees
+		),
+		"maximum_extended_forward_sweep_degrees": (
+			dancer.maximum_extended_forward_sweep_degrees
+		),
+		"arm_stance_adjustment_rate_degrees": (
+			dancer.arm_stance_adjustment_rate_degrees
+		),
 		"minimum_forearm_out_of_plane_degrees": (
 			dancer.minimum_forearm_out_of_plane_degrees
 		),

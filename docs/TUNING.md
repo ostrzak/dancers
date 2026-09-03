@@ -17,6 +17,15 @@ defaults whenever the project starts.
 - **Stick sensitivity** changes the post-deadzone response curve shared by LS
   and RS on both controllers.
 
+During unpaused play, each controller's D-pad changes only that dancer's
+extended arm stance: left/right narrow or widen both arms and up/down sweep both
+arms backward or forward. The setting is session-local like the tuning sliders.
+While paused, the D-pad remains exclusively menu navigation.
+
+The released-arm default is 25 degrees forward. This places a natural two-hand
+frame outside the minimal torso colliders instead of making both constraints
+pull the dancers toward the same body space.
+
 Sensitivity uses `output = input ^ (1 / sensitivity)`. A value of one is linear,
 higher values respond earlier, and lower values provide finer low-input control.
 Zero and full input remain unchanged.

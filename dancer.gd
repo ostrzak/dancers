@@ -38,7 +38,6 @@ extends RigidBody2D
 @export var forearm_length := 36.4
 @export_range(0.0, 90.0, 1.0) var minimum_abduction_degrees := 0.0
 @export_range(0.0, 90.0, 1.0) var maximum_abduction_degrees := 84.0
-@export_range(0.0, 180.0, 1.0) var minimum_elbow_flexion_degrees := 12.0
 @export_range(0.0, 180.0, 1.0) var maximum_elbow_flexion_degrees := 145.0
 @export_range(0.0, 90.0, 1.0) var minimum_forearm_out_of_plane_degrees := 0.0
 @export_range(0.0, 90.0, 1.0) var maximum_forearm_out_of_plane_degrees := 80.0
@@ -46,9 +45,18 @@ extends RigidBody2D
 @export var arm_inertia_scale := 0.015
 @export var effective_inertia_influence := 1.0
 
+@export_category("Extended Arm Stance")
+@export_range(5.0, 55.0, 1.0) var extended_elbow_flexion_degrees := 12.0
+@export var minimum_extended_elbow_flexion_degrees := 5.0
+@export var maximum_extended_elbow_flexion_degrees := 55.0
+@export_range(-25.0, 45.0, 1.0) var extended_forward_sweep_degrees := 25.0
+@export var minimum_extended_forward_sweep_degrees := -25.0
+@export var maximum_extended_forward_sweep_degrees := 45.0
+@export var arm_stance_adjustment_rate_degrees := 40.0
+
 var movement_input := Vector2.ZERO
 var facing_input := Vector2.ZERO
-var desired_facing_direction := Vector2.UP
+var desired_facing_direction := Vector2.DOWN
 var left_trigger_value := 0.0
 var right_trigger_value := 0.0
 var target_angular_velocity := 0.0
@@ -78,6 +86,13 @@ var _facing_gesture_active := false
 const HAND_RADIUS := 9.0
 const ELBOW_RADIUS := 5.0
 const HAND_SIDES := [-1, 1]
+const LOCAL_FORWARD_DIRECTION := Vector2.DOWN
+const HEAD_CENTER := Vector2.ZERO
+const HEAD_RADIUS := 12.0
+const BODY_REAR_Y := -10.0
+const BODY_FORWARD_Y := 9.0
+const NECK_REAR_Y := -14.0
+const NOSE_TIP_Y := 19.0
 
 
 func _ready() -> void:
@@ -86,7 +101,17 @@ func _ready() -> void:
 	angular_damp = spin_angular_damping
 	_current_arm_lengths[-1] = maximum_arm_length
 	_current_arm_lengths[1] = maximum_arm_length
-	desired_facing_direction = Vector2.UP.rotated(global_rotation)
+	extended_elbow_flexion_degrees = clampf(
+		extended_elbow_flexion_degrees,
+		minimum_extended_elbow_flexion_degrees,
+		maximum_extended_elbow_flexion_degrees
+	)
+	extended_forward_sweep_degrees = clampf(
+		extended_forward_sweep_degrees,
+		minimum_extended_forward_sweep_degrees,
+		maximum_extended_forward_sweep_degrees
+	)
+	desired_facing_direction = LOCAL_FORWARD_DIRECTION.rotated(global_rotation)
 	_previous_wrapped_rotation = global_rotation
 	_unwrapped_rotation = global_rotation
 	_desired_facing_rotation = global_rotation
@@ -138,7 +163,7 @@ func set_control_input(
 		if rotation_lock_active:
 			# R3 is a physical orientation lock, not a stored-turn windup. Keep the
 			# latest screen direction but discard rotation backlog while it is held.
-			var locked_wrapped_target := facing_angle + PI * 0.5
+			var locked_wrapped_target := facing_angle - PI * 0.5
 			_desired_facing_rotation = _unwrapped_rotation + wrapf(
 				locked_wrapped_target - global_rotation,
 				-PI,
@@ -152,7 +177,7 @@ func set_control_input(
 				PI
 			)
 		else:
-			var wrapped_target := facing_angle + PI * 0.5
+			var wrapped_target := facing_angle - PI * 0.5
 			_desired_facing_rotation = _unwrapped_rotation + wrapf(
 				wrapped_target - global_rotation,
 				-PI,
@@ -163,7 +188,7 @@ func set_control_input(
 	elif _facing_gesture_active:
 		# Releasing RS keeps the final screen direction but discards any backlog
 		# of full rotations the physical body could not complete during the gesture.
-		var final_wrapped_target := desired_facing_direction.angle() + PI * 0.5
+		var final_wrapped_target := desired_facing_direction.angle() - PI * 0.5
 		_desired_facing_rotation = _unwrapped_rotation + wrapf(
 			final_wrapped_target - global_rotation,
 			-PI,
@@ -182,6 +207,25 @@ func set_runtime_tuning(
 	spin_speed_scale = maxf(new_spin_speed_scale, 0.0)
 	move_speed_scale = maxf(new_move_speed_scale, 0.0)
 	spin_move_ratio = maxf(new_spin_move_ratio, 0.0)
+
+
+func adjust_extended_arm_pose(
+	spread_input: float,
+	forward_input: float,
+	delta: float
+) -> void:
+	var step := arm_stance_adjustment_rate_degrees * maxf(delta, 0.0)
+	extended_elbow_flexion_degrees = clampf(
+		extended_elbow_flexion_degrees - clampf(spread_input, -1.0, 1.0) * step,
+		minimum_extended_elbow_flexion_degrees,
+		maximum_extended_elbow_flexion_degrees
+	)
+	extended_forward_sweep_degrees = clampf(
+		extended_forward_sweep_degrees + clampf(forward_input, -1.0, 1.0) * step,
+		minimum_extended_forward_sweep_degrees,
+		maximum_extended_forward_sweep_degrees
+	)
+	queue_redraw()
 
 
 func get_trigger_value(side: int) -> float:
@@ -277,9 +321,21 @@ func get_projected_upper_arm_length(side: int = 1) -> float:
 
 func get_elbow_flexion_degrees(side: int = 1) -> float:
 	return lerpf(
-		minimum_elbow_flexion_degrees,
+		extended_elbow_flexion_degrees,
 		maximum_elbow_flexion_degrees,
 		get_arm_flexion(side)
+	)
+
+
+func get_arm_forward_sweep_degrees(side: int = 1) -> float:
+	return extended_forward_sweep_degrees * (1.0 - get_arm_flexion(side))
+
+
+func get_upper_arm_local_direction(side: int = 1) -> Vector2:
+	var side_sign := float(signi(side))
+	var outward := Vector2.RIGHT * side_sign
+	return outward.rotated(
+		deg_to_rad(get_arm_forward_sweep_degrees(side)) * side_sign
 	)
 
 
@@ -308,27 +364,28 @@ func get_elbow_joint_radius(side: int = 1) -> float:
 
 
 func get_dorsal_local_direction() -> Vector2:
-	# Both pictograms face toward their heads at the top of the body, so their
-	# anatomical back is down in body-local space.
-	return Vector2.DOWN
+	# Both overhead silhouettes face from the torso through the nose, so their
+	# anatomical back is up in body-local space.
+	return Vector2.UP
 
 
 func get_elbow_local_position(side: int = 1) -> Vector2:
 	# Abduction happens outside the top-down viewing plane. Keep the humerus
-	# radial on screen and communicate that motion through its projected length.
-	var outward := Vector2.RIGHT * float(signi(side))
+	# within a bounded player-selected stance and communicate its out-of-plane
+	# motion through projected length.
 	return (
 		get_shoulder_local_position(side)
-		+ outward * get_projected_upper_arm_length(side)
+		+ get_upper_arm_local_direction(side) * get_projected_upper_arm_length(side)
 	)
 
 
 func get_forearm_local_direction(side: int = 1) -> Vector2:
-	# Mirror the elbow rotation so both forearms fold through the dancer's dorsal
-	# side and eventually point back inward toward the torso.
+	# Preserve the approved mirrored elbow bend while the corrected face and RS
+	# axis move to the opposite side of the unchanged arm frame.
 	var side_sign := float(signi(side))
-	var outward := Vector2.RIGHT * side_sign
-	return outward.rotated(deg_to_rad(get_elbow_flexion_degrees(side)) * side_sign)
+	return get_upper_arm_local_direction(side).rotated(
+		deg_to_rad(get_elbow_flexion_degrees(side)) * side_sign
+	)
 
 
 func get_spin_move_scale() -> float:
@@ -446,81 +503,126 @@ func _draw_simple_body() -> void:
 
 
 func _draw_man_body() -> void:
+	# An upright torso projects almost entirely beneath the head. Only the neck,
+	# angular shoulders, and jacket edges escape the head's footprint.
 	var torso := PackedVector2Array([
-		Vector2(-21.0, -3.0),
-		Vector2(21.0, -3.0),
-		Vector2(16.0, 31.0),
-		Vector2(-16.0, 31.0),
+		Vector2(-6.0, NECK_REAR_Y),
+		Vector2(6.0, NECK_REAR_Y),
+		Vector2(9.0, BODY_REAR_Y),
+		Vector2(20.0, -8.0),
+		Vector2(25.0, -3.0),
+		Vector2(22.0, 6.0),
+		Vector2(12.0, BODY_FORWARD_Y),
+		Vector2(-12.0, BODY_FORWARD_Y),
+		Vector2(-22.0, 6.0),
+		Vector2(-25.0, -3.0),
+		Vector2(-20.0, -8.0),
+		Vector2(-9.0, BODY_REAR_Y),
 	])
 	draw_colored_polygon(torso, body_color)
+	var torso_outline := torso.duplicate()
+	torso_outline.append(torso[0])
 	draw_polyline(
-		PackedVector2Array([
-			Vector2(-21.0, -3.0),
-			Vector2(21.0, -3.0),
-			Vector2(16.0, 31.0),
-			Vector2(-16.0, 31.0),
-			Vector2(-21.0, -3.0),
-		]),
+		torso_outline,
 		detail_color,
 		2.0,
 		true
 	)
 
-	# A pale shirt opening and narrow tie read as formalwear from directly above.
+	# Small lapel points remain visible beside the head without turning the body
+	# into a frontal chest drawing.
 	draw_colored_polygon(PackedVector2Array([
-		Vector2(-8.0, -3.0),
-		Vector2(8.0, -3.0),
-		Vector2(0.0, 11.0),
+		Vector2(-19.0, -6.0),
+		Vector2(-9.0, -8.0),
+		Vector2(-12.0, 5.0),
 	]), detail_color)
 	draw_colored_polygon(PackedVector2Array([
-		Vector2(-2.4, 1.0),
-		Vector2(2.4, 1.0),
-		Vector2(1.5, 13.0),
-		Vector2(-1.5, 13.0),
-	]), body_color)
-	draw_line(Vector2(-20.0, -1.0), Vector2(-4.0, 14.0), detail_color, 2.0, true)
-	draw_line(Vector2(20.0, -1.0), Vector2(4.0, 14.0), detail_color, 2.0, true)
-
-	var head_center := Vector2(0.0, -22.0)
-	draw_circle(head_center, 11.0, body_color)
-	draw_arc(head_center, 11.0, 0.0, TAU, 32, detail_color, 2.0, true)
-	# Rear hairline and side part establish which end of the silhouette is ahead.
-	draw_arc(head_center, 8.0, 0.15, PI - 0.15, 18, detail_color, 3.0, true)
-	draw_line(Vector2(-1.0, -29.0), Vector2(4.0, -24.0), detail_color, 1.5, true)
+		Vector2(19.0, -6.0),
+		Vector2(9.0, -8.0),
+		Vector2(12.0, 5.0),
+	]), detail_color)
+	_draw_overhead_head(false)
 
 
 func _draw_woman_body() -> void:
-	# Bun and side hair sit behind the head, toward the shoulders.
-	draw_circle(Vector2(0.0, -9.0), 7.0, body_color)
-	draw_arc(Vector2(0.0, -9.0), 7.0, 0.0, TAU, 24, detail_color, 2.0, true)
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-17.0, -3.0),
-		Vector2(17.0, -3.0),
-		Vector2(10.0, 12.0),
-		Vector2(27.0, 35.0),
-		Vector2(-27.0, 35.0),
-		Vector2(-10.0, 12.0),
-	]), body_color)
+	# Three shallow rear ruffles add a small dress flourish without turning the
+	# upright dancer back into a floor-length silhouette.
+	for ruffle_center in [
+		Vector2(-15.0, -10.0),
+		Vector2(0.0, -11.0),
+		Vector2(15.0, -10.0),
+	]:
+		draw_circle(ruffle_center, 5.5, body_color)
+		draw_arc(ruffle_center, 5.5, PI, TAU, 12, detail_color, 1.5, true)
+
+	# Long hair drapes over the shoulders instead of extending like a body lying
+	# on the floor. The head will occlude its central portion.
+	var hair := PackedVector2Array([
+		Vector2(-7.0, NECK_REAR_Y),
+		Vector2(7.0, NECK_REAR_Y),
+		Vector2(18.0, -9.0),
+		Vector2(21.0, 3.0),
+		Vector2(16.0, BODY_FORWARD_Y),
+		Vector2(9.0, 5.0),
+		Vector2(-9.0, 5.0),
+		Vector2(-16.0, BODY_FORWARD_Y),
+		Vector2(-21.0, 3.0),
+		Vector2(-18.0, -9.0),
+	])
+	draw_colored_polygon(hair, detail_color)
+
+	# The dress is a rounded shoulder-and-bodice footprint no longer than the
+	# head. Two small front lobes suggest the bosom from above.
+	var dress := PackedVector2Array([
+		Vector2(-8.0, BODY_REAR_Y),
+		Vector2(8.0, BODY_REAR_Y),
+		Vector2(19.0, -7.0),
+		Vector2(24.0, -2.0),
+		Vector2(23.0, 5.0),
+		Vector2(16.0, BODY_FORWARD_Y),
+		Vector2(-16.0, BODY_FORWARD_Y),
+		Vector2(-23.0, 5.0),
+		Vector2(-24.0, -2.0),
+		Vector2(-19.0, -7.0),
+	])
+	draw_colored_polygon(dress, body_color)
+	var dress_outline := dress.duplicate()
+	dress_outline.append(dress[0])
 	draw_polyline(
-		PackedVector2Array([
-			Vector2(-17.0, -3.0),
-			Vector2(17.0, -3.0),
-			Vector2(10.0, 12.0),
-			Vector2(27.0, 35.0),
-			Vector2(-27.0, 35.0),
-			Vector2(-10.0, 12.0),
-			Vector2(-17.0, -3.0),
-		]),
+		dress_outline,
 		detail_color,
 		2.0,
 		true
 	)
-	draw_arc(Vector2.ZERO, 9.0, 0.15, PI - 0.15, 18, detail_color, 2.0, true)
-	draw_line(Vector2(-10.0, 12.0), Vector2(10.0, 12.0), detail_color, 2.0, true)
-	draw_line(Vector2(0.0, 13.0), Vector2(0.0, 32.0), detail_color, 1.5, true)
+	draw_circle(Vector2(-8.0, 6.0), 6.0, body_color)
+	draw_circle(Vector2(8.0, 6.0), 6.0, body_color)
+	draw_arc(Vector2(-8.0, 6.0), 6.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
+	draw_arc(Vector2(8.0, 6.0), 6.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
+	_draw_overhead_head(true)
 
-	var head_center := Vector2(0.0, -22.0)
-	draw_circle(head_center, 11.0, body_color)
-	draw_arc(head_center, 11.0, 0.0, TAU, 32, detail_color, 2.0, true)
-	# The dark rear crescent makes the hair readable without turning the view frontal.
-	draw_arc(head_center, 8.5, 0.1, PI - 0.1, 18, detail_color, 4.0, true)
+
+func _draw_overhead_head(has_long_hair: bool) -> void:
+	var nose := PackedVector2Array([
+		Vector2(-3.2, 10.0),
+		Vector2(3.2, 10.0),
+		Vector2(0.0, NOSE_TIP_Y),
+	])
+	draw_colored_polygon(nose, body_color)
+	draw_circle(HEAD_CENTER, HEAD_RADIUS, body_color)
+	draw_arc(HEAD_CENTER, HEAD_RADIUS, 0.0, TAU, 32, detail_color, 2.0, true)
+	draw_line(nose[0], nose[2], detail_color, 1.5, true)
+	draw_line(nose[2], nose[1], detail_color, 1.5, true)
+	if has_long_hair:
+		# A filled rear cap and side locks read as actual hair rather than a thin
+		# outline around a bald crown.
+		var hair_cap := PackedVector2Array()
+		for point_index in 21:
+			var angle := lerpf(
+				PI + 0.08,
+				TAU - 0.08,
+				float(point_index) / 20.0
+			)
+			hair_cap.append(HEAD_CENTER + Vector2.from_angle(angle) * 9.5)
+		draw_colored_polygon(hair_cap, detail_color)
+		draw_circle(Vector2(-9.5, -2.0), 3.0, detail_color)
+		draw_circle(Vector2(9.5, -2.0), 3.0, detail_color)

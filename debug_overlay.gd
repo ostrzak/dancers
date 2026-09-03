@@ -20,15 +20,17 @@ func _process(_delta: float) -> void:
 		return
 	left_readout.text = "%s\n%s" % [left_dancer.dancer_name, _format_dancer(left_dancer)]
 	right_readout.text = "%s\n%s" % [right_dancer.dancer_name, _format_dancer(right_dancer)]
-	connection_readout.text = "HANDS %s   ready B:%s/%s W:%s/%s   gap %6.2f px   relative %6.2f px/s   force %7.1f" % [
+	connection_readout.text = "HANDS %s   primed B:%s/%s W:%s/%s   gap %6.2f px   relative %6.2f px/s   force %7.1f   elastic %3.0f/%3.0f%%" % [
 		hand_connection.get_hold_mode().to_upper(),
-		"L" if hand_connection.is_grip_active(left_dancer, -1) else "-",
-		"R" if hand_connection.is_grip_active(left_dancer, 1) else "-",
-		"L" if hand_connection.is_grip_active(right_dancer, -1) else "-",
-		"R" if hand_connection.is_grip_active(right_dancer, 1) else "-",
+		"L" if hand_connection.is_hand_primed(left_dancer, -1) else "-",
+		"R" if hand_connection.is_hand_primed(left_dancer, 1) else "-",
+		"L" if hand_connection.is_hand_primed(right_dancer, -1) else "-",
+		"R" if hand_connection.is_hand_primed(right_dancer, 1) else "-",
 		hand_connection.distance_error,
 		hand_connection.relative_hand_velocity,
 		hand_connection.connection_force,
+		hand_connection.primary_elastic_blend * 100.0,
+		hand_connection.secondary_elastic_blend * 100.0,
 	]
 
 
@@ -37,13 +39,15 @@ func set_telemetry_visible(is_visible: bool) -> void:
 
 
 func _format_dancer(dancer: Dancer) -> String:
-	return "speed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nheading err  %+7.2f deg\nlocks L3/R3  %6s / %6s\nmove scale   %7.2fx\ntrigger L/R  %6.2f / %6.2f\nreach L/R    %6.2f / %6.2f px\nupper L/R    %6.2f / %6.2f px\nfore L/R     %6.2f / %6.2f px\nhand L/R     %6.2f / %6.2f px/s" % [
+	return "speed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nheading err  %+7.2f deg\nlocks L3/R3  %6s / %6s\narm flex/fwd %6.1f / %+6.1f deg\nmove scale   %7.2fx\ntrigger L/R  %6.2f / %6.2f\nreach L/R    %6.2f / %6.2f px\nupper L/R    %6.2f / %6.2f px\nfore L/R     %6.2f / %6.2f px\nhand L/R     %6.2f / %6.2f px/s" % [
 		dancer.linear_velocity.length(),
 		dancer.angular_velocity,
 	dancer.target_angular_velocity,
 	rad_to_deg(dancer.heading_error),
 	"ON" if dancer.position_lock_active else "-",
 	"ON" if dancer.rotation_lock_active else "-",
+	dancer.extended_elbow_flexion_degrees,
+	dancer.extended_forward_sweep_degrees,
 	dancer.get_effective_move_scale(),
 		dancer.left_trigger_value,
 		dancer.right_trigger_value,
