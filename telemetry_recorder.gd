@@ -120,7 +120,7 @@ func save_capture(reason: String = "manual") -> String:
 
 func build_capture_payload(reason: String = "manual") -> Dictionary:
 	return {
-		"schema": "dancers-coop-telemetry-v5",
+		"schema": "dancers-coop-telemetry-v8",
 		"reason": reason,
 		"captured_at": Time.get_datetime_string_from_system(),
 		"captured_at_utc": Time.get_datetime_string_from_system(true),
@@ -255,6 +255,7 @@ func _build_connection_sample() -> Dictionary:
 		"secondary_connected": hand_connection.is_secondary_connected,
 		"connection_count": hand_connection.get_active_connection_count(),
 		"hold_mode": hand_connection.get_hold_mode(),
+		"solver_mode": hand_connection.get_solver_mode(),
 		"left_dancer_hand_side": connected_sides[0],
 		"right_dancer_hand_side": connected_sides[1],
 		"secondary_left_dancer_hand_side": secondary_connected_sides[0],
@@ -276,7 +277,38 @@ func _build_connection_sample() -> Dictionary:
 		"secondary_elastic_blend": _float_for_json(
 			hand_connection.secondary_elastic_blend
 		),
+		"primary_hand_separation": _float_for_json(
+			hand_connection.primary_hand_separation
+		),
+		"secondary_hand_separation": _float_for_json(
+			hand_connection.secondary_hand_separation
+		),
+		"primary_allowed_separation": _float_for_json(
+			hand_connection.primary_allowed_separation
+		),
+		"secondary_allowed_separation": _float_for_json(
+			hand_connection.secondary_allowed_separation
+		),
+		"primary_position_correction": _float_for_json(
+			hand_connection.primary_position_correction
+		),
+		"secondary_position_correction": _float_for_json(
+			hand_connection.secondary_position_correction
+		),
+		"primary_velocity_correction": _float_for_json(
+			hand_connection.primary_velocity_correction
+		),
+		"secondary_velocity_correction": _float_for_json(
+			hand_connection.secondary_velocity_correction
+		),
+		"double_hold_orbital_angular_velocity": _float_for_json(
+			hand_connection.double_hold_orbital_angular_velocity
+		),
+		"double_hold_alignment_error": _float_for_json(
+			hand_connection.double_hold_alignment_error
+		),
 		"separation_limit_active": hand_connection.separation_limit_active,
+		"dorsal_limit_active": hand_connection.dorsal_limit_active,
 		"primary_snap_remaining": _float_for_json(
 			hand_connection.primary_snap_remaining
 		),
@@ -303,26 +335,45 @@ func _build_configuration() -> Dictionary:
 			),
 			"release_cooldown": hand_connection.release_cooldown,
 			"snap_duration": hand_connection.snap_duration,
-			"snap_stiffness": hand_connection.snap_stiffness,
-			"snap_damping": hand_connection.snap_damping,
+			"snap_response_rate": hand_connection.snap_response_rate,
+			"snap_velocity_correction": (
+				hand_connection.snap_velocity_correction
+			),
 			"weld_speed_threshold": hand_connection.weld_speed_threshold,
 			"elastic_speed_threshold": hand_connection.elastic_speed_threshold,
-			"weld_stiffness": hand_connection.weld_stiffness,
-			"weld_normal_damping": hand_connection.weld_normal_damping,
-			"weld_tangential_damping": hand_connection.weld_tangential_damping,
-			"elastic_stiffness": hand_connection.elastic_stiffness,
-			"elastic_normal_damping": hand_connection.elastic_normal_damping,
-			"elastic_tangential_damping": hand_connection.elastic_tangential_damping,
+			"weld_response_rate": hand_connection.weld_response_rate,
+			"weld_velocity_correction": (
+				hand_connection.weld_velocity_correction
+			),
+			"weld_tangential_correction": (
+				hand_connection.weld_tangential_correction
+			),
+			"elastic_response_rate": hand_connection.elastic_response_rate,
+			"elastic_velocity_correction": (
+				hand_connection.elastic_velocity_correction
+			),
+			"elastic_tangential_correction": (
+				hand_connection.elastic_tangential_correction
+			),
+			"maximum_spring_closing_speed": (
+				hand_connection.maximum_spring_closing_speed
+			),
 			"maximum_hand_separation": hand_connection.maximum_hand_separation,
+			"welded_hand_separation": hand_connection.welded_hand_separation,
+			"dorsal_safety_margin": hand_connection.dorsal_safety_margin,
 			"separation_projection_margin": (
 				hand_connection.separation_projection_margin
 			),
+			"compliance_open_rate": hand_connection.compliance_open_rate,
+			"compliance_close_rate": hand_connection.compliance_close_rate,
 			"separation_projection_iterations": (
 				hand_connection.separation_projection_iterations
 			),
-			"separation_stiffness": hand_connection.separation_stiffness,
-			"separation_damping": hand_connection.separation_damping,
+			"velocity_projection_iterations": (
+				hand_connection.velocity_projection_iterations
+			),
 			"maximum_constraint_force": hand_connection.maximum_constraint_force,
+			"solver_mode": hand_connection.get_solver_mode(),
 		},
 	}
 	if is_instance_valid(controller):

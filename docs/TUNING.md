@@ -7,15 +7,17 @@ defaults whenever the project starts.
 
 ## Controls
 
-- **Turn speed** multiplies both the extended and tucked maximum facing speeds.
+- **Turn speed** multiplies the maximum kinematic rate used to approach the
+  absolute RS angle. It does not add momentum or change the stick deadzone.
 - **Move speed** multiplies movement force and the input-speed ceiling.
 - **Arm / move ratio** controls how strongly the faster tucked-arm state also
   boosts movement. Both arms contribute through their average flexion, so one
   tucked arm gives an intermediate benefit.
 - **Trigger sensitivity** changes the response curve shared by LT and RT on
   both controllers.
-- **Stick sensitivity** changes the post-deadzone response curve shared by LS
-  and RS on both controllers.
+- **Stick sensitivity** changes post-deadzone LS magnitude. RS discards
+  magnitude after the deadzone, so partial and full travel at one angle give the
+  same facing target.
 
 During unpaused play, each controller's D-pad changes only that dancer's
 extended arm stance: left/right narrow or widen both arms and up/down sweep both
@@ -34,19 +36,23 @@ Zero and full input remain unchanged.
 
 Dancer collision friction is zero. Arena walls can stop translation but do not
 apply tangential friction that grabs a spinning dancer and changes angular speed.
-The RS-facing motor remains responsible for angular acceleration and alignment.
-It disengages while RS is neutral, allowing physical hand forces from the other
-dancer to guide rotation.
+RS facing is kinematic rather than an acceleration motor. While active it moves
+toward the absolute stick angle at the configured rate and writes no turn
+torque. While neutral it applies no orientation correction, allowing the
+handhold to guide rotation without a later return toward the old request.
 
 ## L3 and R3 physical locks
 
-Holding L3 suppresses the LS motor and anchors position with configurable
-stiffness, damping, and maximum force. Holding R3 suppresses the RS motor and
-anchors orientation with configurable stiffness, damping, and maximum torque.
-The two locks are independent and may be held together.
+Pressing L3 toggles a position anchor that suppresses the LS motor and uses
+configurable stiffness, damping, and maximum force. Pressing R3 toggles an
+orientation anchor that suppresses the RS motor and uses configurable stiffness,
+damping, and maximum torque. The two toggles are independent and may both be on.
 
 ## Telemetry
 
 Every capture records all five live tuning values plus both preferred and live
 controller assignments. Applied movement force already includes move-speed and
-arm-to-move scaling, so captures show the actual force used by gameplay.
+arm-to-move scaling, so captures show the actual force used by gameplay. Hold
+telemetry additionally records the 27 px hard limit, the current single-hold
+authorized length, mutual-dorsal blocking, compliance, solver mode, and hard
+safety corrections.

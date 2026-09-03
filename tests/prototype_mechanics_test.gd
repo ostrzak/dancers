@@ -83,11 +83,11 @@ func _run() -> void:
 	_left.global_rotation = 0.0
 	_left.angular_velocity = 0.0
 	await _wait_physics_frames(60)
-	_expect(_left.desired_facing_direction.is_equal_approx(retained_direction), "neutral RS retains the last facing direction")
+	_expect(_left.desired_facing_direction.is_equal_approx(retained_direction), "neutral RS retains the last input direction for diagnostics")
 	_expect(
 		absf(_left.global_rotation) < 0.05
 		and is_zero_approx(_left.diagnostic_spin_torque),
-		"neutral RS remembers its heading without resisting partner-applied rotation"
+		"neutral RS leaves its achieved heading without resisting partner-applied rotation"
 	)
 
 	for frame in 240:
@@ -205,9 +205,9 @@ func _run() -> void:
 	_expect(
 		_left.global_position.distance_to(position_lock_origin) < 1.0
 		and _left.diagnostic_movement_force.is_zero_approx(),
-		"held L3 pins translation and suppresses the LS motor"
+		"an active L3 lock pins translation and suppresses the LS motor"
 	)
-	_expect(_left.global_rotation < -0.4, "held L3 leaves corrected RS rotation free")
+	_expect(_left.global_rotation < -0.4, "an active L3 lock leaves corrected RS rotation free")
 
 	_left.global_position = Vector2(420.0, 260.0)
 	_left.global_rotation = 0.0
@@ -217,11 +217,11 @@ func _run() -> void:
 	var rotation_lock_origin := _left.global_rotation
 	_left.apply_torque_impulse(1200.0)
 	await _wait_physics_frames(90)
-	_expect(_left.global_position.x > 440.0, "held R3 leaves LS translation free")
+	_expect(_left.global_position.x > 440.0, "an active R3 lock leaves LS translation free")
 	_expect(
 		absf(wrapf(_left.global_rotation - rotation_lock_origin, -PI, PI)) < 0.03
 		and is_zero_approx(_left.diagnostic_spin_torque),
-		"held R3 pins orientation and suppresses the RS motor"
+		"an active R3 lock pins orientation and suppresses the RS motor"
 	)
 
 	_left.global_position = Vector2(420.0, 260.0)
@@ -237,7 +237,7 @@ func _run() -> void:
 	_expect(
 		_left.global_position.distance_to(full_lock_position) < 1.0
 		and absf(wrapf(_left.global_rotation - full_lock_rotation, -PI, PI)) < 0.03,
-		"holding L3 and R3 together pins both physical axes"
+		"active L3 and R3 locks together pin both physical axes"
 	)
 
 	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0, false, false)
@@ -274,8 +274,139 @@ func _run() -> void:
 	var initial_snap_gap := _connected_gap(1)
 	await _wait_physics_frames(30)
 	var settled_snap_gap := _connected_gap(1)
-	_expect(settled_snap_gap < initial_snap_gap, "snap assistance pulls the caught hands together without teleporting bodies")
-	_expect(_connection.connection_force > 0.0, "the caught hands use a physical off-centre constraint")
+	_expect(
+		initial_snap_gap <= _connection.maximum_hand_separation + 0.1
+		and settled_snap_gap <= _connection.maximum_hand_separation + 0.1,
+		"a catch immediately enters the hard fingertip-tether distance"
+	)
+	_expect(
+		_connection.primary_allowed_separation
+		<= _connection.maximum_hand_separation,
+		"the projected catch never authorizes separation beyond the hard tether"
+	)
+
+	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+	_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+	_left.angular_velocity = -0.75
+	_right.angular_velocity = 0.75
+	var single_tail_gap := 0.0
+	var single_tail_relative_hand_speed := 0.0
+	for frame in 180:
+		await physics_frame
+		if frame >= 120:
+			single_tail_gap = maxf(single_tail_gap, _connected_gap(1))
+			single_tail_relative_hand_speed = maxf(
+				single_tail_relative_hand_speed,
+				_connection.relative_hand_velocity
+			)
+	print("single neutral settle: gap=%.3f px hand_speed=%.3f px/s blend=%.3f" % [
+		single_tail_gap,
+		single_tail_relative_hand_speed,
+		_connection.primary_elastic_blend,
+	])
+	_expect(
+		single_tail_gap < 4.0
+		and single_tail_relative_hand_speed < 5.0,
+		"a slow neutral single hold settles as firm radial contact without jitter"
+	)
+
+	_left.global_rotation = 0.0
+	_place_hand_gap(primary_sides[0], primary_sides[1], Vector2(0.0, -20.0))
+	await _wait_physics_frames(3)
+	var dorsal_gap := (
+		_right.get_hand_world_position(primary_sides[1])
+		- _left.get_hand_world_position(primary_sides[0])
+	)
+	print("single dorsal projection: component=%.3f px gap=%.3f px active=%s" % [
+		dorsal_gap.dot(
+			_left.get_dorsal_local_direction().rotated(_left.global_rotation)
+		),
+		dorsal_gap.length(),
+		str(_connection.dorsal_limit_active),
+	])
+	_expect(
+		dorsal_gap.length() > 15.0
+		and dorsal_gap.length() <= _connection.maximum_hand_separation + 0.1
+		and not _connection.dorsal_limit_active,
+		"a hand may pass behind one dancer during an underarm-style pivot"
+	)
+	_left.freeze = true
+	_right.freeze = true
+	_left.global_rotation = 0.0
+	_right.global_rotation = PI
+	_right.global_position = (
+		_left.get_hand_world_position(primary_sides[0])
+		+ Vector2(0.0, -20.0)
+		- _right.get_hand_offset(primary_sides[1])
+	)
+	_left.linear_velocity = Vector2.ZERO
+	_right.linear_velocity = Vector2.ZERO
+	_left.angular_velocity = 0.0
+	_right.angular_velocity = 0.0
+	await _wait_physics_frames(1)
+	var mutual_dorsal_gap := (
+		_right.get_hand_world_position(primary_sides[1])
+		- _left.get_hand_world_position(primary_sides[0])
+	)
+	_expect(
+		mutual_dorsal_gap.length() <= _connection.welded_hand_separation + 0.1
+		and _connection.dorsal_limit_active,
+		"only dorsal-to-dorsal hand separation is fully blocked"
+	)
+
+	# One dancer may orbit and turn under the other dancer's anchored arm. The
+	# single contact limits distance but owns no relative orientation.
+	_left.global_position = Vector2(600.0, 360.0)
+	_left.global_rotation = 0.0
+	_right.global_rotation = PI
+	_right.global_position = (
+		_left.get_hand_world_position(primary_sides[0])
+		+ Vector2(2.0, 0.0)
+		- _right.get_hand_offset(primary_sides[1])
+	)
+	_left.linear_velocity = Vector2.ZERO
+	_right.linear_velocity = Vector2.ZERO
+	_left.angular_velocity = 0.0
+	_right.angular_velocity = 0.0
+	_left.freeze = false
+	_right.freeze = false
+	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0, true, false)
+	_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+	var anchored_position := _left.global_position
+	var previous_orbit_angle := (
+		_right.global_position - _left.global_position
+	).angle()
+	var orbit_travel := 0.0
+	var underarm_peak_gap := 0.0
+	for _frame in 180:
+		var body_separation := _right.global_position - _left.global_position
+		var tangent := body_separation.normalized().rotated(-PI * 0.5)
+		_right.set_control_input(
+			tangent,
+			(-body_separation).normalized(),
+			0.0,
+			0.0
+		)
+		await physics_frame
+		var orbit_angle := (
+			_right.global_position - _left.global_position
+		).angle()
+		orbit_travel += absf(wrapf(
+			orbit_angle - previous_orbit_angle,
+			-PI,
+			PI
+		))
+		previous_orbit_angle = orbit_angle
+		underarm_peak_gap = maxf(underarm_peak_gap, _connected_gap(1))
+	_expect(
+		_connection.has_any_connection()
+		and orbit_travel > 0.8
+		and anchored_position.distance_to(_left.global_position) < 2.0
+		and underarm_peak_gap <= _connection.maximum_hand_separation + 0.1,
+		"a dancer can turn and orbit under one anchored hand without an orientation weld"
+	)
+	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0, false, false)
+	_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 	_right.set_control_input(Vector2.RIGHT, Vector2.ZERO, 0.0, 0.0)
 	var guided_start := _left.global_position
@@ -301,8 +432,9 @@ func _run() -> void:
 		separation_tether_activated = (
 			separation_tether_activated or _connection.separation_limit_active
 		)
-	print("single-hold stress sample: peak_gap=%.3f px tether=%s" % [
+	print("single-hold stress sample: peak_gap=%.3f px blend=%.3f tether=%s" % [
 		peak_stress_gap,
+		peak_stress_elastic_blend,
 		str(separation_tether_activated),
 	])
 	_expect(
@@ -312,7 +444,7 @@ func _run() -> void:
 	)
 	_expect(
 		peak_stress_gap <= _connection.maximum_hand_separation + 0.1,
-		"the physical tether never exceeds the two-hand-width limit"
+		"the physical tether never exceeds the one-and-a-half-hand-width limit"
 	)
 	_expect(
 		peak_stress_elastic_blend > 0.5,
@@ -387,6 +519,93 @@ func _run() -> void:
 	)
 
 	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+	_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+	_left.linear_velocity = Vector2.ZERO
+	_right.linear_velocity = Vector2.ZERO
+	_left.angular_velocity = -6.0
+	_right.angular_velocity = 6.0
+	var neutral_peak_gap := 0.0
+	var neutral_peak_gap_frame := 0
+	var neutral_peak_body_distance := 0.0
+	var neutral_peak_alignment_error := 0.0
+	var neutral_tail_angular_error := 0.0
+	var neutral_tail_relative_spin := 0.0
+	var neutral_tail_orbital_speed := 0.0
+	var neutral_tail_relative_hand_speed := 0.0
+	var peak_joint_position_correction := 0.0
+	var peak_joint_velocity_correction := 0.0
+	for frame in 360:
+		await physics_frame
+		var current_peak_gap := maxf(_connected_gap(1), _connected_gap(2))
+		if current_peak_gap > neutral_peak_gap:
+			neutral_peak_gap = current_peak_gap
+			neutral_peak_gap_frame = frame
+			neutral_peak_body_distance = _left.global_position.distance_to(
+				_right.global_position
+			)
+			neutral_peak_alignment_error = _connection.double_hold_alignment_error
+		peak_joint_position_correction = maxf(
+			peak_joint_position_correction,
+			maxf(
+				_connection.primary_position_correction,
+				_connection.secondary_position_correction
+			)
+		)
+		peak_joint_velocity_correction = maxf(
+			peak_joint_velocity_correction,
+			maxf(
+				_connection.primary_velocity_correction,
+				_connection.secondary_velocity_correction
+			)
+		)
+		if frame >= 300:
+			neutral_tail_angular_error = maxf(
+				neutral_tail_angular_error,
+				_connection.double_hold_alignment_error
+			)
+			neutral_tail_relative_spin = maxf(
+				neutral_tail_relative_spin,
+				absf(_right.angular_velocity - _left.angular_velocity)
+			)
+			neutral_tail_orbital_speed = maxf(
+				neutral_tail_orbital_speed,
+				absf(_connection.double_hold_orbital_angular_velocity)
+			)
+			neutral_tail_relative_hand_speed = maxf(
+				neutral_tail_relative_hand_speed,
+				_connection.relative_hand_velocity
+			)
+	print(
+		"neutral double-hold settle: peak_gap=%.3f px frame=%d body_distance=%.3f px peak_alignment=%.3f rad tail_alignment=%.3f rad relative_spin=%.3f orbital=%.3f hand_speed=%.3f px/s position_correction=%.3f velocity_correction=%.3f"
+		% [
+			neutral_peak_gap,
+			neutral_peak_gap_frame,
+			neutral_peak_body_distance,
+			neutral_peak_alignment_error,
+			neutral_tail_angular_error,
+			neutral_tail_relative_spin,
+			neutral_tail_orbital_speed,
+			neutral_tail_relative_hand_speed,
+			peak_joint_position_correction,
+			peak_joint_velocity_correction,
+		]
+	)
+	_expect(
+		peak_joint_position_correction > 0.0,
+		"the hard fingertip limit corrects only an actual frame separation"
+	)
+	_expect(
+		neutral_peak_gap <= _connection.maximum_hand_separation + 0.1,
+		"counter-rotation remains inside both hand-separation limits"
+	)
+	_expect(
+		neutral_tail_angular_error < deg_to_rad(3.0)
+		and neutral_tail_relative_spin < 0.35
+		and neutral_tail_relative_hand_speed < _connection.weld_speed_threshold,
+		"a neutral double hold settles instead of sustaining visible jitter"
+	)
+
+	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 	_right.set_control_input(Vector2(-0.85, 0.53), Vector2.ZERO, 0.0, 0.0)
 	var peak_double_hold_speed := 0.0
 	var peak_double_hold_gap := 0.0
@@ -403,11 +622,31 @@ func _run() -> void:
 	_expect(_left.movement_input == Vector2.ZERO and _right.movement_input.is_equal_approx(Vector2(-0.85, 0.53).normalized()), "double hold does not average or replace either player's LS input")
 	_expect(_left.diagnostic_movement_force.is_zero_approx() and _right.diagnostic_movement_force.length() > 0.0, "a neutral dancer is guided by the other dancer's independent LS motor")
 	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 1.0, 0.0)
-	_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 1.0)
+	_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 	await _wait_physics_frames(60)
 	_expect(_left.get_arm_flexion(-1) > 0.9 and _left.get_arm_flexion(1) < 0.1, "black dancer retains asymmetric arm control in a double hold")
-	_expect(_right.get_arm_flexion(-1) < 0.1 and _right.get_arm_flexion(1) > 0.9, "white dancer retains asymmetric arm control in a double hold")
-	_expect(_connection.primary_connection_force > 0.0 and _connection.secondary_connection_force > 0.0, "both handholds apply independent physical forces")
+	_expect(_right.get_arm_flexion(-1) < 0.1 and _right.get_arm_flexion(1) < 0.1, "white dancer's arms ignore the black dancer's trigger in a double hold")
+	var coupled_primary := _connection.get_connected_hand_sides()
+	var coupled_secondary := _connection.get_secondary_connected_hand_sides()
+	_expect(
+		absf(
+			_left.get_arm_flexion(coupled_primary[0])
+			- _right.get_arm_flexion(coupled_primary[1])
+		) > 0.5
+		or absf(
+			_left.get_arm_flexion(coupled_secondary[0])
+			- _right.get_arm_flexion(coupled_secondary[1])
+		) > 0.5,
+		"connected arm flexion remains independent across dancers"
+	)
+	_expect(
+		_connection.get_solver_mode() == "spring"
+		and _connection.primary_allowed_separation
+		<= _connection.maximum_hand_separation
+		and _connection.secondary_allowed_separation
+		<= _connection.maximum_hand_separation,
+		"a two-hand frame uses conservative independent springs inside the hard tether"
+	)
 	_expect(_connection.get_active_connection_count() == 2, "independent player motion does not auto-release either grip")
 	_expect(_left.linear_velocity.is_finite() and _right.linear_velocity.is_finite(), "double-hold motion remains numerically finite")
 	_expect(peak_double_hold_speed < 2000.0, "sustained opposing double-hold input stays below emergency velocity")
@@ -445,6 +684,36 @@ func _run() -> void:
 	_prepare_far_apart()
 	_root._player_one_device = 5
 	_root._player_two_device = 7
+	_root._input(_joy_button_event(JOY_BUTTON_LEFT_STICK, 5))
+	_expect(
+		_left.position_lock_active and not _right.position_lock_active,
+		"controller one L3 toggles only the black dancer's position lock on"
+	)
+	_root._input(_joy_button_event(JOY_BUTTON_LEFT_STICK, 5, false))
+	_expect(
+		_left.position_lock_active,
+		"releasing L3 leaves the black dancer's position lock latched"
+	)
+	_root._input(_joy_button_event(JOY_BUTTON_LEFT_STICK, 5))
+	_expect(
+		not _left.position_lock_active,
+		"pressing controller one L3 again toggles its position lock off"
+	)
+	_root._input(_joy_button_event(JOY_BUTTON_RIGHT_STICK, 7))
+	_expect(
+		_right.rotation_lock_active and not _left.rotation_lock_active,
+		"controller two R3 toggles only the white dancer's rotation lock on"
+	)
+	_root._input(_joy_button_event(JOY_BUTTON_RIGHT_STICK, 7, false))
+	_expect(
+		_right.rotation_lock_active,
+		"releasing R3 leaves the white dancer's rotation lock latched"
+	)
+	_root._input(_joy_button_event(JOY_BUTTON_RIGHT_STICK, 7))
+	_expect(
+		not _right.rotation_lock_active,
+		"pressing controller two R3 again toggles its rotation lock off"
+	)
 	_root._input(_joy_button_event(JOY_BUTTON_LEFT_SHOULDER, 5))
 	_expect(_connection.is_hand_primed(_left, -1), "controller one held LB primes only the black dancer's left hand")
 	_expect(not _connection.is_hand_primed(_right, -1), "controller one cannot prime the white dancer's hand")
@@ -484,6 +753,51 @@ func _run() -> void:
 	)
 	_pause_menu._resume()
 	_expect(not paused and not _pause_menu.visible, "resume closes the menu and unpauses")
+
+	# Exercise classic twin-stick steering on an isolated frozen dancer so this
+	# focused probe cannot perturb the long-running handhold simulation above.
+	var rs_probe := Dancer.new()
+	get_root().add_child(rs_probe)
+	rs_probe.freeze = true
+	rs_probe.set_control_input(Vector2.ZERO, Vector2.RIGHT * 0.25, 0.0, 0.0)
+	rs_probe._apply_facing_torque()
+	var slight_rs_target := rs_probe.get_desired_facing_rotation()
+	var slight_rs_step := rs_probe.global_rotation
+	var slight_rs_target_speed := absf(rs_probe.target_angular_velocity)
+	rs_probe.global_rotation = 0.0
+	rs_probe.set_control_input(Vector2.ZERO, Vector2.RIGHT, 0.0, 0.0)
+	rs_probe._apply_facing_torque()
+	_expect(
+		is_equal_approx(rs_probe.get_desired_facing_rotation(), slight_rs_target)
+		and is_equal_approx(rs_probe.global_rotation, slight_rs_step)
+		and is_equal_approx(
+			absf(rs_probe.target_angular_velocity),
+			slight_rs_target_speed
+		)
+		and rs_probe.facing_input.is_equal_approx(Vector2.RIGHT)
+		and is_zero_approx(rs_probe.diagnostic_spin_torque),
+		"partial and full RS travel at one angle produce the same inertialess turn"
+	)
+	_expect(
+		_root._normalize_facing_stick(Vector2(0.2, -0.2)).is_equal_approx(
+			Vector2(0.2, -0.2).normalized()
+		)
+		and _root._normalize_facing_stick(Vector2.ZERO) == Vector2.ZERO,
+		"RS magnitude is discarded after the radial deadzone"
+	)
+
+	rs_probe.angular_velocity = 1.25
+	rs_probe.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+	var neutral_rotation := rs_probe.global_rotation
+	rs_probe._apply_facing_torque()
+	_expect(
+		is_equal_approx(rs_probe.global_rotation, neutral_rotation)
+		and is_equal_approx(rs_probe.angular_velocity, 1.25)
+		and is_zero_approx(rs_probe.target_angular_velocity)
+		and is_zero_approx(rs_probe.diagnostic_spin_torque),
+		"centering RS stops its own turn without locking out partner-driven rotation"
+	)
+	rs_probe.queue_free()
 
 	if _failures.is_empty():
 		print("COOP PROTOTYPE MECHANICS: %d/%d checks passed" % [_checks, _checks])

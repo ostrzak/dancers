@@ -24,21 +24,36 @@ its own latch and either connected endpoint can tap its side-relevant bumper to
 release only that pair. Released endpoints receive a short 0.35 s re-catch
 cooldown.
 
-The first 0.22 s increases the pull that brings the hands together. This is
-magnetic capture assistance, not a rigid joint: dancer rotation and momentum
-remain physical throughout the snap.
+The first 0.22 s uses the firmest closing response while the hands settle. Any
+part of the initial catch gap outside the hard tether is corrected immediately;
+the connection never begins in an overstretched state.
 
 ## One or two physical holds
 
-Every connection is an off-centre spring-damper between the actual hand
-positions. One handhold behaves like a loose hinge. A second handhold adds a
-second independent physical constraint; it does not switch to a special couple
-controller.
+Each connection is a radial, damped constraint between the actual hand
+endpoints. It asks for a bounded closing speed instead of stacking a spring
+force, a full velocity weld, and repeated position rotation. The response uses
+the two bodies' effective mass at the hands, including arm leverage, so it does
+not overshoot merely because an arm is extended.
+
+Below 80 px/s, a hold closes firmly toward a 2 px fingertip overlap and removes
+only a controlled fraction of relative hand motion each tick. From 80 to 400
+px/s it changes smoothly toward a softer response with very little tangential
+damping. That fast one-hand region can stretch and rebound while preserving an
+orbit. The hard limit remains independent of this blend.
+
+A double hold uses the same two radial constraints in their conservative
+response. It does not weld dancer orientation, align the bodies, average input,
+or alter either arm's trigger target. The two contact points themselves provide
+the frame leverage.
 
 Therefore, during both single and double holds:
 
 - Each player's LS continues applying that dancer's screen-space movement.
-- Each player's RS continues setting that dancer's own facing target.
+- Outside the deadzone, each player's RS angle is that dancer's absolute
+  screen-space facing target. Partial and full travel at the same angle are
+  identical. The dancer turns toward it at the configured turn-rate limit,
+  without torque, acceleration buildup, overshoot, or circular-stick history.
 - LT and RT continue flexing only the corresponding left or right arm.
 - A minimal 12 px torso collider remains active in free, single, and double
   holds. The 25-degree forward arm frame leaves it clear in a natural two-hand
@@ -46,45 +61,46 @@ Therefore, during both single and double holds:
 - Turns, pulls, orbits, under-arm motion, and releases emerge from player input
   and the two hand constraints rather than input averaging.
 
-When LS and RS are neutral, their motors apply no force or torque. The dancer
-remembers the last RS direction for the next gesture but does not actively hold
-that heading, so a connected partner can physically guide both translation and
-rotation.
+When LS is neutral, its motor applies no force. When RS returns to the deadzone,
+RS-driven rotation stops immediately and does not continue toward its previous
+angle. The handhold is still allowed to rotate the dancer physically, so a
+neutral partner is not an implicit orientation lock.
 
 ## Physical axis locks
 
-L3 and R3 are held controls, not toggles:
+L3 and R3 are independent press-to-toggle controls:
 
-- Holding L3 anchors world position with a stiff spring-damper, suppresses the
-  LS motor, and leaves rotation free.
-- Holding R3 anchors orientation with a stiff torque spring-damper, suppresses
-  the RS motor, and leaves translation free.
-- Holding both anchors both axes.
+- Pressing L3 anchors world position with a stiff spring-damper, suppresses the
+  LS motor, and leaves rotation free. Press L3 again to release it.
+- Pressing R3 anchors orientation with a stiff torque spring-damper, suppresses
+  the RS motor, and leaves translation free. Press R3 again to release it.
+- Enabling both anchors both axes.
 
 The locks remain slightly compliant under extreme hand forces rather than
 teleporting or directly overwriting momentum.
 
-The hold continuously changes character with relative hand speed. At or below
-80 px/s it uses a stiff, well-damped response that feels close to a weld. From
-80 to 500 px/s it eases into a softer elastic response. At 500 px/s and above,
-normal damping is only 2 and tangential damping only 0.5, so a fast separation
-stores useful spring tension without killing an orbit or turn. Damping is split
-into normal and tangential components specifically to preserve dance momentum.
+At 27 px—one and a half 18 px hand diameters—the hands reach an unconditional
+geometric limit. A small prediction margin, eight position passes, and one
+separating-velocity pass keep the rendered endpoints inside it. These safety
+corrections use effective mass and arm leverage but act only along the current
+hand gap; they do not weld all motion at the contact.
 
-At 36 px the hands reach a geometric safety limit. Excess distance and only the
-separating component of velocity are projected out, weighted by inverse mass
-and respecting L3 position locks; converging, tangential, and angular motion are
-left intact. Projection begins 0.75 px early to absorb one physics tick of
-solver motion without visibly exceeding the limit. If both dancers are position-locked, the bounded safety spring is
-used instead because neither body may be moved. Total constraint force per
-handhold remains capped at 4200. Releasing a hold removes only that relationship
-and preserves both dancers' current linear and angular momentum.
+A hand is allowed behind one dancer, which is necessary for an underarm turn.
+Only mutual dorsal separation—each connected hand displaced behind the other
+dancer at the same time—collapses to the 2 px firm-contact distance. This is one
+anatomical rule, not two competing body-relative half-planes.
+
+The elastic blend opens quickly under a fast maneuver and closes more slowly,
+creating damped recoil instead of switching abruptly between responses.
+Releasing a hold removes only that relationship and preserves both dancers'
+current linear and angular momentum.
 
 ## Telemetry
 
 Samples distinguish `free`, `single`, and `double` holds. For each hand they
 record physical button-down, primed, and release-tap-armed state. They also
-record both connection pairings and forces, each pair's weld-to-elastic blend,
-catch cooldown, snap time remaining, maximum-separation activation, collision
-suppression, both lock states and applied lock forces, and the separate LS, RS,
-LT, and RT state for each dancer.
+record both connection pairings, each pair's measured and authorized separation,
+single-hold elastic blend, position and velocity correction, dorsal and radial
+limit activation, catch cooldown, collision suppression, both toggle-lock states
+and applied lock forces, double-hold orbital/alignment measurements, and the
+separate LS, RS, LT, and RT state for each dancer.

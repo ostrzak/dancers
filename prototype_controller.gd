@@ -48,6 +48,12 @@ func _input(event: InputEvent) -> void:
 			hand_connection.set_grip_button_state(dancer, -1, event.pressed)
 		JOY_BUTTON_RIGHT_SHOULDER:
 			hand_connection.set_grip_button_state(dancer, 1, event.pressed)
+		JOY_BUTTON_LEFT_STICK:
+			if event.pressed:
+				dancer.toggle_position_lock()
+		JOY_BUTTON_RIGHT_STICK:
+			if event.pressed:
+				dancer.toggle_rotation_lock()
 
 
 func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
@@ -64,15 +70,24 @@ func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
 		_read_button(device, JOY_BUTTON_RIGHT_SHOULDER)
 	)
 	var dpad := _read_dpad(device)
+	var facing_stick := _read_stick(
+		device,
+		JOY_AXIS_RIGHT_X,
+		JOY_AXIS_RIGHT_Y
+	)
 	dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
 	dancer.set_control_input(
 		_read_stick(device, JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y),
-		_read_stick(device, JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y),
+		_normalize_facing_stick(facing_stick),
 		_read_trigger(device, JOY_AXIS_TRIGGER_LEFT),
 		_read_trigger(device, JOY_AXIS_TRIGGER_RIGHT),
-		_read_button(device, JOY_BUTTON_LEFT_STICK),
-		_read_button(device, JOY_BUTTON_RIGHT_STICK)
+		dancer.position_lock_active,
+		dancer.rotation_lock_active
 	)
+
+
+func _normalize_facing_stick(stick: Vector2) -> Vector2:
+	return stick.normalized() if not stick.is_zero_approx() else Vector2.ZERO
 
 
 func _read_stick(device: int, axis_x: int, axis_y: int) -> Vector2:

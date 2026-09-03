@@ -61,8 +61,20 @@ func _run() -> void:
 		and sample["hand_connection"].has("primary_snap_remaining")
 		and sample["hand_connection"].has("secondary_snap_remaining")
 		and sample["hand_connection"].has("primary_elastic_blend")
-		and sample["hand_connection"].has("secondary_elastic_blend"),
-		"connection samples expose free, single, double, snap, and adaptive spring state"
+		and sample["hand_connection"].has("secondary_elastic_blend")
+		and sample["hand_connection"].has("primary_hand_separation")
+		and sample["hand_connection"].has("secondary_hand_separation")
+		and sample["hand_connection"].has("primary_allowed_separation")
+		and sample["hand_connection"].has("secondary_allowed_separation")
+		and sample["hand_connection"].has("primary_position_correction")
+		and sample["hand_connection"].has("secondary_position_correction")
+		and sample["hand_connection"].has("primary_velocity_correction")
+		and sample["hand_connection"].has("secondary_velocity_correction")
+		and sample["hand_connection"].has("dorsal_limit_active")
+		and sample["hand_connection"].has("double_hold_orbital_angular_velocity")
+		and sample["hand_connection"].has("double_hold_alignment_error")
+		and sample["hand_connection"]["solver_mode"] == "spring",
+		"connection samples identify the spring solver and its safety corrections"
 	)
 	_expect(sample["left_dancer"]["input"]["movement"] == [0.25, -0.75], "effective LS input is recorded")
 	_expect(sample["left_dancer"]["input"]["facing"] == [1.0, 0.0], "effective RS facing input is recorded")
@@ -74,7 +86,7 @@ func _run() -> void:
 	_expect(
 		sample["left_dancer"]["input"]["position_lock"]
 		and not sample["left_dancer"]["input"]["rotation_lock"],
-		"held L3 and R3 lock state is recorded"
+		"active L3 and R3 toggle state is recorded"
 	)
 	_expect(sample["left_dancer"]["applied"]["movement_force"] == [225.0, -675.0], "applied movement force is recorded")
 	_expect(float(sample["left_dancer"]["applied"]["turn_torque"]) == 1234.0, "applied facing torque is recorded")
@@ -87,6 +99,7 @@ func _run() -> void:
 		sample["left_dancer"]["arms"].has("left")
 		and sample["left_dancer"]["arms"].has("right")
 		and sample["left_dancer"]["arms"].has("extended_stance")
+		and not sample["left_dancer"]["arms"]["left"].has("connected_flexion_target")
 		and float(sample["left_dancer"]["arms"]["extended_stance"]["elbow_flexion_degrees"]) == 23.0
 		and float(sample["left_dancer"]["arms"]["extended_stance"]["forward_sweep_degrees"]) == 15.0,
 		"telemetry keeps separate arms and the shared D-pad stance"
@@ -99,7 +112,7 @@ func _run() -> void:
 	)
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
-	_expect(payload["schema"] == "dancers-coop-telemetry-v5", "payload uses the versioned co-op schema")
+	_expect(payload["schema"] == "dancers-coop-telemetry-v8", "payload uses the versioned co-op schema")
 	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
 	_expect(payload["configuration"].has("controller"), "payload includes exact controller tuning")
 	_expect(
@@ -131,25 +144,28 @@ func _run() -> void:
 	)
 	_expect(
 		float(payload["configuration"]["hand_connection"]["catch_radius"]) == 54.0
-		and float(payload["configuration"]["hand_connection"]["maximum_hand_separation"]) == 36.0
-		and float(payload["configuration"]["hand_connection"]["separation_projection_margin"]) == 0.75
-		and int(payload["configuration"]["hand_connection"]["separation_projection_iterations"]) == 8,
+		and float(payload["configuration"]["hand_connection"]["maximum_hand_separation"]) == 27.0
+		and float(payload["configuration"]["hand_connection"]["welded_hand_separation"]) == 2.0
+		and float(payload["configuration"]["hand_connection"]["dorsal_safety_margin"]) == 2.0
+		and int(payload["configuration"]["hand_connection"]["separation_projection_iterations"]) == 8
+		and int(payload["configuration"]["hand_connection"]["velocity_projection_iterations"]) == 1,
 		"capture records the catch-assist and firm-hold distances"
 	)
 	_expect(
 		payload["configuration"]["hand_connection"].has("snap_duration")
-		and payload["configuration"]["hand_connection"].has("snap_stiffness")
-		and payload["configuration"]["hand_connection"].has("snap_damping"),
-		"capture records the magnetic snap tuning"
+		and payload["configuration"]["hand_connection"].has("snap_response_rate")
+		and payload["configuration"]["hand_connection"].has("snap_velocity_correction"),
+		"capture records the magnetic catch duration"
 	)
 	_expect(
 		payload["configuration"]["hand_connection"].has("weld_speed_threshold")
 		and payload["configuration"]["hand_connection"].has("elastic_speed_threshold")
-		and payload["configuration"]["hand_connection"].has("weld_stiffness")
-		and payload["configuration"]["hand_connection"].has("elastic_stiffness")
-		and payload["configuration"]["hand_connection"].has("weld_normal_damping")
-		and payload["configuration"]["hand_connection"].has("elastic_tangential_damping"),
-		"capture records the low-speed weld and high-speed elastic tuning"
+		and payload["configuration"]["hand_connection"].has("weld_response_rate")
+		and payload["configuration"]["hand_connection"].has("elastic_response_rate")
+		and payload["configuration"]["hand_connection"].has("compliance_open_rate")
+		and payload["configuration"]["hand_connection"].has("compliance_close_rate")
+		and payload["configuration"]["hand_connection"]["solver_mode"] == "spring",
+		"capture records the conservative-to-elastic spring tuning"
 	)
 	_expect(
 		not payload["configuration"]["hand_connection"].has("closed_hold_minimum_body_distance"),
@@ -170,7 +186,7 @@ func _run() -> void:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saved_path))
 		_expect(parsed is Dictionary, "saved capture is valid JSON")
 		if parsed is Dictionary:
-			_expect(parsed["schema"] == "dancers-coop-telemetry-v5", "saved JSON retains the co-op schema")
+			_expect(parsed["schema"] == "dancers-coop-telemetry-v8", "saved JSON retains the co-op schema")
 			_expect(int(parsed["sample_count"]) >= 1, "saved JSON contains telemetry samples")
 		DirAccess.remove_absolute(saved_path)
 	_pause_menu._resume()

@@ -80,8 +80,6 @@ var _current_arm_lengths := {
 var _unwrapped_rotation := 0.0
 var _previous_wrapped_rotation := 0.0
 var _desired_facing_rotation := 0.0
-var _previous_facing_input_angle := 0.0
-var _facing_gesture_active := false
 
 const HAND_RADIUS := 9.0
 const ELBOW_RADIUS := 5.0
@@ -136,7 +134,7 @@ func _physics_process(delta: float) -> void:
 	_update_effective_inertia()
 	_apply_movement_force()
 	_apply_position_lock_force()
-	_apply_facing_torque()
+	_apply_facing_torque(delta)
 	_apply_rotation_lock_torque()
 	queue_redraw()
 
@@ -149,54 +147,39 @@ func set_control_input(
 	new_position_lock_active: bool = false,
 	new_rotation_lock_active: bool = false
 ) -> void:
-	if new_position_lock_active and not position_lock_active:
-		position_lock_anchor = global_position
-	if new_rotation_lock_active and not rotation_lock_active:
-		rotation_lock_anchor = global_rotation
-	position_lock_active = new_position_lock_active
-	rotation_lock_active = new_rotation_lock_active
+	set_position_lock_enabled(new_position_lock_active)
+	set_rotation_lock_enabled(new_rotation_lock_active)
 	movement_input = new_movement_input.limit_length(1.0)
-	facing_input = new_facing_input.limit_length(1.0)
+	facing_input = (
+		new_facing_input.normalized()
+		if not new_facing_input.is_zero_approx()
+		else Vector2.ZERO
+	)
 	if not facing_input.is_zero_approx():
-		desired_facing_direction = facing_input.normalized()
-		var facing_angle := desired_facing_direction.angle()
-		if rotation_lock_active:
-			# R3 is a physical orientation lock, not a stored-turn windup. Keep the
-			# latest screen direction but discard rotation backlog while it is held.
-			var locked_wrapped_target := facing_angle - PI * 0.5
-			_desired_facing_rotation = _unwrapped_rotation + wrapf(
-				locked_wrapped_target - global_rotation,
-				-PI,
-				PI
-			)
-			_facing_gesture_active = false
-		elif _facing_gesture_active:
-			_desired_facing_rotation += wrapf(
-				facing_angle - _previous_facing_input_angle,
-				-PI,
-				PI
-			)
-		else:
-			var wrapped_target := facing_angle - PI * 0.5
-			_desired_facing_rotation = _unwrapped_rotation + wrapf(
-				wrapped_target - global_rotation,
-				-PI,
-				PI
-			)
-		_facing_gesture_active = true
-		_previous_facing_input_angle = facing_angle
-	elif _facing_gesture_active:
-		# Releasing RS keeps the final screen direction but discards any backlog
-		# of full rotations the physical body could not complete during the gesture.
-		var final_wrapped_target := desired_facing_direction.angle() - PI * 0.5
-		_desired_facing_rotation = _unwrapped_rotation + wrapf(
-			final_wrapped_target - global_rotation,
-			-PI,
-			PI
-		)
-		_facing_gesture_active = false
+		desired_facing_direction = facing_input
+		_desired_facing_rotation = desired_facing_direction.angle() - PI * 0.5
 	left_trigger_value = clampf(new_left_trigger_value, 0.0, 1.0)
 	right_trigger_value = clampf(new_right_trigger_value, 0.0, 1.0)
+
+
+func toggle_position_lock() -> void:
+	set_position_lock_enabled(not position_lock_active)
+
+
+func toggle_rotation_lock() -> void:
+	set_rotation_lock_enabled(not rotation_lock_active)
+
+
+func set_position_lock_enabled(is_enabled: bool) -> void:
+	if is_enabled and not position_lock_active:
+		position_lock_anchor = global_position
+	position_lock_active = is_enabled
+
+
+func set_rotation_lock_enabled(is_enabled: bool) -> void:
+	if is_enabled and not rotation_lock_active:
+		rotation_lock_anchor = global_rotation
+	rotation_lock_active = is_enabled
 
 
 func set_runtime_tuning(
@@ -429,22 +412,37 @@ func _apply_position_lock_force() -> void:
 	apply_central_force(diagnostic_position_lock_force)
 
 
-func _apply_facing_torque() -> void:
+func _apply_facing_torque(delta: float = 1.0 / 60.0) -> void:
 	diagnostic_spin_torque = 0.0
-	heading_error = get_desired_facing_rotation() - _unwrapped_rotation
+	heading_error = wrapf(
+		get_desired_facing_rotation() - global_rotation,
+		-PI,
+		PI
+	)
 	if rotation_lock_active or facing_input.is_zero_approx():
 		target_angular_velocity = 0.0
 		return
-	var turn_speed_limit := get_turn_speed_limit()
-	target_angular_velocity = clampf(
-		heading_error * facing_response_rate,
-		-turn_speed_limit,
-		turn_speed_limit
+
+	# Classic twin-stick steering: stick angle is an absolute screen-space
+	# heading. Once outside the controller deadzone, magnitude has no authority.
+	# Rotation advances kinematically at the configured turn speed, so there is no
+	# RS torque, acceleration ramp, overshoot, or stored circular-stick travel.
+	var maximum_step := get_turn_speed_limit() * maxf(delta, 0.0)
+	var applied_step := clampf(heading_error, -maximum_step, maximum_step)
+	target_angular_velocity = (
+		applied_step / delta
+		if delta > 0.000001
+		else 0.0
 	)
-	var velocity_error := target_angular_velocity - angular_velocity
-	var requested_torque := velocity_error * spin_response_gain
-	diagnostic_spin_torque = clampf(requested_torque, -spin_torque, spin_torque)
-	apply_torque(diagnostic_spin_torque)
+	global_rotation += applied_step
+	angular_velocity = 0.0
+	_previous_wrapped_rotation = global_rotation
+	_unwrapped_rotation = global_rotation
+	heading_error = wrapf(
+		get_desired_facing_rotation() - global_rotation,
+		-PI,
+		PI
+	)
 
 
 func _apply_rotation_lock_torque() -> void:
@@ -626,3 +624,23 @@ func _draw_overhead_head(has_long_hair: bool) -> void:
 		draw_colored_polygon(hair_cap, detail_color)
 		draw_circle(Vector2(-9.5, -2.0), 3.0, detail_color)
 		draw_circle(Vector2(9.5, -2.0), 3.0, detail_color)
+	else:
+		# The dark head doubles as a close-cropped horseshoe of hair. A light,
+		# forward-reaching crown makes the male-pattern baldness legible from the
+		# gameplay camera without adding facial detail to the overhead figure.
+		var bald_crown := PackedVector2Array([
+			Vector2(-4.0, -6.5),
+			Vector2(4.0, -6.5),
+			Vector2(6.5, -3.0),
+			Vector2(7.0, 2.0),
+			Vector2(5.0, 7.0),
+			Vector2(2.5, 9.0),
+			Vector2(-2.5, 9.0),
+			Vector2(-5.0, 7.0),
+			Vector2(-7.0, 2.0),
+			Vector2(-6.5, -3.0),
+		])
+		draw_colored_polygon(bald_crown, detail_color)
+		var crown_outline := bald_crown.duplicate()
+		crown_outline.append(bald_crown[0])
+		draw_polyline(crown_outline, body_color, 1.25, true)
