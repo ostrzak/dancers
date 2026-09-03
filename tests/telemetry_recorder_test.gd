@@ -1,10 +1,9 @@
 extends SceneTree
 
-const TelemetryRecorderScript = preload("res://telemetry_recorder.gd")
-
 var _failures: Array[String] = []
+var _checks := 0
 var _root: PrototypeController
-var _recorder: Node
+var _recorder: TelemetryRecorder
 var _pause_menu: PauseMenu
 
 
@@ -45,28 +44,63 @@ func _run() -> void:
 
 	_recorder.clear()
 	var left: Dancer = _root.get_node("LeftDancer")
-	left.set_control_input(Vector2(0.25, -0.75), 0.6)
+	left.set_control_input(Vector2(0.25, -0.75), Vector2.RIGHT, 0.6, 0.2, true, false)
 	left.diagnostic_movement_force = Vector2(225.0, -675.0)
 	left.diagnostic_spin_torque = 1234.0
+	left.diagnostic_position_lock_force = Vector2(-45.0, 12.0)
 	_recorder.record_current_sample()
 	var sample: Dictionary = _recorder.get_samples()[0]
 	_expect(sample.has("left_dancer") and sample.has("right_dancer"), "each sample contains both dancers")
 	_expect(sample.has("pair") and sample.has("hand_connection"), "each sample contains pair and connection state")
-	_expect(sample["left_dancer"]["input"]["movement"] == [0.25, -0.75], "effective movement input is recorded")
-	_expect(float(sample["left_dancer"]["input"]["trigger"]) == 0.6, "trigger input is recorded")
-	_expect(sample["left_dancer"]["applied"]["movement_force"] == [225.0, -675.0], "applied movement force is recorded")
-	_expect(float(sample["left_dancer"]["applied"]["spin_torque"]) == 1234.0, "applied spin torque is recorded")
 	_expect(
-		sample["hand_connection"].has("separation_limit_active")
-		and sample["hand_connection"].has("separation_position_correction")
-		and sample["hand_connection"].has("separation_velocity_impulse"),
-		"connection samples expose maximum-separation interventions"
+		sample["hand_connection"].has("connection_count")
+		and sample["hand_connection"].has("hold_mode")
+		and sample["hand_connection"].has("primary_snap_remaining")
+		and sample["hand_connection"].has("secondary_snap_remaining"),
+		"connection samples expose free, single, double, and snap state"
+	)
+	_expect(sample["left_dancer"]["input"]["movement"] == [0.25, -0.75], "effective LS input is recorded")
+	_expect(sample["left_dancer"]["input"]["facing"] == [1.0, 0.0], "effective RS facing input is recorded")
+	_expect(
+		float(sample["left_dancer"]["input"]["left_trigger"]) == 0.6
+		and float(sample["left_dancer"]["input"]["right_trigger"]) == 0.2,
+		"independent LT and RT inputs are recorded"
+	)
+	_expect(
+		sample["left_dancer"]["input"]["position_lock"]
+		and not sample["left_dancer"]["input"]["rotation_lock"],
+		"held L3 and R3 lock state is recorded"
+	)
+	_expect(sample["left_dancer"]["applied"]["movement_force"] == [225.0, -675.0], "applied movement force is recorded")
+	_expect(float(sample["left_dancer"]["applied"]["turn_torque"]) == 1234.0, "applied facing torque is recorded")
+	_expect(
+		sample["left_dancer"]["applied"]["position_lock_force"] == [-45.0, 12.0]
+		and sample["left_dancer"]["applied"].has("rotation_lock_torque"),
+		"physical lock force and torque are recorded"
+	)
+	_expect(
+		sample["left_dancer"]["arms"].has("left")
+		and sample["left_dancer"]["arms"].has("right")
+		and sample["left_dancer"]["arms"]["left"].has("current_length"),
+		"telemetry keeps separate left and right arm state"
+	)
+	_expect(
+		sample["left_dancer"]["hands"]["left"].has("ready")
+		and sample["left_dancer"]["hands"]["right"].has("ready"),
+		"each hand sample exposes its held-bumper readiness"
 	)
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
-	_expect(payload["schema"] == "dancers-telemetry-capture-v1", "payload uses the versioned Dancers schema")
+	_expect(payload["schema"] == "dancers-coop-telemetry-v3", "payload uses the versioned co-op schema")
 	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
 	_expect(payload["configuration"].has("controller"), "payload includes exact controller tuning")
+	_expect(
+		payload["configuration"]["controller"].has("preferred_player_one_device")
+		and payload["configuration"]["controller"].has("preferred_player_two_device")
+		and payload["configuration"]["controller"].has("assigned_player_one_device")
+		and payload["configuration"]["controller"].has("assigned_player_two_device"),
+		"payload records preferred and live two-controller assignments"
+	)
 	_expect(
 		payload["configuration"]["controller"].has("spin_speed_scale")
 		and payload["configuration"]["controller"].has("move_speed_scale")
@@ -77,8 +111,24 @@ func _run() -> void:
 	)
 	_expect(payload["configuration"].has("hand_connection"), "payload includes exact connection tuning")
 	_expect(
-		float(payload["configuration"]["hand_connection"]["maximum_hand_separation"]) == 36.0,
-		"capture records the two-hand-width separation limit"
+		payload["configuration"]["left_dancer"].has("position_lock_stiffness")
+		and payload["configuration"]["left_dancer"].has("rotation_lock_stiffness"),
+		"capture includes physical L3 and R3 lock tuning"
+	)
+	_expect(
+		float(payload["configuration"]["hand_connection"]["catch_radius"]) == 54.0
+		and float(payload["configuration"]["hand_connection"]["maximum_hand_separation"]) == 36.0,
+		"capture records the catch-assist and firm-hold distances"
+	)
+	_expect(
+		payload["configuration"]["hand_connection"].has("snap_duration")
+		and payload["configuration"]["hand_connection"].has("snap_stiffness")
+		and payload["configuration"]["hand_connection"].has("snap_damping"),
+		"capture records the magnetic snap tuning"
+	)
+	_expect(
+		not payload["configuration"]["hand_connection"].has("closed_hold_minimum_body_distance"),
+		"the removed automatic closed-hold frame is absent from telemetry"
 	)
 
 	_pause_menu._pause()
@@ -95,22 +145,23 @@ func _run() -> void:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saved_path))
 		_expect(parsed is Dictionary, "saved capture is valid JSON")
 		if parsed is Dictionary:
-			_expect(parsed["schema"] == "dancers-telemetry-capture-v1", "saved JSON retains the schema")
+			_expect(parsed["schema"] == "dancers-coop-telemetry-v3", "saved JSON retains the co-op schema")
 			_expect(int(parsed["sample_count"]) >= 1, "saved JSON contains telemetry samples")
 		DirAccess.remove_absolute(saved_path)
 	_pause_menu._resume()
 
 	if _failures.is_empty():
-		print("TELEMETRY RECORDER: 29/29 checks passed")
+		print("COOP TELEMETRY RECORDER: %d/%d checks passed" % [_checks, _checks])
 		quit(0)
 	else:
 		for failure in _failures:
 			push_error(failure)
-		print("TELEMETRY RECORDER: %d failure(s)" % _failures.size())
+		print("COOP TELEMETRY RECORDER: %d failure(s) across %d checks" % [_failures.size(), _checks])
 		quit(1)
 
 
 func _expect(condition: bool, description: String) -> void:
+	_checks += 1
 	if not condition:
 		_failures.append(description)
 

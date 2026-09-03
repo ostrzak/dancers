@@ -20,11 +20,15 @@ func _process(_delta: float) -> void:
 		return
 	left_readout.text = "%s\n%s" % [left_dancer.dancer_name, _format_dancer(left_dancer)]
 	right_readout.text = "%s\n%s" % [right_dancer.dancer_name, _format_dancer(right_dancer)]
-	connection_readout.text = "HANDS %s   error %6.2f px   relative %6.2f px/s   force %7.1f" % [
-		"CONNECTED" if hand_connection.is_connected else "OPEN",
+	connection_readout.text = "HANDS %s   ready B:%s/%s W:%s/%s   gap %6.2f px   relative %6.2f px/s   force %7.1f" % [
+		hand_connection.get_hold_mode().to_upper(),
+		"L" if hand_connection.is_grip_active(left_dancer, -1) else "-",
+		"R" if hand_connection.is_grip_active(left_dancer, 1) else "-",
+		"L" if hand_connection.is_grip_active(right_dancer, -1) else "-",
+		"R" if hand_connection.is_grip_active(right_dancer, 1) else "-",
 		hand_connection.distance_error,
 		hand_connection.relative_hand_velocity,
-		hand_connection.connection_force
+		hand_connection.connection_force,
 	]
 
 
@@ -33,21 +37,22 @@ func set_telemetry_visible(is_visible: bool) -> void:
 
 
 func _format_dancer(dancer: Dancer) -> String:
-	var direction := "CW (+1)" if dancer.intended_spin_direction > 0 else "CCW (-1)"
-	return "speed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nspin         %s\nmove scale   %7.2fx\nreach        %7.2f px\nupper proj   %5.1f px @ %4.1f deg\nfore proj    %5.1f px @ %4.1f deg\nelbow flex   %5.1f deg\ntrigger      %7.2f\nhand L / R   %6.2f / %6.2f px/s\nconnected    %s" % [
+	return "speed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nheading err  %+7.2f deg\nlocks L3/R3  %6s / %6s\nmove scale   %7.2fx\ntrigger L/R  %6.2f / %6.2f\nreach L/R    %6.2f / %6.2f px\nupper L/R    %6.2f / %6.2f px\nfore L/R     %6.2f / %6.2f px\nhand L/R     %6.2f / %6.2f px/s" % [
 		dancer.linear_velocity.length(),
 		dancer.angular_velocity,
-		dancer.target_angular_velocity,
-		direction,
-		dancer.get_effective_move_scale(),
+	dancer.target_angular_velocity,
+	rad_to_deg(dancer.heading_error),
+	"ON" if dancer.position_lock_active else "-",
+	"ON" if dancer.rotation_lock_active else "-",
+	dancer.get_effective_move_scale(),
+		dancer.left_trigger_value,
+		dancer.right_trigger_value,
+		dancer.get_hand_local_position(-1).length(),
 		dancer.get_hand_local_position(1).length(),
-		dancer.get_projected_upper_arm_length(),
-		dancer.get_abduction_degrees(),
-		dancer.get_projected_forearm_length(),
-		dancer.get_forearm_out_of_plane_degrees(),
-		dancer.get_elbow_flexion_degrees(),
-		dancer.trigger_value,
+		dancer.get_projected_upper_arm_length(-1),
+		dancer.get_projected_upper_arm_length(1),
+		dancer.get_projected_forearm_length(-1),
+		dancer.get_projected_forearm_length(1),
 		dancer.get_hand_velocity(-1).length(),
 		dancer.get_hand_velocity(1).length(),
-		"yes" if hand_connection.is_connected else "no"
 	]

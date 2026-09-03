@@ -2,9 +2,9 @@ class_name PrototypeController
 extends Node2D
 
 @export_category("Input")
-@export var preferred_gamepad_device := 0
+@export var preferred_player_one_device := 0
+@export var preferred_player_two_device := 1
 @export var stick_deadzone := 0.16
-@export var bumper_chord_window := 0.085
 
 @export_category("Runtime Tuning")
 @export_range(0.5, 2.0, 0.05) var spin_speed_scale := 1.0
@@ -17,129 +17,94 @@ extends Node2D
 @onready var right_dancer: Dancer = $RightDancer
 @onready var hand_connection: HandConnection = $HandConnection
 
-var _gamepad_device := -1
-var _pending_bumper := -1
-var _pending_bumper_time := 0.0
-var _previous_keyboard_left_bumper := false
-var _previous_keyboard_right_bumper := false
-
-const LEFT_BUMPER := 0
-const RIGHT_BUMPER := 1
+var _player_one_device := -1
+var _player_two_device := -1
 
 
 func _ready() -> void:
-	_select_gamepad()
+	_select_gamepads()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	_apply_runtime_tuning()
 	queue_redraw()
 
 
-func _physics_process(delta: float) -> void:
-	_select_gamepad_if_needed()
-	var left_move := _read_stick(JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y)
-	var right_move := _read_stick(JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y)
-
-	# Keyboard fallbacks keep editor iteration possible without changing the
-	# intended one-controller experiment: WASD/Shift/Q and arrows/Enter/E.
-	left_move = (left_move + _read_keyboard_vector(KEY_A, KEY_D, KEY_W, KEY_S)).limit_length(1.0)
-	right_move = (right_move + _read_keyboard_vector(KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN)).limit_length(1.0)
-	var left_trigger := maxf(_read_trigger(JOY_AXIS_TRIGGER_LEFT), 1.0 if Input.is_physical_key_pressed(KEY_SHIFT) else 0.0)
-	var right_trigger := maxf(_read_trigger(JOY_AXIS_TRIGGER_RIGHT), 1.0 if Input.is_physical_key_pressed(KEY_ENTER) else 0.0)
-
-	left_dancer.set_control_input(left_move, left_trigger)
-	right_dancer.set_control_input(right_move, right_trigger)
-	_poll_keyboard_bumpers()
-	_resolve_pending_bumper(delta)
+func _physics_process(_delta: float) -> void:
+	_select_gamepads_if_needed()
+	_apply_player_input(left_dancer, _player_one_device)
+	_apply_player_input(right_dancer, _player_two_device)
 
 
 func _input(event: InputEvent) -> void:
 	if get_tree() != null and get_tree().paused:
 		return
-	if event is InputEventJoypadButton and event.pressed:
-		if _gamepad_device >= 0 and event.device != _gamepad_device:
-			return
-		match event.button_index:
-			JOY_BUTTON_LEFT_SHOULDER:
-				_register_bumper_press(LEFT_BUMPER)
-			JOY_BUTTON_RIGHT_SHOULDER:
-				_register_bumper_press(RIGHT_BUMPER)
-			JOY_BUTTON_A:
-				hand_connection.release_hands()
-	elif event is InputEventKey \
-			and event.pressed \
-			and not event.echo \
-			and event.physical_keycode == KEY_SPACE:
-		hand_connection.release_hands()
-
-
-func _register_bumper_press(bumper: int) -> void:
-	if _pending_bumper == -1:
-		_pending_bumper = bumper
-		_pending_bumper_time = bumper_chord_window
-	elif _pending_bumper != bumper and _pending_bumper_time > 0.0:
-		_pending_bumper = -1
-		_pending_bumper_time = 0.0
-		left_dancer.reverse_spin()
-		right_dancer.reverse_spin()
-	elif _pending_bumper != bumper:
-		_execute_pending_bumper()
-		_pending_bumper = bumper
-		_pending_bumper_time = bumper_chord_window
-
-
-func _resolve_pending_bumper(delta: float) -> void:
-	if _pending_bumper == -1:
+	if not (event is InputEventJoypadButton):
 		return
-	_pending_bumper_time -= delta
-	if _pending_bumper_time > 0.0:
+
+	var dancer := _dancer_for_device(event.device)
+	if not is_instance_valid(dancer):
 		return
-	_execute_pending_bumper()
+	match event.button_index:
+		JOY_BUTTON_LEFT_SHOULDER:
+			hand_connection.set_grip_active(dancer, -1, event.pressed)
+		JOY_BUTTON_RIGHT_SHOULDER:
+			hand_connection.set_grip_active(dancer, 1, event.pressed)
 
 
-func _execute_pending_bumper() -> void:
-	if _pending_bumper == LEFT_BUMPER:
-		left_dancer.reverse_spin()
-	elif _pending_bumper == RIGHT_BUMPER:
-		right_dancer.reverse_spin()
-	_pending_bumper = -1
-	_pending_bumper_time = 0.0
+func _apply_player_input(dancer: Dancer, device: int) -> void:
+	if not is_instance_valid(dancer):
+		return
+	hand_connection.set_grip_active(
+		dancer,
+		-1,
+		_read_button(device, JOY_BUTTON_LEFT_SHOULDER)
+	)
+	hand_connection.set_grip_active(
+		dancer,
+		1,
+		_read_button(device, JOY_BUTTON_RIGHT_SHOULDER)
+	)
+	dancer.set_control_input(
+		_read_stick(device, JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y),
+		_read_stick(device, JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y),
+		_read_trigger(device, JOY_AXIS_TRIGGER_LEFT),
+		_read_trigger(device, JOY_AXIS_TRIGGER_RIGHT),
+		_read_button(device, JOY_BUTTON_LEFT_STICK),
+		_read_button(device, JOY_BUTTON_RIGHT_STICK)
+	)
 
 
-func _poll_keyboard_bumpers() -> void:
-	var left_pressed := Input.is_physical_key_pressed(KEY_Q)
-	var right_pressed := Input.is_physical_key_pressed(KEY_E)
-	if left_pressed and not _previous_keyboard_left_bumper:
-		_register_bumper_press(LEFT_BUMPER)
-	if right_pressed and not _previous_keyboard_right_bumper:
-		_register_bumper_press(RIGHT_BUMPER)
-	_previous_keyboard_left_bumper = left_pressed
-	_previous_keyboard_right_bumper = right_pressed
-
-
-func _read_stick(axis_x: int, axis_y: int) -> Vector2:
-	if _gamepad_device < 0:
+func _read_stick(device: int, axis_x: int, axis_y: int) -> Vector2:
+	if device < 0:
 		return Vector2.ZERO
 	var value := Vector2(
-		Input.get_joy_axis(_gamepad_device, axis_x),
-		Input.get_joy_axis(_gamepad_device, axis_y)
+		Input.get_joy_axis(device, axis_x),
+		Input.get_joy_axis(device, axis_y)
 	)
 	var magnitude := value.length()
 	if magnitude <= stick_deadzone:
 		return Vector2.ZERO
-	var scaled_magnitude := inverse_lerp(stick_deadzone, 1.0, minf(magnitude, 1.0))
+	var scaled_magnitude := inverse_lerp(
+		stick_deadzone,
+		1.0,
+		minf(magnitude, 1.0)
+	)
 	return value.normalized() * _apply_input_sensitivity(
 		scaled_magnitude,
 		stick_sensitivity
 	)
 
 
-func _read_trigger(axis: int) -> float:
-	if _gamepad_device < 0:
+func _read_trigger(device: int, axis: int) -> float:
+	if device < 0:
 		return 0.0
 	return _apply_input_sensitivity(
-		clampf(Input.get_joy_axis(_gamepad_device, axis), 0.0, 1.0),
+		clampf(Input.get_joy_axis(device, axis), 0.0, 1.0),
 		trigger_sensitivity
 	)
+
+
+func _read_button(device: int, button: int) -> bool:
+	return device >= 0 and Input.is_joy_button_pressed(device, button)
 
 
 func set_runtime_tuning(
@@ -155,6 +120,14 @@ func set_runtime_tuning(
 	trigger_sensitivity = clampf(new_trigger_sensitivity, 0.5, 2.0)
 	stick_sensitivity = clampf(new_stick_sensitivity, 0.5, 2.0)
 	_apply_runtime_tuning()
+
+
+func get_player_one_device() -> int:
+	return _player_one_device
+
+
+func get_player_two_device() -> int:
+	return _player_two_device
 
 
 func _apply_runtime_tuning() -> void:
@@ -176,39 +149,54 @@ func _apply_input_sensitivity(value: float, sensitivity: float) -> float:
 	return pow(clampf(value, 0.0, 1.0), 1.0 / maxf(sensitivity, 0.001))
 
 
-func _read_keyboard_vector(left: int, right: int, up: int, down: int) -> Vector2:
-	return Input.get_vector(
-		_key_action(left), _key_action(right), _key_action(up), _key_action(down)
+func _select_gamepads() -> void:
+	var connected := Input.get_connected_joypads()
+	_player_one_device = _select_preferred_or_first(
+		connected,
+		preferred_player_one_device,
+		-1
+	)
+	_player_two_device = _select_preferred_or_first(
+		connected,
+		preferred_player_two_device,
+		_player_one_device
 	)
 
 
-func _key_action(key: int) -> StringName:
-	var action := StringName("prototype_key_%d" % int(key))
-	if not InputMap.has_action(action):
-		InputMap.add_action(action)
-		var input_event := InputEventKey.new()
-		input_event.physical_keycode = key
-		InputMap.action_add_event(action, input_event)
-	return action
+func _select_preferred_or_first(
+	connected: Array[int],
+	preferred: int,
+	excluded: int
+) -> int:
+	if preferred != excluded and connected.has(preferred):
+		return preferred
+	for device in connected:
+		if device != excluded:
+			return device
+	return -1
 
 
-func _select_gamepad() -> void:
+func _select_gamepads_if_needed() -> void:
 	var connected := Input.get_connected_joypads()
-	if connected.has(preferred_gamepad_device):
-		_gamepad_device = preferred_gamepad_device
-	elif not connected.is_empty():
-		_gamepad_device = connected[0]
-	else:
-		_gamepad_device = -1
+	if (
+		(_player_one_device >= 0 and not connected.has(_player_one_device))
+		or (_player_two_device >= 0 and not connected.has(_player_two_device))
+		or (_player_one_device < 0 and not connected.is_empty())
+		or (_player_two_device < 0 and connected.size() >= 2)
+	):
+		_select_gamepads()
 
 
-func _select_gamepad_if_needed() -> void:
-	if _gamepad_device < 0:
-		_select_gamepad()
+func _dancer_for_device(device: int) -> Dancer:
+	if device == _player_one_device:
+		return left_dancer
+	if device == _player_two_device:
+		return right_dancer
+	return null
 
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
-	_select_gamepad()
+	_select_gamepads()
 
 
 func _draw() -> void:

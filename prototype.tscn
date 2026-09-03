@@ -8,7 +8,7 @@
 [ext_resource type="Script" path="res://telemetry_recorder.gd" id="6_telemetry"]
 
 [sub_resource type="CircleShape2D" id="CircleShape_dancer"]
-radius = 28.0
+radius = 12.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape_horizontal"]
 size = Vector2(1280, 20)
@@ -51,13 +51,13 @@ script = ExtResource("2_dancer")
 dancer_name = "MAN"
 body_color = Color(0.05, 0.05, 0.05, 1)
 detail_color = Color(0.95, 0.95, 0.95, 1)
-intended_spin_direction = 1
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LeftDancer"]
 shape = SubResource("CircleShape_dancer")
 
 [node name="RightDancer" type="RigidBody2D" parent="."]
 position = Vector2(890, 360)
+rotation = 3.1415927
 mass = 1.2
 gravity_scale = 0.0
 continuous_cd = 2
@@ -68,12 +68,10 @@ script = ExtResource("2_dancer")
 dancer_name = "WOMAN"
 body_color = Color(0.95, 0.95, 0.95, 1)
 detail_color = Color(0.05, 0.05, 0.05, 1)
-flip_body_symbol = true
-hand_line_offset = -24.0
-shoulder_half_width = 10.0
+body_style = 1
+shoulder_half_width = 16.0
 upper_arm_length = 38.5
 forearm_length = 38.5
-intended_spin_direction = -1
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RightDancer"]
 shape = SubResource("CircleShape_dancer")
@@ -258,7 +256,7 @@ theme_override_constants/separation = 16
 layout_mode = 2
 theme_override_colors/font_color = Color(0.84, 0.84, 0.84, 1)
 theme_override_font_sizes/font_size = 14
-text = "Higher sensitivity responds earlier while preserving full input range.\nSpin / move ratio controls how strongly tucking boosts travel speed."
+text = "Higher sensitivity responds earlier while preserving full input range.\nArm / move ratio controls how strongly tucking boosts travel speed."
 horizontal_alignment = 1
 
 [node name="TuningGrid" type="GridContainer" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING"]
@@ -270,7 +268,7 @@ columns = 3
 [node name="SpinSpeedLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "SPIN SPEED"
+text = "TURN SPEED"
 
 [node name="SpinSpeed" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
 custom_minimum_size = Vector2(300, 42)
@@ -308,7 +306,7 @@ horizontal_alignment = 2
 [node name="SpinMoveRatioLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "SPIN / MOVE RATIO"
+text = "ARM / MOVE RATIO"
 
 [node name="SpinMoveRatio" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/TUNING/TuningGrid"]
 custom_minimum_size = Vector2(300, 42)

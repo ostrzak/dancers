@@ -5,14 +5,22 @@ segment lengths stay constant, while only their top-down projections are drawn.
 This makes shoulder adduction and elbow flexion readable without lighting,
 shadows, or a second 3D character rig.
 
+The bodies are also drawn directly from above. The black man uses a short-hair,
+jacket, lapel, shirt, and tie silhouette. The white woman uses a bun, fitted
+waist, and flared dress silhouette. Both share the same head-forward local
+orientation and begin facing one another; neither is a flipped frontal
+pictogram.
+
 ## Pose parameter
 
-`Dancer.get_arm_flexion()` produces a normalized pose value `t`:
+`Dancer.get_arm_flexion(side)` produces a normalized pose value `t` for one
+arm:
 
 - `t = 0`: arm released and maximally abducted;
 - `t = 1`: arm fully adducted and flexed.
 
-The trigger moves continuously between these endpoints.
+LT moves the left arm continuously between these endpoints; RT independently
+moves the right arm.
 
 Both anatomical arm segments and their pose-control distance were reduced to
 70% of the original prototype values. Projection angles, hand size, and the
