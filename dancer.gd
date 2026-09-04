@@ -22,6 +22,9 @@ extends RigidBody2D
 @export var minimum_target_angular_velocity := 8.0
 @export var maximum_target_angular_velocity := 12.0
 @export var spin_angular_damping := 0.7
+@export_range(0.0, 1.0, 0.05) var facing_dial_engage_threshold := 0.55
+@export_range(0.0, 1.0, 0.05) var facing_dial_release_threshold := 0.25
+@export_range(15.0, 180.0, 5.0) var maximum_facing_dial_step_degrees := 60.0
 
 @export_category("Physical Locks")
 @export var position_lock_stiffness := 1400.0
@@ -70,6 +73,8 @@ var diagnostic_position_lock_force := Vector2.ZERO
 var diagnostic_rotation_lock_torque := 0.0
 var position_lock_active := false
 var rotation_lock_active := false
+var facing_dial_active := false
+var facing_dial_total_rotation := 0.0
 var position_lock_anchor := Vector2.ZERO
 var rotation_lock_anchor := 0.0
 
@@ -82,6 +87,8 @@ var _double_hold_arm_effort := {-1: 0.0, 1: 0.0}
 var _unwrapped_rotation := 0.0
 var _previous_wrapped_rotation := 0.0
 var _desired_facing_rotation := 0.0
+var _previous_facing_stick_angle := 0.0
+var _pending_facing_rotation_delta := 0.0
 
 const HAND_RADIUS := 9.0
 const ELBOW_RADIUS := 5.0
@@ -157,16 +164,53 @@ func set_control_input(
 	set_position_lock_enabled(new_position_lock_active)
 	set_rotation_lock_enabled(new_rotation_lock_active)
 	movement_input = new_movement_input.limit_length(1.0)
-	facing_input = (
-		new_facing_input.normalized()
-		if not new_facing_input.is_zero_approx()
-		else Vector2.ZERO
-	)
-	if not facing_input.is_zero_approx():
-		desired_facing_direction = facing_input
-		_desired_facing_rotation = desired_facing_direction.angle() - PI * 0.5
+	_update_facing_dial_input(new_facing_input.limit_length(1.0))
 	left_trigger_value = clampf(new_left_trigger_value, 0.0, 1.0)
 	right_trigger_value = clampf(new_right_trigger_value, 0.0, 1.0)
+
+
+func _update_facing_dial_input(new_facing_input: Vector2) -> void:
+	var magnitude := new_facing_input.length()
+	var release_threshold := minf(
+		facing_dial_release_threshold,
+		facing_dial_engage_threshold
+	)
+	if rotation_lock_active or (facing_dial_active and magnitude <= release_threshold):
+		_release_facing_dial()
+		return
+
+	if not facing_dial_active:
+		facing_input = Vector2.ZERO
+		_pending_facing_rotation_delta = 0.0
+		if magnitude < facing_dial_engage_threshold:
+			return
+		facing_dial_active = true
+		facing_input = new_facing_input
+		desired_facing_direction = new_facing_input.normalized()
+		_previous_facing_stick_angle = new_facing_input.angle()
+		facing_dial_total_rotation = 0.0
+		_desired_facing_rotation = global_rotation
+		return
+
+	facing_input = new_facing_input
+	desired_facing_direction = new_facing_input.normalized()
+	var current_stick_angle := new_facing_input.angle()
+	_pending_facing_rotation_delta = wrapf(
+		current_stick_angle - _previous_facing_stick_angle,
+		-PI,
+		PI
+	)
+	_previous_facing_stick_angle = current_stick_angle
+	_desired_facing_rotation = global_rotation + _pending_facing_rotation_delta
+
+
+func _release_facing_dial() -> void:
+	facing_dial_active = false
+	facing_input = Vector2.ZERO
+	_pending_facing_rotation_delta = 0.0
+	_desired_facing_rotation = global_rotation
+	heading_error = 0.0
+	target_angular_velocity = 0.0
 
 
 func toggle_position_lock() -> void:
@@ -452,35 +496,41 @@ func _apply_position_lock_force() -> void:
 
 func _apply_facing_torque(delta: float = 1.0 / 60.0) -> void:
 	diagnostic_spin_torque = 0.0
-	heading_error = wrapf(
-		get_desired_facing_rotation() - global_rotation,
-		-PI,
-		PI
-	)
-	if rotation_lock_active or facing_input.is_zero_approx():
+	heading_error = _pending_facing_rotation_delta
+	if rotation_lock_active or not facing_dial_active:
+		_pending_facing_rotation_delta = 0.0
+		_desired_facing_rotation = global_rotation
+		heading_error = 0.0
 		target_angular_velocity = 0.0
 		return
 
-	# Classic twin-stick steering: stick angle is an absolute screen-space
-	# heading. Once outside the controller deadzone, magnitude has no authority.
-	# Rotation advances kinematically at the configured turn speed, so there is no
-	# RS torque, acceleration ramp, overshoot, or stored circular-stick travel.
-	var maximum_step := get_turn_speed_limit() * maxf(delta, 0.0)
-	var applied_step := clampf(heading_error, -maximum_step, maximum_step)
+	# The right stick acts like a clutchable dial. Only angular travel made while
+	# the stick is held outside the engage ring turns the dancer. Each sample is
+	# consumed immediately, so centering the stick cannot leave a queued turn.
+	var maximum_step := deg_to_rad(maximum_facing_dial_step_degrees)
+	var applied_step := clampf(
+		_pending_facing_rotation_delta,
+		-maximum_step,
+		maximum_step
+	)
+	_pending_facing_rotation_delta = 0.0
+	if is_zero_approx(applied_step):
+		_desired_facing_rotation = global_rotation
+		heading_error = 0.0
+		target_angular_velocity = 0.0
+		return
 	target_angular_velocity = (
 		applied_step / delta
 		if delta > 0.000001
 		else 0.0
 	)
 	global_rotation += applied_step
+	facing_dial_total_rotation += applied_step
 	angular_velocity = 0.0
 	_previous_wrapped_rotation = global_rotation
-	_unwrapped_rotation = global_rotation
-	heading_error = wrapf(
-		get_desired_facing_rotation() - global_rotation,
-		-PI,
-		PI
-	)
+	_unwrapped_rotation += applied_step
+	_desired_facing_rotation = global_rotation
+	heading_error = 0.0
 
 
 func _apply_rotation_lock_torque() -> void:

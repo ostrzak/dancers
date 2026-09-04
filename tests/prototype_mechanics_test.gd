@@ -78,41 +78,55 @@ func _run() -> void:
 	_expect(_arm_segments_match(_left) and _arm_segments_match(_right), "arm drawings use their side-specific projected segment lengths")
 	_expect(_hands_are_mirrored(_left), "equal trigger values keep the black dancer's hands mirrored")
 
-	_left.set_control_input(Vector2.ZERO, Vector2.RIGHT, 0.0, 0.0)
-	await _wait_physics_frames(120)
+	var dial_start_rotation := _left.global_rotation
+	_left.set_control_input(Vector2.ZERO, Vector2.RIGHT * 0.7, 0.0, 0.0)
+	await physics_frame
 	_expect(
-		absf(wrapf(_left.global_rotation + PI * 0.5, -PI, PI)) < 0.2,
-		"RS right turns the corrected nose toward screen right"
+		_left.facing_dial_active
+		and absf(wrapf(_left.global_rotation - dial_start_rotation, -PI, PI)) < 0.01,
+		"pushing RS into the outer ring engages the dial without snapping the dancer"
 	)
-	_expect(absf(_left.heading_error) < 0.2, "the facing motor converges on the requested heading")
+	for step in 3:
+		var quarter_turn_sample := Vector2.from_angle(deg_to_rad(30.0 * float(step + 1))) * 0.7
+		_left.set_control_input(Vector2.ZERO, quarter_turn_sample, 0.0, 0.0)
+		await physics_frame
+	_expect(
+		absf(wrapf(_left.global_rotation - dial_start_rotation - PI * 0.5, -PI, PI)) < 0.02,
+		"a quarter-circle RS sweep rotates the dancer by one quarter turn"
+	)
 	var retained_direction := _left.desired_facing_direction
 	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
-	_left.global_rotation = 0.0
-	_left.angular_velocity = 0.0
-	await _wait_physics_frames(60)
+	var released_rotation := _left.global_rotation
+	_left._apply_facing_torque()
 	_expect(_left.desired_facing_direction.is_equal_approx(retained_direction), "neutral RS retains the last input direction for diagnostics")
 	_expect(
-		absf(_left.global_rotation) < 0.05
+		not _left.facing_dial_active
+		and is_equal_approx(_left.global_rotation, released_rotation)
 		and is_zero_approx(_left.diagnostic_spin_torque),
-		"neutral RS leaves its achieved heading without resisting partner-applied rotation"
+		"centering RS releases the dial without a queued correction"
 	)
 
+	_left.set_control_input(Vector2.ZERO, Vector2.RIGHT * 0.8, 0.0, 0.0)
+	await physics_frame
 	for frame in 240:
-		var aim_angle := -PI * 0.5 + TAU * float(frame) / 120.0
+		var aim_angle := TAU * float(frame + 1) / 120.0
 		_left.set_control_input(
 			Vector2.ZERO,
-			Vector2.from_angle(aim_angle),
+			Vector2.from_angle(aim_angle) * 0.8,
 			0.0,
 			0.0
 		)
 		await physics_frame
-	print("circular facing sample: error=%.3f deg angular=%.3f target=%.3f" % [
-		rad_to_deg(_left.heading_error),
-		_left.angular_velocity,
-		_left.target_angular_velocity,
+	print("circular RS dial sample: turns=%.3f active=%s" % [
+		_left.facing_dial_total_rotation / TAU,
+		_left.facing_dial_active,
 	])
 	_expect(_left.global_rotation < INF and _left.angular_velocity < INF, "two continuous RS circles remain numerically finite")
-	_expect(absf(_left.heading_error) < 0.9, "the facing motor tracks a sustained circular RS gesture")
+	_expect(
+		absf(_left.facing_dial_total_rotation - TAU * 2.0) < 0.02,
+		"two continuous RS circles produce two dancer turns without losing crossings"
+	)
+	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 
 	_left.angular_velocity = 0.0
 	_left.set_control_input(Vector2.ZERO, Vector2.UP, 0.0, 0.0)
@@ -214,7 +228,7 @@ func _run() -> void:
 		and _left.diagnostic_movement_force.is_zero_approx(),
 		"an active L3 lock pins translation and suppresses the LS motor"
 	)
-	_expect(_left.global_rotation < -0.4, "an active L3 lock leaves corrected RS rotation free")
+	_expect(_left.global_rotation > 0.4, "an active L3 lock leaves clockwise RS dial rotation free")
 
 	_left.global_position = Vector2(420.0, 260.0)
 	_left.global_rotation = 0.0
@@ -814,48 +828,48 @@ func _run() -> void:
 	_pause_menu._resume()
 	_expect(not paused and not _pause_menu.visible, "resume closes the menu and unpauses")
 
-	# Exercise classic twin-stick steering on an isolated frozen dancer so this
+	# Exercise the clutchable RS dial on an isolated frozen dancer so this
 	# focused probe cannot perturb the long-running handhold simulation above.
 	var rs_probe := Dancer.new()
 	get_root().add_child(rs_probe)
 	rs_probe.freeze = true
 	rs_probe.set_control_input(Vector2.ZERO, Vector2.RIGHT * 0.25, 0.0, 0.0)
 	rs_probe._apply_facing_torque()
-	var slight_rs_target := rs_probe.get_desired_facing_rotation()
-	var slight_rs_step := rs_probe.global_rotation
-	var slight_rs_target_speed := absf(rs_probe.target_angular_velocity)
-	rs_probe.global_rotation = 0.0
-	rs_probe.set_control_input(Vector2.ZERO, Vector2.RIGHT, 0.0, 0.0)
+	_expect(
+		not rs_probe.facing_dial_active
+		and rs_probe.facing_input == Vector2.ZERO
+		and is_zero_approx(rs_probe.global_rotation),
+		"RS travel below the outer threshold does not engage the dial"
+	)
+	rs_probe.set_control_input(Vector2.ZERO, Vector2.RIGHT * 0.7, 0.0, 0.0)
 	rs_probe._apply_facing_torque()
 	_expect(
-		is_equal_approx(rs_probe.get_desired_facing_rotation(), slight_rs_target)
-		and is_equal_approx(rs_probe.global_rotation, slight_rs_step)
-		and is_equal_approx(
-			absf(rs_probe.target_angular_velocity),
-			slight_rs_target_speed
-		)
-		and rs_probe.facing_input.is_equal_approx(Vector2.RIGHT)
-		and is_zero_approx(rs_probe.diagnostic_spin_torque),
-		"partial and full RS travel at one angle produce the same inertialess turn"
+		rs_probe.facing_dial_active
+		and is_equal_approx(rs_probe.facing_input.length(), 0.7)
+		and is_zero_approx(rs_probe.global_rotation),
+		"the outer ring engages at the current phase without an entry snap"
 	)
+	var thirty_degree_sample := Vector2.from_angle(deg_to_rad(30.0)) * 0.4
+	rs_probe.set_control_input(Vector2.ZERO, thirty_degree_sample, 0.0, 0.0)
+	rs_probe._apply_facing_torque()
 	_expect(
-		_root._normalize_facing_stick(Vector2(0.2, -0.2)).is_equal_approx(
-			Vector2(0.2, -0.2).normalized()
-		)
-		and _root._normalize_facing_stick(Vector2.ZERO) == Vector2.ZERO,
-		"RS magnitude is discarded after the radial deadzone"
+		rs_probe.facing_dial_active
+		and is_equal_approx(rs_probe.facing_input.length(), 0.4)
+		and absf(rs_probe.global_rotation - deg_to_rad(30.0)) < 0.001,
+		"hysteresis keeps an imperfect inner sweep engaged and preserves its phase"
 	)
 
 	rs_probe.angular_velocity = 1.25
-	rs_probe.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+	rs_probe.set_control_input(Vector2.ZERO, Vector2.RIGHT * 0.2, 0.0, 0.0)
 	var neutral_rotation := rs_probe.global_rotation
 	rs_probe._apply_facing_torque()
 	_expect(
-		is_equal_approx(rs_probe.global_rotation, neutral_rotation)
+		not rs_probe.facing_dial_active
+		and is_equal_approx(rs_probe.global_rotation, neutral_rotation)
 		and is_equal_approx(rs_probe.angular_velocity, 1.25)
 		and is_zero_approx(rs_probe.target_angular_velocity)
 		and is_zero_approx(rs_probe.diagnostic_spin_torque),
-		"centering RS stops its own turn without locking out partner-driven rotation"
+		"crossing the inner threshold releases without resisting partner-driven rotation"
 	)
 	rs_probe.queue_free()
 
