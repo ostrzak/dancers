@@ -69,9 +69,6 @@ dancer_name = "WOMAN"
 body_color = Color(0.95, 0.95, 0.95, 1)
 detail_color = Color(0.05, 0.05, 0.05, 1)
 body_style = 1
-shoulder_half_width = 16.0
-upper_arm_length = 38.5
-forearm_length = 38.5
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RightDancer"]
 shape = SubResource("CircleShape_dancer")

@@ -14,6 +14,12 @@ angular tuxedo shoulders. The white woman uses a filled rear hair cap and side
 locks, long hair draped over rounded shoulders, restrained bodice lobes, and
 three shallow rear dress ruffles within a normal human footprint.
 
+These man and woman silhouettes are visual puppets over one identical
+mechanical skeleton. Both dancers inherit the same shoulder spacing, upper-arm
+and forearm lengths, arm-length range, projection limits, hand size, and torso
+collider. `body_style`, names, and colours distinguish the dancers without
+changing hand reach or the geometry presented to the handhold solver.
+
 ## Pose parameter
 
 `Dancer.get_arm_flexion(side)` produces a normalized pose value `t` for one

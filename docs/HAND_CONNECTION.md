@@ -54,7 +54,9 @@ partner can therefore ask for more flexion, but the arm and frame budge only as
 far as the other partner permits. A small elbow-side effort arc shows the
 unfulfilled part of that request. Before solving the contacts, the arm geometry
 is projected so the two local hand spans match; this removes the impossible
-geometry that formerly made the two constraints fight and oscillate.
+geometry that formerly made the two constraints fight and oscillate. Both
+dancers now start from the same mechanical skeleton; the span projection only
+has to reconcile live pose differences, never man-versus-woman anatomy.
 
 Therefore, during both single and double holds:
 

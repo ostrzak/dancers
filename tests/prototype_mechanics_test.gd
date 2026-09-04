@@ -31,6 +31,26 @@ func _run() -> void:
 	_expect(_right.body_color.get_luminance() > 0.5, "player two controls the white dancer")
 	_expect(_left.body_style == 0 and _right.body_style == 1, "the dancers use distinct top-down man and woman silhouettes")
 	_expect(
+		is_equal_approx(_left.shoulder_half_width, _right.shoulder_half_width)
+		and is_equal_approx(_left.upper_arm_length, _right.upper_arm_length)
+		and is_equal_approx(_left.forearm_length, _right.forearm_length)
+		and is_equal_approx(_left.minimum_arm_length, _right.minimum_arm_length)
+		and is_equal_approx(_left.maximum_arm_length, _right.maximum_arm_length)
+		and is_equal_approx(_left.hand_line_offset, _right.hand_line_offset)
+		and is_equal_approx(_left.minimum_abduction_degrees, _right.minimum_abduction_degrees)
+		and is_equal_approx(_left.maximum_abduction_degrees, _right.maximum_abduction_degrees)
+		and is_equal_approx(_left.maximum_elbow_flexion_degrees, _right.maximum_elbow_flexion_degrees)
+		and is_equal_approx(
+			_left.minimum_forearm_out_of_plane_degrees,
+			_right.minimum_forearm_out_of_plane_degrees
+		)
+		and is_equal_approx(
+			_left.maximum_forearm_out_of_plane_degrees,
+			_right.maximum_forearm_out_of_plane_degrees
+		),
+		"both visual puppets use one identical mechanical arm skeleton"
+	)
+	_expect(
 		is_equal_approx(_left.weight_kg, 75.0)
 		and is_equal_approx(_right.weight_kg, 75.0)
 		and is_equal_approx(_left.mass, 1.2)
