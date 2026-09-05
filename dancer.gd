@@ -15,10 +15,15 @@ extends RigidBody2D
 @export_category("Facing")
 @export var spin_torque := 15000.0
 @export var spin_response_gain := 9000.0
-@export var facing_response_rate := 10.0
+@export var facing_response_rate := 40.0
 @export var minimum_target_angular_velocity := 8.0
 @export var maximum_target_angular_velocity := 12.0
 @export var spin_angular_damping := 0.7
+@export_range(0.0, 1.0, 0.05) var facing_dial_engage_threshold := 0.55
+@export_range(0.0, 1.0, 0.05) var facing_dial_release_threshold := 0.25
+@export_range(1.0, 45.0, 1.0) var facing_dial_max_lag_degrees := 20.0
+@export var facing_dial_acceleration := 80.0
+@export var facing_dial_braking := 240.0
 
 @export_category("Physical Locks")
 @export var position_lock_stiffness := 1400.0
@@ -70,6 +75,8 @@ var move_speed_scale := 1.0
 var spin_move_ratio := 1.0
 var position_lock_active := false
 var rotation_lock_active := false
+var facing_dial_active := false
+var facing_dial_total_rotation := 0.0
 var position_lock_anchor := Vector2.ZERO
 var rotation_lock_anchor := 0.0
 
@@ -81,7 +88,8 @@ var _unwrapped_rotation := 0.0
 var _previous_wrapped_rotation := 0.0
 var _desired_facing_rotation := 0.0
 var _previous_facing_input_angle := 0.0
-var _facing_gesture_active := false
+var _pending_facing_rotation_delta := 0.0
+var _facing_dial_velocity := 0.0
 
 const HAND_RADIUS := 9.0
 const ELBOW_RADIUS := 5.0
@@ -136,7 +144,7 @@ func _physics_process(delta: float) -> void:
 	_update_effective_inertia()
 	_apply_movement_force()
 	_apply_position_lock_force()
-	_apply_facing_torque()
+	_apply_facing_torque(delta)
 	_apply_rotation_lock_torque()
 	queue_redraw()
 
@@ -156,47 +164,48 @@ func set_control_input(
 	position_lock_active = new_position_lock_active
 	rotation_lock_active = new_rotation_lock_active
 	movement_input = new_movement_input.limit_length(1.0)
-	facing_input = new_facing_input.limit_length(1.0)
-	if not facing_input.is_zero_approx():
-		desired_facing_direction = facing_input.normalized()
-		var facing_angle := desired_facing_direction.angle()
-		if rotation_lock_active:
-			# R3 is a physical orientation lock, not a stored-turn windup. Keep the
-			# latest screen direction but discard rotation backlog while it is held.
-			var locked_wrapped_target := facing_angle - PI * 0.5
-			_desired_facing_rotation = _unwrapped_rotation + wrapf(
-				locked_wrapped_target - global_rotation,
-				-PI,
-				PI
-			)
-			_facing_gesture_active = false
-		elif _facing_gesture_active:
-			_desired_facing_rotation += wrapf(
-				facing_angle - _previous_facing_input_angle,
-				-PI,
-				PI
-			)
-		else:
-			var wrapped_target := facing_angle - PI * 0.5
-			_desired_facing_rotation = _unwrapped_rotation + wrapf(
-				wrapped_target - global_rotation,
-				-PI,
-				PI
-			)
-		_facing_gesture_active = true
-		_previous_facing_input_angle = facing_angle
-	elif _facing_gesture_active:
-		# Releasing RS keeps the final screen direction but discards any backlog
-		# of full rotations the physical body could not complete during the gesture.
-		var final_wrapped_target := desired_facing_direction.angle() - PI * 0.5
-		_desired_facing_rotation = _unwrapped_rotation + wrapf(
-			final_wrapped_target - global_rotation,
-			-PI,
-			PI
-		)
-		_facing_gesture_active = false
+	_update_facing_dial_input(new_facing_input.limit_length(1.0))
 	left_trigger_value = clampf(new_left_trigger_value, 0.0, 1.0)
 	right_trigger_value = clampf(new_right_trigger_value, 0.0, 1.0)
+
+
+func _update_facing_dial_input(new_input: Vector2) -> void:
+	var magnitude := new_input.length()
+	var release_threshold := minf(facing_dial_release_threshold, facing_dial_engage_threshold)
+	if rotation_lock_active or magnitude <= release_threshold:
+		_release_facing_dial()
+		return
+	if not facing_dial_active:
+		if magnitude < facing_dial_engage_threshold:
+			return
+		facing_dial_active = true
+		_previous_facing_input_angle = new_input.angle()
+		facing_dial_total_rotation = 0.0
+		_pending_facing_rotation_delta = 0.0
+		_facing_dial_velocity = 0.0
+	facing_input = new_input
+	desired_facing_direction = new_input.normalized()
+	var sweep := wrapf(new_input.angle() - _previous_facing_input_angle, -PI, PI)
+	_previous_facing_input_angle = new_input.angle()
+	# A reversal starts a new request instead of paying off the old direction.
+	if sweep * _pending_facing_rotation_delta < 0.0 and absf(sweep) > 0.0001:
+		_pending_facing_rotation_delta = 0.0
+	var lag_limit := deg_to_rad(maxf(facing_dial_max_lag_degrees, 0.0))
+	_pending_facing_rotation_delta = clampf(
+		_pending_facing_rotation_delta + sweep, -lag_limit, lag_limit
+	)
+	heading_error = _pending_facing_rotation_delta
+	_desired_facing_rotation = _unwrapped_rotation + heading_error
+
+
+func _release_facing_dial() -> void:
+	facing_dial_active = false
+	facing_input = Vector2.ZERO
+	_pending_facing_rotation_delta = 0.0
+	_facing_dial_velocity = 0.0
+	target_angular_velocity = 0.0
+	heading_error = 0.0
+	_desired_facing_rotation = _unwrapped_rotation
 
 
 func set_runtime_tuning(
@@ -429,22 +438,47 @@ func _apply_position_lock_force() -> void:
 	apply_central_force(diagnostic_position_lock_force)
 
 
-func _apply_facing_torque() -> void:
+func _apply_facing_torque(delta: float = 1.0 / 120.0) -> void:
 	diagnostic_spin_torque = 0.0
-	heading_error = get_desired_facing_rotation() - _unwrapped_rotation
-	if rotation_lock_active or facing_input.is_zero_approx():
-		target_angular_velocity = 0.0
+	if rotation_lock_active or not facing_dial_active:
+		_release_facing_dial()
 		return
-	var turn_speed_limit := get_turn_speed_limit()
-	target_angular_velocity = clampf(
-		heading_error * facing_response_rate,
-		-turn_speed_limit,
-		turn_speed_limit
+	if delta <= 0.0:
+		return
+	var turn_speed_limit := maxf(get_turn_speed_limit(), 0.0)
+	var braking := maxf(facing_dial_braking, 0.001)
+	var remaining := absf(_pending_facing_rotation_delta)
+	var desired_speed := signf(_pending_facing_rotation_delta) * minf(
+		turn_speed_limit,
+		minf(remaining * maxf(facing_response_rate, 0.0), sqrt(2.0 * braking * remaining))
 	)
-	var velocity_error := target_angular_velocity - angular_velocity
-	var requested_torque := velocity_error * spin_response_gain
-	diagnostic_spin_torque = clampf(requested_torque, -spin_torque, spin_torque)
-	apply_torque(diagnostic_spin_torque)
+	var slowing := _facing_dial_velocity * desired_speed < 0.0 \
+		or absf(desired_speed) < absf(_facing_dial_velocity)
+	_facing_dial_velocity = move_toward(
+		_facing_dial_velocity, desired_speed,
+		(braking if slowing else maxf(facing_dial_acceleration, 0.0)) * delta
+	)
+	var applied_step := _facing_dial_velocity * delta
+	# Land exactly on small adjustments; never coast past a finished request.
+	if remaining <= 0.000001 or (
+		applied_step * _pending_facing_rotation_delta > 0.0
+		and absf(applied_step) >= remaining
+	):
+		applied_step = _pending_facing_rotation_delta
+		_facing_dial_velocity = 0.0
+	var lag_limit := deg_to_rad(maxf(facing_dial_max_lag_degrees, 0.0))
+	_pending_facing_rotation_delta = clampf(
+		_pending_facing_rotation_delta - applied_step, -lag_limit, lag_limit
+	)
+	# Controlled RS motion is additive. Handhold/collision angular velocity is
+	# left intact, including when the clutch releases; no orientation hold.
+	global_rotation += applied_step
+	_unwrapped_rotation += applied_step
+	_previous_wrapped_rotation = global_rotation
+	facing_dial_total_rotation += applied_step
+	target_angular_velocity = applied_step / delta
+	heading_error = _pending_facing_rotation_delta
+	_desired_facing_rotation = _unwrapped_rotation + heading_error
 
 
 func _apply_rotation_lock_torque() -> void:

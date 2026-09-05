@@ -14,8 +14,8 @@ defaults whenever the project starts.
   tucked arm gives an intermediate benefit.
 - **Trigger sensitivity** changes the response curve shared by LT and RT on
   both controllers.
-- **Stick sensitivity** changes the post-deadzone response curve shared by LS
-  and RS on both controllers.
+- **Stick sensitivity** changes LS response. RS uses linear post-deadzone
+  travel so its engagement thresholds stay consistent when this slider changes.
 
 During unpaused play, each controller's D-pad changes only that dancer's
 extended arm stance: left/right narrow or widen both arms and up/down sweep both
@@ -34,9 +34,25 @@ Zero and full input remain unchanged.
 
 Dancer collision friction is zero. Arena walls can stop translation but do not
 apply tangential friction that grabs a spinning dancer and changes angular speed.
-The RS-facing motor remains responsible for angular acceleration and alignment.
-It disengages while RS is neutral, allowing physical hand forces from the other
-dancer to guide rotation.
+RS is a relative circular dial: engage beyond 0.55 processed travel (about 62%
+raw travel), sweep clockwise/counterclockwise to turn, and release below 0.25
+(about 37% raw). Entry captures the current stick angle without changing facing.
+Stick radius controls engagement; circular movement controls the requested turn.
+
+The dial eases in at 80 rad/s² and brakes at 240 rad/s². The existing Turn speed
+slider scales the arm-dependent 8–12 rad/s ceiling. `facing_response_rate = 40`
+controls how closely small remaining adjustments settle. Pending travel is
+limited to `facing_dial_max_lag_degrees = 20`: excess travel is discarded, so
+arbitrarily fast circles do not guarantee matching dancer turn counts. Reversing
+discards the opposite backlog and brakes the old motion before changing direction.
+Holding RS still finishes only the small remaining adjustment; centering cancels
+it immediately. Ordinary gestures below these limits preserve their angular travel.
+
+RS applies controlled rotation without erasing physical angular velocity. A
+partner can still rotate the body, including after release; the 20° bound concerns
+unfinished RS input, not displacement caused by the partner. Legacy `spin_torque`
+and `spin_response_gain` do not tune this dial. This is an eased kinematic control,
+not a torque motor.
 
 ## L3 and R3 physical locks
 
@@ -50,3 +66,6 @@ The two locks are independent and may be held together.
 Every capture records all five live tuning values plus both preferred and live
 controller assignments. Applied movement force already includes move-speed and
 arm-to-move scaling, so captures show the actual force used by gameplay.
+`facing_dial` records engagement, applied gesture travel, and pending travel.
+`target_angular_velocity` is the applied RS rate; `angular_velocity` describes
+physics-driven spin. Configuration records the dial limits and easing values.

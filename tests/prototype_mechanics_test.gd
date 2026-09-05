@@ -71,13 +71,14 @@ func _run() -> void:
 	_expect(_arm_segments_match(_left) and _arm_segments_match(_right), "arm drawings use their side-specific projected segment lengths")
 	_expect(_hands_are_mirrored(_left), "equal trigger values keep the black dancer's hands mirrored")
 
+	var dial_start := _left.global_rotation
 	_left.set_control_input(Vector2.ZERO, Vector2.RIGHT, 0.0, 0.0)
 	await _wait_physics_frames(120)
 	_expect(
-		absf(wrapf(_left.global_rotation + PI * 0.5, -PI, PI)) < 0.2,
-		"RS right turns the corrected nose toward screen right"
+		absf(wrapf(_left.global_rotation - dial_start, -PI, PI)) < 0.01,
+		"RS entry engages without snapping to screen direction"
 	)
-	_expect(absf(_left.heading_error) < 0.2, "the facing motor converges on the requested heading")
+	_expect(_left.facing_dial_active, "outer RS travel engages the dial")
 	var retained_direction := _left.desired_facing_direction
 	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 	_left.global_rotation = 0.0
@@ -198,7 +199,11 @@ func _run() -> void:
 	_left.global_rotation = 0.0
 	_left.linear_velocity = Vector2.ZERO
 	_left.angular_velocity = 0.0
+	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 	_left.set_control_input(Vector2.RIGHT, Vector2.RIGHT, 0.0, 0.0, true, false)
+	for step in 30:
+		_left.set_control_input(Vector2.RIGHT, Vector2.from_angle(-PI * 0.5 * float(step + 1) / 30.0), 0.0, 0.0, true, false)
+		await physics_frame
 	var position_lock_origin := _left.global_position
 	_left.apply_central_impulse(Vector2(45.0, -20.0))
 	await _wait_physics_frames(90)
@@ -207,7 +212,7 @@ func _run() -> void:
 		and _left.diagnostic_movement_force.is_zero_approx(),
 		"held L3 pins translation and suppresses the LS motor"
 	)
-	_expect(_left.global_rotation < -0.4, "held L3 leaves corrected RS rotation free")
+	_expect(_left.global_rotation < -0.4, "held L3 leaves RS dial rotation free")
 
 	_left.global_position = Vector2(420.0, 260.0)
 	_left.global_rotation = 0.0

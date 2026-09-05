@@ -67,7 +67,7 @@ func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
 	dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
 	dancer.set_control_input(
 		_read_stick(device, JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y),
-		_read_stick(device, JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y),
+		_read_stick(device, JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y, false),
 		_read_trigger(device, JOY_AXIS_TRIGGER_LEFT),
 		_read_trigger(device, JOY_AXIS_TRIGGER_RIGHT),
 		_read_button(device, JOY_BUTTON_LEFT_STICK),
@@ -75,7 +75,9 @@ func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
 	)
 
 
-func _read_stick(device: int, axis_x: int, axis_y: int) -> Vector2:
+func _read_stick(
+	device: int, axis_x: int, axis_y: int, apply_sensitivity: bool = true
+) -> Vector2:
 	if device < 0:
 		return Vector2.ZERO
 	var value := Vector2(
@@ -92,7 +94,7 @@ func _read_stick(device: int, axis_x: int, axis_y: int) -> Vector2:
 	)
 	return value.normalized() * _apply_input_sensitivity(
 		scaled_magnitude,
-		stick_sensitivity
+		stick_sensitivity if apply_sensitivity else 1.0
 	)
 
 
