@@ -39,14 +39,14 @@ func set_telemetry_visible(is_visible: bool) -> void:
 
 
 func _format_dancer(dancer: Dancer) -> String:
-	return "speed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nheading err  %+7.2f deg\nlocks L3/R3  %6s / %6s\narm flex/fwd %6.1f / %+6.1f deg\nmove scale   %7.2fx\ntrigger L/R  %6.2f / %6.2f\nreach L/R    %6.2f / %6.2f px\nupper L/R    %6.2f / %6.2f px\nfore L/R     %6.2f / %6.2f px\nhand L/R     %6.2f / %6.2f px/s" % [
+	return "speed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nheading err  %+7.2f deg\nlocks L3/R3  %6s / %6s\narm abd/fwd  %6.1f / %+6.1f deg\nmove scale   %7.2fx\ntrigger L/R  %6.2f / %6.2f\nreach L/R    %6.2f / %6.2f px\nupper L/R    %6.2f / %6.2f px\nfore L/R     %6.2f / %6.2f px\nhand L/R     %6.2f / %6.2f px/s" % [
 		dancer.linear_velocity.length(),
 		dancer.angular_velocity,
 	dancer.target_angular_velocity,
 	rad_to_deg(dancer.heading_error),
 	"ON" if dancer.position_lock_active else "-",
 	"ON" if dancer.rotation_lock_active else "-",
-	dancer.extended_elbow_flexion_degrees,
+	dancer.extended_abduction_degrees,
 	dancer.extended_forward_sweep_degrees,
 	dancer.get_effective_move_scale(),
 		dancer.left_trigger_value,

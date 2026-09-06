@@ -17,9 +17,12 @@ defaults whenever the project starts.
 - **Stick sensitivity** changes LS response. RS uses linear post-deadzone
   travel so its engagement thresholds stay consistent when this slider changes.
 
-During unpaused play, each controller's D-pad changes only that dancer's
-extended arm stance: left/right narrow or widen both arms and up/down sweep both
-arms backward or forward. The setting is session-local like the tuning sliders.
+During unpaused play, D-pad Left/Right adducts/abducts the shoulders and Up/Down
+sweeps both arms forward/backward. Diagonals combine the two axes; neutral elbow
+bend stays fixed. Whether apart or holding one or two hands, each axis requires
+matching directions from both players and advances
+both poses by the same amount, stopping at either partner's limit. Releasing the
+last handhold keeps the mutual-input requirement. Settings are session-local.
 While paused, the D-pad remains exclusively menu navigation.
 
 The released-arm default is 25 degrees forward. This places a natural two-hand

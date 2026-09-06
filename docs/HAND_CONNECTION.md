@@ -40,6 +40,11 @@ Therefore, during both single and double holds:
 - Each player's LS continues applying that dancer's screen-space movement.
 - Each player's RS continues setting that dancer's own facing target.
 - LT and RT continue flexing only the corresponding left or right arm.
+- D-pad Left/Right adjusts neutral shoulder adduction/abduction; Up/Down adjusts
+  forward/backward sweep. Each axis requires matching directions from both
+  players at all times, including while apart. Diagonals combine axes; one player alone
+  cannot change the neutral pose. Both dancers receive the same angular change
+  up to either partner's limit, preserving any pre-existing pose difference.
 - A minimal 12 px torso collider remains active in free, single, and double
   holds. The 25-degree forward arm frame leaves it clear in a natural two-hand
   pose, while the circles prevent the body centres from collapsing together.

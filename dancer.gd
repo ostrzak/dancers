@@ -51,6 +51,7 @@ extends RigidBody2D
 @export var effective_inertia_influence := 1.0
 
 @export_category("Extended Arm Stance")
+@export_range(0.0, 84.0, 1.0) var extended_abduction_degrees := 84.0
 @export_range(5.0, 55.0, 1.0) var extended_elbow_flexion_degrees := 12.0
 @export var minimum_extended_elbow_flexion_degrees := 5.0
 @export var maximum_extended_elbow_flexion_degrees := 55.0
@@ -224,10 +225,10 @@ func adjust_extended_arm_pose(
 	delta: float
 ) -> void:
 	var step := arm_stance_adjustment_rate_degrees * maxf(delta, 0.0)
-	extended_elbow_flexion_degrees = clampf(
-		extended_elbow_flexion_degrees - clampf(spread_input, -1.0, 1.0) * step,
-		minimum_extended_elbow_flexion_degrees,
-		maximum_extended_elbow_flexion_degrees
+	extended_abduction_degrees = clampf(
+		extended_abduction_degrees + clampf(spread_input, -1.0, 1.0) * step,
+		minimum_abduction_degrees,
+		maximum_abduction_degrees
 	)
 	extended_forward_sweep_degrees = clampf(
 		extended_forward_sweep_degrees + clampf(forward_input, -1.0, 1.0) * step,
@@ -318,7 +319,7 @@ func get_arm_flexion(side: int = 1) -> float:
 
 func get_abduction_degrees(side: int = 1) -> float:
 	return lerpf(
-		maximum_abduction_degrees,
+		clampf(extended_abduction_degrees, minimum_abduction_degrees, maximum_abduction_degrees),
 		minimum_abduction_degrees,
 		get_arm_flexion(side)
 	)

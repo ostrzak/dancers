@@ -200,6 +200,7 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 			"left": _build_arm_sample(dancer, -1),
 			"right": _build_arm_sample(dancer, 1),
 			"extended_stance": {
+				"abduction_degrees": _float_for_json(dancer.extended_abduction_degrees),
 				"elbow_flexion_degrees": _float_for_json(
 					dancer.extended_elbow_flexion_degrees
 				),
@@ -380,6 +381,7 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 		"forearm_length": dancer.forearm_length,
 		"minimum_abduction_degrees": dancer.minimum_abduction_degrees,
 		"maximum_abduction_degrees": dancer.maximum_abduction_degrees,
+		"extended_abduction_degrees": dancer.extended_abduction_degrees,
 		"maximum_elbow_flexion_degrees": dancer.maximum_elbow_flexion_degrees,
 		"extended_elbow_flexion_degrees": dancer.extended_elbow_flexion_degrees,
 		"minimum_extended_elbow_flexion_degrees": (

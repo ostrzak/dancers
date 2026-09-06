@@ -144,13 +144,16 @@ func _run() -> void:
 	_left.set_current_arm_length(-1, _left.maximum_arm_length)
 	_left.set_current_arm_length(1, _left.maximum_arm_length)
 	var default_extended_hand := _left.get_hand_local_position(1)
+	_left.adjust_extended_arm_pose(-1.0, 0.0, 1.0)
+	var narrowed_hand := _left.get_hand_local_position(1)
 	_left.adjust_extended_arm_pose(1.0, 0.0, 1.0)
 	var widened_hand := _left.get_hand_local_position(1)
 	_expect(
-		_left.extended_elbow_flexion_degrees
-		== _left.minimum_extended_elbow_flexion_degrees
-		and widened_hand.x > default_extended_hand.x,
-		"D-pad right widens both fully extended arms within the elbow limit"
+		is_equal_approx(_left.extended_abduction_degrees, 84.0)
+		and is_equal_approx(_left.extended_elbow_flexion_degrees, 12.0)
+		and widened_hand.x > narrowed_hand.x
+		and widened_hand.is_equal_approx(default_extended_hand),
+		"D-pad left/right changes shoulder abduction while neutral elbow bend stays fixed"
 	)
 	_left.extended_elbow_flexion_degrees = 12.0
 	_left.adjust_extended_arm_pose(0.0, 1.0, 1.0)
@@ -163,8 +166,8 @@ func _run() -> void:
 	)
 	_left.adjust_extended_arm_pose(-1.0, 1.0, 10.0)
 	_expect(
-		_left.extended_elbow_flexion_degrees
-		== _left.maximum_extended_elbow_flexion_degrees
+		_left.extended_abduction_degrees
+		== _left.minimum_abduction_degrees
 		and _left.extended_forward_sweep_degrees
 		== _left.maximum_extended_forward_sweep_degrees,
 		"D-pad stance adjustment stops at its anatomical upper limits"
@@ -186,7 +189,9 @@ func _run() -> void:
 		"full trigger removes D-pad stance influence at the authored tucked endpoint"
 	)
 	_left.extended_elbow_flexion_degrees = 12.0
+	_left.extended_abduction_degrees = 84.0
 	_left.extended_forward_sweep_degrees = 25.0
+	_check_dpad_consent()
 
 	_left.global_position = Vector2(360.0, 240.0)
 	_left.linear_velocity = Vector2.ZERO
@@ -498,6 +503,71 @@ func _run() -> void:
 			push_error(failure)
 		print("COOP PROTOTYPE MECHANICS: %d failure(s) across %d checks" % [_failures.size(), _checks])
 		quit(1)
+
+
+func _check_dpad_consent() -> void:
+	# Synchronous input probe; restore the fixture before physics resumes.
+	_root._apply_arm_pose_inputs(Vector2(-1, 1), Vector2.ZERO, 0.1)
+	_expect(
+		is_equal_approx(_left.extended_abduction_degrees, 84.0)
+		and is_equal_approx(_left.extended_forward_sweep_degrees, 25.0)
+		and is_equal_approx(_right.extended_abduction_degrees, 84.0),
+		"free D-pad input also requires the partner's agreement"
+	)
+	for hold_count in [0, 1, 2]:
+		_connection.is_connected = hold_count > 0
+		_connection.is_secondary_connected = hold_count == 2
+		for dancer in [_left, _right]:
+			dancer.extended_abduction_degrees = 60.0
+			dancer.extended_forward_sweep_degrees = 25.0
+		_root._apply_arm_pose_inputs(Vector2(-1, 1), Vector2.ZERO, 0.1)
+		_root._apply_arm_pose_inputs(Vector2(-1, 1), Vector2(1, -1), 0.1)
+		_expect(
+			is_equal_approx(_left.extended_abduction_degrees, 60.0)
+			and is_equal_approx(_right.extended_abduction_degrees, 60.0)
+			and is_equal_approx(_left.extended_forward_sweep_degrees, 25.0)
+			and is_equal_approx(_right.extended_forward_sweep_degrees, 25.0),
+			"%d holds: unilateral or opposite requests leave both poses unchanged" % hold_count
+		)
+		_root._apply_arm_pose_inputs(Vector2(-1, 1), Vector2(-1, 1), 0.1)
+		_expect(
+			is_equal_approx(_left.extended_abduction_degrees, 56.0)
+			and is_equal_approx(_right.extended_abduction_degrees, 56.0)
+			and is_equal_approx(_left.extended_forward_sweep_degrees, 29.0)
+			and is_equal_approx(_right.extended_forward_sweep_degrees, 29.0),
+			"%d holds: matching diagonals change both dancers together" % hold_count
+		)
+		_root._apply_arm_pose_inputs(Vector2(-1, 1), Vector2(0, 1), 0.1)
+		_expect(
+			is_equal_approx(_left.extended_abduction_degrees, 56.0)
+			and is_equal_approx(_right.extended_abduction_degrees, 56.0)
+			and is_equal_approx(_left.extended_forward_sweep_degrees, 33.0)
+			and is_equal_approx(_right.extended_forward_sweep_degrees, 33.0),
+			"%d holds: consent applies independently to each axis" % hold_count
+		)
+	_left.extended_abduction_degrees = 83.0
+	_right.extended_abduction_degrees = 60.0
+	_root._apply_arm_pose_inputs(Vector2.RIGHT, Vector2.RIGHT, 1.0)
+	_expect(
+		is_equal_approx(_left.extended_abduction_degrees, 84.0)
+		and is_equal_approx(_right.extended_abduction_degrees, 61.0),
+		"a partner's pose limit bounds the same agreed change on both dancers"
+	)
+	paused = true
+	_root._apply_arm_pose_inputs(Vector2.LEFT, Vector2.LEFT, 1.0)
+	paused = false
+	_expect(is_equal_approx(_left.extended_abduction_degrees, 84.0), "paused D-pad input cannot adjust arms")
+	_connection.is_connected = false
+	_connection.is_secondary_connected = false
+	_root._apply_arm_pose_inputs(Vector2.LEFT, Vector2.ZERO, 0.1)
+	_expect(
+		is_equal_approx(_left.extended_abduction_degrees, 84.0)
+		and is_equal_approx(_right.extended_abduction_degrees, 61.0),
+		"releasing the last hold still requires mutual agreement"
+	)
+	for dancer in [_left, _right]:
+		dancer.extended_abduction_degrees = 84.0
+		dancer.extended_forward_sweep_degrees = 25.0
 
 
 func _prepare_far_apart() -> void:

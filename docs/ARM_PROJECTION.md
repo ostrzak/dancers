@@ -27,17 +27,26 @@ moves the right arm.
 
 ## Extended stance
 
-Each controller's D-pad adjusts the fully extended pose of both arms on that
-dancer. Left and right narrow or widen the stance by changing the baseline
-elbow flexion. Up and down sweep both arm chains forward or backward relative to
-the nose. Holding a direction adjusts continuously at 40 degrees per second.
+Each controller's D-pad adjusts the trigger-released pose of both arms. Left
+adducts the shoulders; right abducts them. Up sweeps the arms forward (shoulder
+flexion); down sweeps them backward (extension) relative to the dancer's nose.
+Diagonals combine both axes at 40 degrees per second per axis. The neutral elbow
+bend stays at its authored 12 degrees; the D-pad no longer tunes elbow flexion.
+
+Each axis always requires both players to hold the same D-pad direction,
+whether apart or in a single or double handhold.
+An idle or opposing partner blocks that axis. For example, Up-Right plus Up
+allows only forward sweep. The agreed angular change is identical on both
+dancers and stops at either partner's limit. Existing pose differences are
+preserved without a snap at catch time. This is a dancer-wide neutral pose, so
+in a single hold the agreement also governs the free arm. Releasing the last
+handhold keeps the same mutual-input requirement. Paused D-pad input only navigates menus.
 The authored neutral stance begins 25 degrees forward, giving two facing dancers
 a useful ballroom frame before either trigger is pressed.
 
-The limits are anatomical rather than cosmetic: extended elbow flexion stays
-between 5 and 55 degrees, forward sweep stays between 25 degrees rearward and
-45 degrees forward, and the chosen extrema cannot cross a hand over the body's
-centreline. Each trigger independently fades the selected stance as that arm
+Neutral abduction ranges from 0 to 84 degrees; forward sweep stays between
+25 degrees rearward and 45 degrees forward. Each trigger independently fades
+the selected stance as that arm
 adducts and flexes. At full trigger the forward sweep is zero and the existing
 145-degree tucked elbow endpoint remains authoritative.
 
@@ -51,7 +60,8 @@ The upper arm stays radial in screen space. Its projected length is:
 
 `upper_projection = upper_arm_length * sin(abduction_angle)`
 
-Abduction moves from 84 degrees to 0 degrees. At full adduction the projection
+Abduction moves from the D-pad-selected neutral angle (84 degrees by default)
+to 0 degrees. At full adduction the projection
 therefore reaches zero, the elbow overlaps the shoulder, and the remaining
 joint is drawn as a hand-sized shoulder cap.
 
