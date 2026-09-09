@@ -5,6 +5,9 @@ extends CanvasLayer
 @export var telemetry_recorder: Node
 @export var controller: PrototypeController
 
+@onready var man_dancer: Dancer = controller.get_node("LeftDancer")
+@onready var woman_dancer: Dancer = controller.get_node("RightDancer")
+
 @onready var tabs: TabContainer = $Center/Panel/Menu/Tabs
 @onready var telemetry_toggle: CheckButton = $Center/Panel/Menu/Tabs/GENERAL/Telemetry
 @onready var resume_button: Button = $Center/Panel/Menu/Tabs/GENERAL/Resume
@@ -21,6 +24,10 @@ extends CanvasLayer
 @onready var spin_move_ratio_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/SpinMoveRatioValue
 @onready var trigger_sensitivity_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/TriggerSensitivityValue
 @onready var stick_sensitivity_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/StickSensitivityValue
+@onready var man_weight_slider: HSlider = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/ManWeight
+@onready var woman_weight_slider: HSlider = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanWeight
+@onready var man_weight_value: Label = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/ManWeightValue
+@onready var woman_weight_value: Label = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanWeightValue
 
 
 func _ready() -> void:
@@ -39,6 +46,8 @@ func _ready() -> void:
 		stick_sensitivity_slider,
 	]:
 		slider.value_changed.connect(_on_tuning_changed)
+	man_weight_slider.value_changed.connect(_on_weight_changed)
+	woman_weight_slider.value_changed.connect(_on_weight_changed)
 	_sync_tuning_controls()
 	if is_instance_valid(telemetry_recorder):
 		telemetry_recorder.capture_saved.connect(_on_capture_saved)
@@ -99,8 +108,10 @@ func _switch_tab(direction: int) -> void:
 	tabs.current_tab = wrapi(tabs.current_tab + direction, 0, tabs.get_tab_count())
 	if tabs.current_tab == 0:
 		resume_button.grab_focus()
-	else:
+	elif tabs.current_tab == 1:
 		spin_speed_slider.grab_focus()
+	else:
+		man_weight_slider.grab_focus()
 
 
 func _sync_tuning_controls() -> void:
@@ -111,6 +122,8 @@ func _sync_tuning_controls() -> void:
 	spin_move_ratio_slider.set_value_no_signal(controller.spin_move_ratio)
 	trigger_sensitivity_slider.set_value_no_signal(controller.trigger_sensitivity)
 	stick_sensitivity_slider.set_value_no_signal(controller.stick_sensitivity)
+	man_weight_slider.set_value_no_signal(man_dancer.weight_kg)
+	woman_weight_slider.set_value_no_signal(woman_dancer.weight_kg)
 	_refresh_tuning_labels()
 
 
@@ -128,11 +141,21 @@ func _on_tuning_changed(_value: float) -> void:
 
 
 func _refresh_tuning_labels() -> void:
+	man_weight_value.text = "%d kg" % int(man_weight_slider.value)
+	woman_weight_value.text = "%d kg" % int(woman_weight_slider.value)
 	spin_speed_value.text = "%.2fx" % spin_speed_slider.value
 	move_speed_value.text = "%.2fx" % move_speed_slider.value
 	spin_move_ratio_value.text = "%.2f" % spin_move_ratio_slider.value
 	trigger_sensitivity_value.text = "%.2fx" % trigger_sensitivity_slider.value
 	stick_sensitivity_value.text = "%.2fx" % stick_sensitivity_slider.value
+
+
+func _on_weight_changed(_value: float) -> void:
+	if not is_instance_valid(controller):
+		return
+	man_dancer.set_weight_kg(man_weight_slider.value)
+	woman_dancer.set_weight_kg(woman_weight_slider.value)
+	_refresh_tuning_labels()
 
 
 func _activate_focused_control() -> void:

@@ -33,7 +33,7 @@ func _run() -> void:
 	_expect(
 		Dancer.BODY_REAR_Y >= Dancer.HEAD_CENTER.y - Dancer.HEAD_RADIUS
 		and Dancer.BODY_FORWARD_Y <= Dancer.HEAD_CENTER.y + Dancer.HEAD_RADIUS,
-		"the upright torso footprint stays completely beneath the head lengthwise"
+		"the upper torso remains compact beneath the head"
 	)
 	_expect(
 		Dancer.NOSE_TIP_Y > Dancer.HEAD_CENTER.y + Dancer.HEAD_RADIUS
@@ -45,9 +45,9 @@ func _run() -> void:
 		"the dancers begin facing one another"
 	)
 	_expect(
-		is_equal_approx(_left.get_node("CollisionShape2D").shape.radius, 12.0)
-		and is_equal_approx(_right.get_node("CollisionShape2D").shape.radius, 12.0),
-		"minimal torso colliders leave room for a close dance frame"
+		is_equal_approx(_left.get_node("CollisionShape2D").shape.radius, 20.0)
+		and is_equal_approx(_right.get_node("CollisionShape2D").shape.radius, 20.0),
+		"larger torso colliders provide room for the belly"
 	)
 	_expect(
 		_left.physics_material_override.friction == 0.0
@@ -71,14 +71,13 @@ func _run() -> void:
 	_expect(_arm_segments_match(_left) and _arm_segments_match(_right), "arm drawings use their side-specific projected segment lengths")
 	_expect(_hands_are_mirrored(_left), "equal trigger values keep the black dancer's hands mirrored")
 
-	var dial_start := _left.global_rotation
 	_left.set_control_input(Vector2.ZERO, Vector2.RIGHT, 0.0, 0.0)
 	await _wait_physics_frames(120)
 	_expect(
-		absf(wrapf(_left.global_rotation - dial_start, -PI, PI)) < 0.01,
-		"RS entry engages without snapping to screen direction"
+		absf(wrapf(_left.global_rotation + PI * 0.5, -PI, PI)) < 0.01,
+		"full RS travel quickly settles onto its screen heading"
 	)
-	_expect(_left.facing_dial_active, "outer RS travel engages the dial")
+	_expect(_left.facing_dial_active, "outer RS travel engages facing correction")
 	var retained_direction := _left.desired_facing_direction
 	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
 	_left.global_rotation = 0.0
@@ -91,8 +90,10 @@ func _run() -> void:
 		"neutral RS remembers its heading without resisting partner-applied rotation"
 	)
 
+	_left.set_control_input(Vector2.ZERO, Vector2.DOWN, 0.0, 0.0)
+	await _wait_physics_frames(30)
 	for frame in 240:
-		var aim_angle := -PI * 0.5 + TAU * float(frame) / 120.0
+		var aim_angle := PI * 0.5 + TAU * float(frame + 1) / 120.0
 		_left.set_control_input(
 			Vector2.ZERO,
 			Vector2.from_angle(aim_angle),
@@ -100,13 +101,14 @@ func _run() -> void:
 			0.0
 		)
 		await physics_frame
+	await _wait_physics_frames(60)
 	print("circular facing sample: error=%.3f deg angular=%.3f target=%.3f" % [
 		rad_to_deg(_left.heading_error),
 		_left.angular_velocity,
 		_left.target_angular_velocity,
 	])
 	_expect(_left.global_rotation < INF and _left.angular_velocity < INF, "two continuous RS circles remain numerically finite")
-	_expect(absf(_left.heading_error) < 0.9, "the facing motor tracks a sustained circular RS gesture")
+	_expect(absf(_left.heading_error) < 0.02, "the facing response settles after a sustained outer-ring circle")
 
 	_left.angular_velocity = 0.0
 	_left.set_control_input(Vector2.ZERO, Vector2.UP, 0.0, 0.0)
@@ -217,7 +219,8 @@ func _run() -> void:
 		and _left.diagnostic_movement_force.is_zero_approx(),
 		"held L3 pins translation and suppresses the LS motor"
 	)
-	_expect(_left.global_rotation < -0.4, "held L3 leaves RS dial rotation free")
+	_expect(absf(wrapf(_left.global_rotation - PI, -PI, PI)) < 0.03,
+		"held L3 leaves RS free to reach the requested upward heading across wrap")
 
 	_left.global_position = Vector2(420.0, 260.0)
 	_left.global_rotation = 0.0
@@ -300,14 +303,9 @@ func _run() -> void:
 	_right.set_control_input(Vector2.RIGHT, Vector2.UP, 0.0, 0.0)
 	var peak_stress_gap := settled_snap_gap
 	var separation_tether_activated := false
-	var peak_stress_elastic_blend := 0.0
 	for _frame in 180:
 		await physics_frame
 		peak_stress_gap = maxf(peak_stress_gap, _connected_gap(1))
-		peak_stress_elastic_blend = maxf(
-			peak_stress_elastic_blend,
-			_connection.primary_elastic_blend
-		)
 		separation_tether_activated = (
 			separation_tether_activated or _connection.separation_limit_active
 		)
@@ -324,10 +322,7 @@ func _run() -> void:
 		peak_stress_gap <= _connection.maximum_hand_separation + 0.1,
 		"the physical tether never exceeds the two-hand-width limit"
 	)
-	_expect(
-		peak_stress_elastic_blend > 0.5,
-		"fast separating motion shifts the live handhold toward elastic response"
-	)
+	_check_high_speed_compliance()
 
 	_connection.set_grip_button_state(_right, primary_sides[1], false)
 	_expect(
@@ -385,7 +380,7 @@ func _run() -> void:
 	_expect(
 		not _left.get_collision_exceptions().has(_right)
 		and not _right.get_collision_exceptions().has(_left),
-		"double hold keeps the minimal torso collision as an anti-overlap guard"
+		"double hold keeps torso collision as an anti-overlap guard"
 	)
 	_connection.set_grip_button_state(_left, -1, false)
 	_connection.set_grip_button_state(_right, 1, false)
@@ -438,7 +433,7 @@ func _run() -> void:
 	_expect(
 		not _left.get_collision_exceptions().has(_right)
 		and not _right.get_collision_exceptions().has(_left),
-		"returning to one handhold keeps the minimal torso collision"
+		"returning to one handhold keeps torso collision"
 	)
 	_expect(
 		_left.linear_velocity.is_equal_approx(double_left_velocity)
@@ -495,6 +490,8 @@ func _run() -> void:
 	_pause_menu._resume()
 	_expect(not paused and not _pause_menu.visible, "resume closes the menu and unpauses")
 
+	await _check_weight_controls()
+	_check_hand_roll()
 	if _failures.is_empty():
 		print("COOP PROTOTYPE MECHANICS: %d/%d checks passed" % [_checks, _checks])
 		quit(0)
@@ -503,6 +500,199 @@ func _run() -> void:
 			push_error(failure)
 		print("COOP PROTOTYPE MECHANICS: %d failure(s) across %d checks" % [_failures.size(), _checks])
 		quit(1)
+
+
+func _check_high_speed_compliance() -> void:
+	# A controlled high-speed case, rather than relying on solver jitter to
+	# manufacture the relative velocity during the opposing-input stress test.
+	var a := Dancer.new()
+	var b := Dancer.new()
+	get_root().add_child(a)
+	get_root().add_child(b)
+	a.linear_velocity = Vector2(-300.0, 0.0)
+	b.linear_velocity = Vector2(300.0, 0.0)
+	var link := HandConnection.new()
+	link.dancer_a = a
+	link.dancer_b = b
+	link._process_hold_pair(1, 1, false, 1)
+	_expect(is_equal_approx(link.primary_elastic_blend, 1.0),
+		"600 px/s separating hand motion uses the elastic response")
+	link.free()
+	a.free()
+	b.free()
+
+
+func _check_hand_roll() -> void:
+	var dancer := Dancer.new()
+	get_root().add_child(dancer)
+	dancer.set_physics_process(false)
+	dancer.set_current_arm_length(-1, dancer.maximum_arm_length)
+	dancer.set_current_arm_length(1, dancer.minimum_arm_length)
+	_expect(is_zero_approx(dancer.get_hand_roll_radians(-1))
+		and is_equal_approx(dancer.get_hand_roll_radians(1), PI),
+		"independent hands roll from back to palm with adduction and flexion")
+	dancer.set_current_arm_length(-1, (dancer.maximum_arm_length + dancer.minimum_arm_length) * 0.5)
+	_expect(is_equal_approx(dancer.get_hand_roll_radians(-1), PI * 0.5),
+		"half-tucked hand passes continuously through edge-on")
+	dancer.set_current_arm_length(-1, dancer.maximum_arm_length)
+	dancer.extended_abduction_degrees = 0.0
+	_expect(is_equal_approx(dancer.get_hand_roll_radians(-1), PI * 0.5),
+		"D-pad adduction contributes to roll while the elbow remains extended")
+	dancer.free()
+
+
+func _check_weight_controls() -> void:
+	_pause_menu._pause()
+	_pause_menu._switch_tab(2)
+	_expect(_pause_menu.tabs.current_tab == 2
+		and _pause_menu.man_weight_slider.has_focus(), "DANCERS tab supports gamepad focus")
+	_expect(_pause_menu.man_weight_slider.step == 1.0
+		and _pause_menu.woman_weight_slider.step == 1.0, "weight sliders use one kilogram steps")
+	_pause_menu.man_weight_slider.value = 71.0
+	_pause_menu.woman_weight_slider.value = 64.0
+	_expect(_left.weight_kg == 71.0 and _right.weight_kg == 64.0
+		and _pause_menu.man_weight_value.text == "71 kg"
+		and _pause_menu.woman_weight_value.text == "64 kg", "paused sliders update weight and labels immediately")
+	_expect(is_equal_approx(_left.mass / _right.mass, 71.0 / 64.0),
+		"both sexes use the same physical mass conversion")
+	for dancer in [_left, _right]:
+		var first := 50 if dancer.body_style == 1 else 70
+		var last := 70 if dancer.body_style == 1 else 100
+		var anchor: Vector2 = dancer.get_hand_local_position(1)
+		var shoulder: Vector2 = dancer.get_shoulder_local_position(1)
+		var prior_inertia := 0.0
+		var prior_mass := 0.0
+		var prior_scale := Vector2.ZERO
+		for kg in range(first, last + 1):
+			dancer.set_weight_kg(float(kg))
+			_expect(dancer.inertia > prior_inertia and dancer.mass > prior_mass,
+				"%s: %d kg increases mass and inertia" % [dancer.dancer_name, kg])
+			if kg > first:
+				_expect((dancer.get_visual_body_scale() != prior_scale) == (kg % 5 == 0),
+					"%s: %d kg changes appearance only at five kilogram thresholds" % [dancer.dancer_name, kg])
+			prior_inertia = dancer.inertia
+			prior_mass = dancer.mass
+			prior_scale = dancer.get_visual_body_scale()
+		_expect(dancer.get_hand_local_position(1).is_equal_approx(anchor)
+			and dancer.get_shoulder_local_position(1).is_equal_approx(shoulder)
+			and dancer.get_node("CollisionShape2D").shape.radius == 20.0
+			and dancer.scale.is_equal_approx(Vector2.ONE),
+			"%s weight preserves physical anchors and collider" % dancer.dancer_name)
+		dancer.set_weight_kg(-100.0)
+		_expect(dancer.weight_kg == first, "weight clamps at the body style's lower bound")
+		dancer.set_weight_kg(1000.0)
+		_expect(dancer.weight_kg == last, "weight clamps at the body style's upper bound")
+		var belly: Vector2 = dancer.get_belly_profile()
+		_expect(belly.y + 3.0 > Dancer.NOSE_TIP_Y + 5.0
+			and belly.y + 3.0 <= dancer.get_node("CollisionShape2D").shape.radius + 6.0,
+			"full belly extends beyond the head with at most six pixels of collider overhang")
+		dancer.set_weight_kg(float(first))
+		var lean_belly: Vector2 = dancer.get_belly_profile()
+		dancer.set_weight_kg(float(first + 4))
+		_expect(dancer.get_belly_profile() == lean_belly,
+			"belly keeps the same silhouette within each five kilogram band")
+		dancer.set_weight_kg(float(first + 5))
+		_expect(dancer.get_belly_profile().x > lean_belly.x
+			and dancer.get_belly_profile().y > lean_belly.y,
+			"each five kilogram threshold widens the belly and brings it forward")
+	_pause_menu._resume()
+	# Isolated engine bodies: identical geometry, no damping or input motor.
+	var light := Dancer.new()
+	var heavy := Dancer.new()
+	get_root().add_child(light)
+	get_root().add_child(heavy)
+	for dancer in [light, heavy]:
+		dancer.set_physics_process(false)
+		dancer.linear_damp = 0.0
+		dancer.angular_damp = 0.0
+		dancer.linear_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
+		dancer.angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
+	light.set_weight_kg(70.0)
+	heavy.set_weight_kg(71.0)
+	await _wait_physics_frames(2)
+	for dancer in [light, heavy]:
+		dancer.apply_central_impulse(Vector2(10.0, 0.0))
+		dancer.apply_torque_impulse(100.0)
+	await _wait_physics_frames(2)
+	_expect(is_equal_approx(light.linear_velocity.x / heavy.linear_velocity.x, 71.0 / 70.0),
+		"one kilogram changes actual engine impulse response precisely")
+	_expect(is_equal_approx(light.angular_velocity / heavy.angular_velocity, 71.0 / 70.0),
+		"one kilogram changes actual engine angular impulse response precisely")
+	light.body_style = 1
+	light.set_weight_kg(50.0)
+	heavy.set_weight_kg(100.0)
+	for dancer in [light, heavy]:
+		dancer.linear_velocity = Vector2.ZERO
+		dancer.angular_velocity = 0.0
+		dancer.global_rotation = 0.0
+		dancer._unwrapped_rotation = 0.0
+		dancer._previous_wrapped_rotation = 0.0
+		dancer.set_control_input(Vector2.ZERO, Vector2.RIGHT, 0.0, 0.0)
+		dancer._apply_facing_torque(1.0 / 120.0)
+	_expect(is_equal_approx(light.target_angular_velocity / heavy.target_angular_velocity, 2.0),
+		"heavier RS response accelerates more slowly without altering its heading target")
+	for dancer in [light, heavy]:
+		dancer.global_rotation = 0.0
+	light.global_position = Vector2(2000.0, 0.0)
+	heavy.global_position = Vector2(2200.0, 0.0)
+	var link := HandConnection.new()
+	link.dancer_a = light
+	link.dancer_b = heavy
+	var before_light := light.global_position
+	var before_heavy := heavy.global_position
+	link._enforce_maximum_separation(1, -1, 1.0 / 120.0)
+	_expect(is_equal_approx(light.global_position.distance_to(before_light)
+		/ heavy.global_position.distance_to(before_heavy), 2.0),
+		"50/100 kg handhold correction moves the lighter partner twice as far")
+	_expect(light.get_hand_world_position(1).distance_to(heavy.get_hand_world_position(-1))
+		<= link.maximum_hand_separation, "unequal-weight tether stays within its separation limit")
+	link.free()
+	light.free()
+	heavy.free()
+	# Exercise the existing spring and tether with the full 2:1 weight ratio.
+	# Fresh fixture avoids carrying consumed grip taps from the input-routing tests.
+	_root.free()
+	_root = load("res://prototype.tscn").instantiate()
+	get_root().add_child(_root)
+	_root.set_physics_process(false)
+	_left = _root.get_node("LeftDancer")
+	_right = _root.get_node("RightDancer")
+	_connection = _root.get_node("HandConnection")
+	_left.set_weight_kg(100.0)
+	_right.set_weight_kg(50.0)
+	await _prepare_double_hold_pose()
+	for side in [-1, 1]:
+		_connection.set_grip_button_state(_left, side, true)
+		_connection.set_grip_button_state(_right, -side, true)
+	await _wait_physics_frames(30)
+	_expect(_connection.get_active_connection_count() == 2, "100/50 kg partners acquire both handholds")
+	var peak_gap := 0.0
+	var peak_speed := 0.0
+	for tick in 240:
+		_left.set_control_input(Vector2.LEFT, Vector2.ZERO, 1.0 if tick > 100 else 0.0, 0.0)
+		_right.set_control_input(Vector2.RIGHT, Vector2.ZERO, 0.0, 1.0 if tick > 100 else 0.0)
+		await physics_frame
+		peak_gap = maxf(peak_gap, maxf(_connected_gap(1), _connected_gap(2)))
+		peak_speed = maxf(peak_speed, maxf(_left.linear_velocity.length(), _right.linear_velocity.length()))
+	_expect(_connection.get_active_connection_count() == 2
+		and peak_gap <= _connection.maximum_hand_separation + 0.1,
+		"100/50 kg opposing inputs and asymmetric tucking retain bounded handholds")
+	_expect(_left.linear_velocity.is_finite() and _right.linear_velocity.is_finite()
+		and peak_speed < 2000.0, "100/50 kg double hold stays finite without runaway speed")
+	print("100/50 kg stress: peak_gap=%.3f px peak_speed=%.3f px/s" % [peak_gap, peak_speed])
+	_left.set_control_input(Vector2.ZERO, Vector2.ZERO, 1.0, 0.0)
+	_right.set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 1.0)
+	var prior_spin := Vector2(_left.angular_velocity, _right.angular_velocity)
+	var squared_steps := 0.0
+	for tick in 480:
+		await physics_frame
+		var spin := Vector2(_left.angular_velocity, _right.angular_velocity)
+		if tick >= 360:
+			squared_steps += (spin - prior_spin).length_squared()
+		prior_spin = spin
+	var settled_jitter := sqrt(squared_steps / 120.0)
+	print("100/50 kg neutral double-hold spin-step RMS: %.6f" % settled_jitter)
+	_expect(settled_jitter < 0.15, "unequal double hold does not sustain alternating spin after input stops")
 
 
 func _check_dpad_consent() -> void:

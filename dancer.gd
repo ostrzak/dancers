@@ -7,6 +7,13 @@ extends RigidBody2D
 @export var detail_color := Color("f2f2f2")
 @export_enum("Man", "Woman") var body_style := 0
 
+@export_category("Weight")
+@export_range(50.0, 100.0, 1.0) var weight_kg := 75.0
+
+# A common unit conversion preserves weight ratios across both body styles.
+const REFERENCE_WEIGHT_KG := 75.0
+const REFERENCE_PHYSICS_MASS := 1.2
+
 @export_category("Movement")
 @export var movement_force := 900.0
 @export var movement_linear_damping := 2.2
@@ -19,9 +26,9 @@ extends RigidBody2D
 @export var minimum_target_angular_velocity := 8.0
 @export var maximum_target_angular_velocity := 12.0
 @export var spin_angular_damping := 0.7
-@export_range(0.0, 1.0, 0.05) var facing_dial_engage_threshold := 0.55
-@export_range(0.0, 1.0, 0.05) var facing_dial_release_threshold := 0.25
-@export_range(1.0, 45.0, 1.0) var facing_dial_max_lag_degrees := 20.0
+@export_range(0.0, 1.0, 0.05) var facing_dial_engage_threshold := 0.15
+@export_range(0.0, 1.0, 0.05) var facing_dial_release_threshold := 0.08
+@export_range(0.0, 1.0, 0.01) var facing_dial_minimum_response := 0.08
 @export var facing_dial_acceleration := 80.0
 @export var facing_dial_braking := 240.0
 
@@ -78,6 +85,7 @@ var position_lock_active := false
 var rotation_lock_active := false
 var facing_dial_active := false
 var facing_dial_total_rotation := 0.0
+var facing_dial_response_scale := 0.0
 var position_lock_anchor := Vector2.ZERO
 var rotation_lock_anchor := 0.0
 
@@ -88,8 +96,6 @@ var _current_arm_lengths := {
 var _unwrapped_rotation := 0.0
 var _previous_wrapped_rotation := 0.0
 var _desired_facing_rotation := 0.0
-var _previous_facing_input_angle := 0.0
-var _pending_facing_rotation_delta := 0.0
 var _facing_dial_velocity := 0.0
 
 const HAND_RADIUS := 9.0
@@ -124,7 +130,7 @@ func _ready() -> void:
 	_previous_wrapped_rotation = global_rotation
 	_unwrapped_rotation = global_rotation
 	_desired_facing_rotation = global_rotation
-	_update_effective_inertia()
+	set_weight_kg(weight_kg)
 	queue_redraw()
 
 
@@ -180,29 +186,31 @@ func _update_facing_dial_input(new_input: Vector2) -> void:
 		if magnitude < facing_dial_engage_threshold:
 			return
 		facing_dial_active = true
-		_previous_facing_input_angle = new_input.angle()
 		facing_dial_total_rotation = 0.0
-		_pending_facing_rotation_delta = 0.0
 		_facing_dial_velocity = 0.0
 	facing_input = new_input
-	desired_facing_direction = new_input.normalized()
-	var sweep := wrapf(new_input.angle() - _previous_facing_input_angle, -PI, PI)
-	_previous_facing_input_angle = new_input.angle()
-	# A reversal starts a new request instead of paying off the old direction.
-	if sweep * _pending_facing_rotation_delta < 0.0 and absf(sweep) > 0.0001:
-		_pending_facing_rotation_delta = 0.0
-	var lag_limit := deg_to_rad(maxf(facing_dial_max_lag_degrees, 0.0))
-	_pending_facing_rotation_delta = clampf(
-		_pending_facing_rotation_delta + sweep, -lag_limit, lag_limit
+	var response_range := maxf(1.0 - release_threshold, 0.001)
+	var response_progress := clampf((magnitude - release_threshold) / response_range, 0.0, 1.0)
+	response_progress = smoothstep(0.0, 1.0, response_progress)
+	facing_dial_response_scale = lerpf(
+		clampf(facing_dial_minimum_response, 0.0, 1.0),
+		1.0,
+		response_progress
 	)
-	heading_error = _pending_facing_rotation_delta
-	_desired_facing_rotation = _unwrapped_rotation + heading_error
+	desired_facing_direction = new_input.normalized()
+	var wrapped_target := desired_facing_direction.angle() - PI * 0.5
+	_desired_facing_rotation = _unwrapped_rotation + wrapf(
+		wrapped_target - global_rotation,
+		-PI,
+		PI
+	)
+	heading_error = _desired_facing_rotation - _unwrapped_rotation
 
 
 func _release_facing_dial() -> void:
 	facing_dial_active = false
 	facing_input = Vector2.ZERO
-	_pending_facing_rotation_delta = 0.0
+	facing_dial_response_scale = 0.0
 	_facing_dial_velocity = 0.0
 	target_angular_velocity = 0.0
 	heading_error = 0.0
@@ -446,40 +454,44 @@ func _apply_facing_torque(delta: float = 1.0 / 120.0) -> void:
 		return
 	if delta <= 0.0:
 		return
-	var turn_speed_limit := maxf(get_turn_speed_limit(), 0.0)
-	var braking := maxf(facing_dial_braking, 0.001)
-	var remaining := absf(_pending_facing_rotation_delta)
-	var desired_speed := signf(_pending_facing_rotation_delta) * minf(
+	# Radius controls how forcefully the dancer corrects toward the requested
+	# screen heading. Scaling speed, acceleration, and braking together preserves
+	# the eased human-inertia shape from gentle adjustments to outer-ring turns.
+	var response_scale := clampf(facing_dial_response_scale, 0.0, 1.0)
+	var turn_speed_limit := maxf(get_turn_speed_limit(), 0.0) * response_scale
+	var weight_response := REFERENCE_WEIGHT_KG / weight_kg
+	var braking := maxf(facing_dial_braking * response_scale * weight_response, 0.001)
+	heading_error = _desired_facing_rotation - _unwrapped_rotation
+	var remaining := absf(heading_error)
+	var desired_speed := signf(heading_error) * minf(
 		turn_speed_limit,
-		minf(remaining * maxf(facing_response_rate, 0.0), sqrt(2.0 * braking * remaining))
+		minf(
+			remaining * maxf(facing_response_rate, 0.0) * response_scale,
+			sqrt(2.0 * braking * remaining)
+		)
 	)
 	var slowing := _facing_dial_velocity * desired_speed < 0.0 \
 		or absf(desired_speed) < absf(_facing_dial_velocity)
 	_facing_dial_velocity = move_toward(
 		_facing_dial_velocity, desired_speed,
-		(braking if slowing else maxf(facing_dial_acceleration, 0.0)) * delta
+		(braking if slowing else maxf(facing_dial_acceleration, 0.0) * response_scale * weight_response) * delta
 	)
 	var applied_step := _facing_dial_velocity * delta
 	# Land exactly on small adjustments; never coast past a finished request.
 	if remaining <= 0.000001 or (
-		applied_step * _pending_facing_rotation_delta > 0.0
+		applied_step * heading_error > 0.0
 		and absf(applied_step) >= remaining
 	):
-		applied_step = _pending_facing_rotation_delta
+		applied_step = heading_error
 		_facing_dial_velocity = 0.0
-	var lag_limit := deg_to_rad(maxf(facing_dial_max_lag_degrees, 0.0))
-	_pending_facing_rotation_delta = clampf(
-		_pending_facing_rotation_delta - applied_step, -lag_limit, lag_limit
-	)
-	# Controlled RS motion is additive. Handhold/collision angular velocity is
-	# left intact, including when the clutch releases; no orientation hold.
+	# Controlled RS correction is additive. Handhold/collision angular velocity
+	# is left intact, and releasing the stick does not hold orientation.
 	global_rotation += applied_step
 	_unwrapped_rotation += applied_step
 	_previous_wrapped_rotation = global_rotation
 	facing_dial_total_rotation += applied_step
 	target_angular_velocity = applied_step / delta
-	heading_error = _pending_facing_rotation_delta
-	_desired_facing_rotation = _unwrapped_rotation + heading_error
+	heading_error = _desired_facing_rotation - _unwrapped_rotation
 
 
 func _apply_rotation_lock_torque() -> void:
@@ -515,45 +527,173 @@ func _update_effective_inertia() -> void:
 		+ get_hand_local_position(1).length_squared()
 	) * 0.5
 	var arm_inertia := arm_inertia_scale * average_radius_squared
-	inertia = maxf(1.0, base_effective_inertia + arm_inertia * effective_inertia_influence)
+	inertia = maxf(1.0, (base_effective_inertia + arm_inertia * effective_inertia_influence)
+		* weight_kg / REFERENCE_WEIGHT_KG)
+
+
+func set_weight_kg(value: float) -> void:
+	if not is_finite(value):
+		return
+	weight_kg = clampf(roundf(value), 50.0 if body_style == 1 else 70.0,
+		70.0 if body_style == 1 else 100.0)
+	mass = REFERENCE_PHYSICS_MASS * weight_kg / REFERENCE_WEIGHT_KG
+	_update_effective_inertia()
+	queue_redraw()
+
+
+func get_visual_weight_kg() -> int:
+	# Advance on the labelled threshold: 64 kg still uses the 60 kg silhouette.
+	return floori(weight_kg / 5.0) * 5
+
+
+func get_visual_weight_fullness() -> float:
+	var minimum := 50.0 if body_style == 1 else 70.0
+	var maximum := 70.0 if body_style == 1 else 100.0
+	return inverse_lerp(minimum, maximum, float(get_visual_weight_kg()))
+
+
+func get_visual_body_scale() -> Vector2:
+	var fullness := get_visual_weight_fullness()
+	return Vector2(lerpf(0.88, 1.12, fullness), lerpf(0.92, 1.08, fullness))
+
+
+func get_belly_profile() -> Vector2:
+	# Half-width and forward depth of the abdomen, centred 3 px forward of
+	# the body origin. Its fullest front reaches 26 px, beyond the nose/head.
+	var fullness := get_visual_weight_fullness()
+	return Vector2(lerpf(13.0, 24.0, fullness), lerpf(11.0, 23.0, fullness))
+
+
+func _belly_front_contour() -> PackedVector2Array:
+	var profile := get_belly_profile()
+	var body_scale := get_visual_body_scale()
+	var contour := PackedVector2Array()
+	for index in 25:
+		var angle := PI * float(index) / 24.0
+		# Cancel the clothing transform so the actual belly envelope is explicit.
+		contour.append(Vector2(cos(angle) * profile.x, 3.0 + sin(angle) * profile.y) / body_scale)
+	return contour
 
 
 func _draw() -> void:
 	for side in HAND_SIDES:
-		var shoulder := get_shoulder_local_position(side)
-		var elbow := get_elbow_local_position(side)
-		var hand := get_hand_local_position(side)
-		draw_line(shoulder, elbow, body_color, 8.0, true)
-		draw_line(elbow, hand, body_color, 8.0, true)
-		draw_circle(elbow, get_elbow_joint_radius(side), body_color)
-		draw_circle(hand, HAND_RADIUS, body_color)
+		_draw_arm(side)
 	_draw_simple_body()
 
 
+func _draw_arm(side: int) -> void:
+	var shoulder := get_shoulder_local_position(side)
+	var elbow := get_elbow_local_position(side)
+	var hand := get_hand_local_position(side)
+	var shoulder_radius := lerpf(6.5, 8.0, get_arm_flexion(side))
+	var elbow_radius := lerpf(4.5, 7.0, get_arm_flexion(side))
+	# Outline the union first, then fill it. This avoids rings at the elbow and
+	# stays well-defined when the projected upper arm disappears completely.
+	for border in [1.5, 0.0]:
+		var color := detail_color if border > 0.0 else body_color
+		_draw_tapered_segment(shoulder, elbow, shoulder_radius + border, elbow_radius + border, color)
+		_draw_tapered_segment(elbow, hand, elbow_radius + border, 3.5 + border, color)
+		_draw_palm(side, border, color)
+	# One short cuff line adds clothing detail without extra joint markers.
+	var forearm := hand - elbow
+	if forearm.length() > HAND_RADIUS + 8.0:
+		var direction := forearm.normalized()
+		var normal := direction.orthogonal()
+		var cuff := hand - direction * (HAND_RADIUS + 3.0)
+		draw_line(cuff - normal * 3.6, cuff + normal * 3.6, detail_color, 1.2, true)
+
+
+func get_hand_roll_radians(side: int) -> float:
+	# Authored visual coupling, not an extra physical wrist joint. Both actual
+	# shoulder adduction and elbow flexion contribute, including D-pad stance.
+	var adduction := 1.0 - clampf(inverse_lerp(minimum_abduction_degrees,
+		maximum_abduction_degrees, get_abduction_degrees(side)), 0.0, 1.0)
+	var flexion := clampf(inverse_lerp(extended_elbow_flexion_degrees,
+		maximum_elbow_flexion_degrees, get_elbow_flexion_degrees(side)), 0.0, 1.0)
+	return PI * (adduction + flexion) * 0.5
+
+
+func _draw_palm(side: int, border: float, color: Color) -> void:
+	# The grip stays at the palm centre. Mirror the thumb across the forearm
+	# for left/right hands, using pose direction even in foreshortened poses.
+	var hand := get_hand_local_position(side)
+	var forward := get_forearm_local_direction(side)
+	var thumbward := Vector2(-forward.y, forward.x) * float(signi(side))
+	var roll := get_hand_roll_radians(side)
+	var projected_width := cos(roll)
+	var edge_thickness := 2.0 * sin(roll)
+	# Wrist -> rounded finger block -> small thumb -> wrist. No individual fingers.
+	var profile := PackedVector2Array([
+		Vector2(-8.0, -3.0), Vector2(-4.0, -5.0), Vector2(4.0, -5.5),
+		Vector2(7.0, -4.0), Vector2(8.5, -1.0), Vector2(8.0, 2.5),
+		Vector2(6.0, 4.5), Vector2(2.0, 5.0), Vector2(0.0, 7.0),
+		Vector2(-2.5, 8.0), Vector2(-4.5, 6.5), Vector2(-5.0, 4.0),
+		Vector2(-8.0, 3.0),
+	])
+	# One corner-cutting pass rounds the silhouette at gameplay resolution.
+	var contour := PackedVector2Array()
+	for index in profile.size():
+		var a := profile[index]
+		var b := profile[(index + 1) % profile.size()]
+		for fraction in [0.25, 0.75]:
+			var point := a.lerp(b, fraction)
+			var centre := hand + forward * point.x + thumbward * point.y * projected_width
+			# Project a thin palm volume: finite edge-on thickness, with the thumb
+			# continuously crossing to the opposite side as the palm turns upward.
+			contour.append(centre + thumbward * edge_thickness)
+			contour.append(centre - thumbward * edge_thickness)
+	contour = Geometry2D.convex_hull(contour)
+	draw_colored_polygon(contour, color)
+	if border > 0.0:
+		draw_polyline(contour, color, border * 2.0, true)
+	elif projected_width < -0.15:
+		# A restrained crease distinguishes the palm face from the hand's back.
+		var crease_color := detail_color
+		crease_color.a *= smoothstep(0.15, 0.75, -projected_width)
+		draw_line(hand - forward * 2.0 + thumbward * projected_width * 2.5,
+			hand + forward * 1.5, crease_color, 1.0, true)
+
+
+func _draw_tapered_segment(start: Vector2, end: Vector2,
+		start_radius: float, end_radius: float, color: Color) -> void:
+	var segment := end - start
+	if segment.length_squared() > 0.0001:
+		var normal := segment.normalized().orthogonal()
+		draw_colored_polygon(PackedVector2Array([
+			start + normal * start_radius, end + normal * end_radius,
+			end - normal * end_radius, start - normal * start_radius,
+		]), color)
+	draw_circle(start, start_radius, color, true, -1, true)
+	draw_circle(end, end_radius, color, true, -1, true)
+
+
 func _draw_simple_body() -> void:
+	# Canvas-only scaling: collider, physical anchors, and head remain unchanged.
+	draw_set_transform(Vector2.ZERO, 0.0, get_visual_body_scale())
 	if body_style == 1:
 		_draw_woman_body()
 	else:
 		_draw_man_body()
+	draw_set_transform(Vector2.ZERO)
+	_draw_overhead_head(body_style == 1)
 
 
 func _draw_man_body() -> void:
-	# An upright torso projects almost entirely beneath the head. Only the neck,
-	# angular shoulders, and jacket edges escape the head's footprint.
+	# Shoulders retain their overhead shape; the abdomen forms one continuous
+	# rounded front edge, rather than a separate circle or a longer flat chest.
 	var torso := PackedVector2Array([
 		Vector2(-6.0, NECK_REAR_Y),
 		Vector2(6.0, NECK_REAR_Y),
 		Vector2(9.0, BODY_REAR_Y),
 		Vector2(20.0, -8.0),
 		Vector2(25.0, -3.0),
-		Vector2(22.0, 6.0),
-		Vector2(12.0, BODY_FORWARD_Y),
-		Vector2(-12.0, BODY_FORWARD_Y),
-		Vector2(-22.0, 6.0),
+	])
+	torso.append_array(_belly_front_contour())
+	torso.append_array(PackedVector2Array([
 		Vector2(-25.0, -3.0),
 		Vector2(-20.0, -8.0),
 		Vector2(-9.0, BODY_REAR_Y),
-	])
+	]))
 	draw_colored_polygon(torso, body_color)
 	var torso_outline := torso.duplicate()
 	torso_outline.append(torso[0])
@@ -576,7 +716,6 @@ func _draw_man_body() -> void:
 		Vector2(9.0, -8.0),
 		Vector2(12.0, 5.0),
 	]), detail_color)
-	_draw_overhead_head(false)
 
 
 func _draw_woman_body() -> void:
@@ -606,20 +745,18 @@ func _draw_woman_body() -> void:
 	])
 	draw_colored_polygon(hair, detail_color)
 
-	# The dress is a rounded shoulder-and-bodice footprint no longer than the
-	# head. Two small front lobes suggest the bosom from above.
+	# The dress follows the same weight-dependent abdomen under the bodice.
 	var dress := PackedVector2Array([
 		Vector2(-8.0, BODY_REAR_Y),
 		Vector2(8.0, BODY_REAR_Y),
 		Vector2(19.0, -7.0),
 		Vector2(24.0, -2.0),
-		Vector2(23.0, 5.0),
-		Vector2(16.0, BODY_FORWARD_Y),
-		Vector2(-16.0, BODY_FORWARD_Y),
-		Vector2(-23.0, 5.0),
+	])
+	dress.append_array(_belly_front_contour())
+	dress.append_array(PackedVector2Array([
 		Vector2(-24.0, -2.0),
 		Vector2(-19.0, -7.0),
-	])
+	]))
 	draw_colored_polygon(dress, body_color)
 	var dress_outline := dress.duplicate()
 	dress_outline.append(dress[0])
@@ -633,7 +770,6 @@ func _draw_woman_body() -> void:
 	draw_circle(Vector2(8.0, 6.0), 6.0, body_color)
 	draw_arc(Vector2(-8.0, 6.0), 6.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
 	draw_arc(Vector2(8.0, 6.0), 6.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
-	_draw_overhead_head(true)
 
 
 func _draw_overhead_head(has_long_hair: bool) -> void:

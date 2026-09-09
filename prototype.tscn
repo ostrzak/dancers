@@ -8,7 +8,7 @@
 [ext_resource type="Script" path="res://telemetry_recorder.gd" id="6_telemetry"]
 
 [sub_resource type="CircleShape2D" id="CircleShape_dancer"]
-radius = 12.0
+radius = 20.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape_horizontal"]
 size = Vector2(1280, 20)
@@ -49,6 +49,7 @@ max_contacts_reported = 4
 physics_material_override = SubResource("PhysicsMaterial_dancer")
 script = ExtResource("2_dancer")
 dancer_name = "MAN"
+weight_kg = 85.0
 body_color = Color(0.05, 0.05, 0.05, 1)
 detail_color = Color(0.95, 0.95, 0.95, 1)
 
@@ -69,6 +70,7 @@ dancer_name = "WOMAN"
 body_color = Color(0.95, 0.95, 0.95, 1)
 detail_color = Color(0.05, 0.05, 0.05, 1)
 body_style = 1
+weight_kg = 60.0
 shoulder_half_width = 16.0
 upper_arm_length = 38.5
 forearm_length = 38.5
@@ -357,6 +359,60 @@ value = 1.0
 custom_minimum_size = Vector2(62, 0)
 layout_mode = 2
 text = "1.00x"
+horizontal_alignment = 2
+
+[node name="DANCERS" type="VBoxContainer" parent="PauseMenu/Center/Panel/Menu/Tabs"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Description" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/DANCERS"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Weight affects movement, turning and partner pulling.\nBody shape changes every 5 kg."
+horizontal_alignment = 1
+
+[node name="WeightGrid" type="GridContainer" parent="PauseMenu/Center/Panel/Menu/Tabs/DANCERS"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 20
+columns = 3
+
+[node name="ManLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/DANCERS/WeightGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "MAN"
+
+[node name="ManWeight" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/DANCERS/WeightGrid"]
+custom_minimum_size = Vector2(340, 42)
+layout_mode = 2
+min_value = 70.0
+max_value = 100.0
+step = 1.0
+value = 85.0
+
+[node name="ManWeightValue" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/DANCERS/WeightGrid"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "85 kg"
+horizontal_alignment = 2
+
+[node name="WomanLabel" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/DANCERS/WeightGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "WOMAN"
+
+[node name="WomanWeight" type="HSlider" parent="PauseMenu/Center/Panel/Menu/Tabs/DANCERS/WeightGrid"]
+custom_minimum_size = Vector2(340, 42)
+layout_mode = 2
+min_value = 50.0
+max_value = 70.0
+step = 1.0
+value = 60.0
+
+[node name="WomanWeightValue" type="Label" parent="PauseMenu/Center/Panel/Menu/Tabs/DANCERS/WeightGrid"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "60 kg"
 horizontal_alignment = 2
 
 [node name="TabHint" type="Label" parent="PauseMenu/Center/Panel/Menu"]

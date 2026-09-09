@@ -46,6 +46,7 @@ func _run() -> void:
 	var left: Dancer = _root.get_node("LeftDancer")
 	left.set_control_input(Vector2(0.25, -0.75), Vector2.RIGHT, 0.6, 0.2, true, false)
 	left.diagnostic_movement_force = Vector2(225.0, -675.0)
+	left.set_weight_kg(83.0)
 	left.diagnostic_spin_torque = 1234.0
 	left.diagnostic_position_lock_force = Vector2(-45.0, 12.0)
 	left.extended_elbow_flexion_degrees = 23.0
@@ -53,6 +54,10 @@ func _run() -> void:
 	_recorder.hand_connection.set_grip_button_state(left, -1, true)
 	_recorder.record_current_sample()
 	var sample: Dictionary = _recorder.get_samples()[0]
+	_expect(sample["left_dancer"]["weight_kg"] == 83.0
+		and sample["left_dancer"]["visual_weight_kg"] == 80
+		and is_equal_approx(sample["left_dancer"]["mass"], 83.0 * 1.2 / 75.0),
+		"sample distinguishes exact physical weight from its visual band")
 	_expect(sample.has("left_dancer") and sample.has("right_dancer"), "each sample contains both dancers")
 	_expect(sample.has("pair") and sample.has("hand_connection"), "each sample contains pair and connection state")
 	_expect(
@@ -99,6 +104,11 @@ func _run() -> void:
 	)
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
+	_expect(payload["configuration"]["hand_connection"]["spring_integration"] == "implicit_endpoint_mass",
+		"capture identifies the mass-aware implicit spring calculation")
+	_expect(payload["configuration"]["left_dancer"]["weight_kg"] == 83.0
+		and payload["configuration"]["left_dancer"]["reference_weight_kg"] == 75.0,
+		"configuration records weight and the shared physics conversion")
 	_expect(payload["schema"] == "dancers-coop-telemetry-v5", "payload uses the versioned co-op schema")
 	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
 	_expect(payload["configuration"].has("controller"), "payload includes exact controller tuning")

@@ -45,7 +45,7 @@ Therefore, during both single and double holds:
   players at all times, including while apart. Diagonals combine axes; one player alone
   cannot change the neutral pose. Both dancers receive the same angular change
   up to either partner's limit, preserving any pre-existing pose difference.
-- A minimal 12 px torso collider remains active in free, single, and double
+- A 20 px torso collider remains active in free, single, and double
   holds. The 25-degree forward arm frame leaves it clear in a natural two-hand
   pose, while the circles prevent the body centres from collapsing together.
 - Turns, pulls, orbits, under-arm motion, and releases emerge from player input
@@ -55,6 +55,25 @@ When LS and RS are neutral, their motors apply no force or torque. The dancer
 remembers the last RS direction for the next gesture but does not actively hold
 that heading, so a connected partner can physically guide both translation and
 rotation.
+
+## Stable spring integration
+
+Spring forces use a backward-Euler step with the effective inverse mass at both
+hands, including each arm's rotational lever and the current body inertia. This
+prevents damping from overshooting and reversing endpoint velocity each tick.
+When two holds share the bodies, a conservative two-pair response budget prevents
+the independently applied forces from overcorrecting together. Forces are still
+equal and opposite at the physical hand positions, with the existing force cap;
+there is no added rotation snap, velocity reset, or artificial settling timer.
+
+The current branch retained explicit springs; the earlier `e0bed60` rigid-joint
+fix is not in its ancestry. The September 9 capture reproduced alternating spin
+even with pre-weight masses restored, so the new visual hands were not the cause.
+The regression fixture in `tests/fixtures/handhold-stability-2026-09-09.json`
+preserves that capture's initial state and exact input-change frames. Run
+`tests/handhold_replay_test.gd`; `--extreme-weights` also exercises 100/50 kg.
+The replay asserts low sustained spin-step RMS after input stops, in addition
+to bounded hand separation. Configuration records `implicit_endpoint_mass`.
 
 ## Physical axis locks
 

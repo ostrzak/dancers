@@ -164,6 +164,9 @@ func _build_current_sample() -> Dictionary:
 
 func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 	return {
+		"weight_kg": dancer.weight_kg,
+		"mass": dancer.mass,
+		"visual_weight_kg": dancer.get_visual_weight_kg(),
 		"position": _vector2_for_json(dancer.global_position),
 		"rotation_radians": _float_for_json(dancer.global_rotation),
 		"rotation_degrees": _float_for_json(rad_to_deg(dancer.global_rotation)),
@@ -173,6 +176,7 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 		"target_angular_velocity": _float_for_json(dancer.target_angular_velocity),
 		"facing_dial": {
 			"active": dancer.facing_dial_active,
+			"response_scale": _float_for_json(dancer.facing_dial_response_scale),
 			"applied_rotation_radians": _float_for_json(dancer.facing_dial_total_rotation),
 			"pending_rotation_radians": _float_for_json(dancer.heading_error),
 		},
@@ -303,6 +307,7 @@ func _build_configuration() -> Dictionary:
 		"left_dancer": _build_dancer_configuration(left_dancer),
 		"right_dancer": _build_dancer_configuration(right_dancer),
 		"hand_connection": {
+			"spring_integration": "implicit_endpoint_mass",
 			"catch_radius": hand_connection.catch_radius,
 			"maximum_relative_catch_velocity": (
 				hand_connection.maximum_relative_catch_velocity
@@ -351,6 +356,10 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 	return {
 		"name": dancer.dancer_name,
 		"body_style": dancer.body_style,
+		"weight_kg": dancer.weight_kg,
+		"reference_weight_kg": Dancer.REFERENCE_WEIGHT_KG,
+		"reference_physics_mass": Dancer.REFERENCE_PHYSICS_MASS,
+		"visual_weight_kg": dancer.get_visual_weight_kg(),
 		"mass": dancer.mass,
 		"movement_force": dancer.movement_force,
 		"movement_linear_damping": dancer.movement_linear_damping,
@@ -358,10 +367,10 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 		"spin_torque": dancer.spin_torque,
 		"spin_response_gain": dancer.spin_response_gain,
 		"facing_response_rate": dancer.facing_response_rate,
-		"facing_mode": "bounded_eased_dial",
+		"facing_mode": "radial_heading_response",
 		"facing_dial_engage_threshold": dancer.facing_dial_engage_threshold,
 		"facing_dial_release_threshold": dancer.facing_dial_release_threshold,
-		"facing_dial_max_lag_degrees": dancer.facing_dial_max_lag_degrees,
+		"facing_dial_minimum_response": dancer.facing_dial_minimum_response,
 		"facing_dial_acceleration": dancer.facing_dial_acceleration,
 		"facing_dial_braking": dancer.facing_dial_braking,
 		"minimum_target_angular_velocity": dancer.minimum_target_angular_velocity,

@@ -80,7 +80,8 @@ func _physics_process(delta: float) -> void:
 			_connected_hand_a,
 			_connected_hand_b,
 			primary_snap_remaining > 0.0,
-			1
+			1,
+			delta
 		)
 	if is_secondary_connected:
 		secondary_snap_remaining = maxf(0.0, secondary_snap_remaining - delta)
@@ -88,7 +89,8 @@ func _physics_process(delta: float) -> void:
 			_secondary_hand_a,
 			_secondary_hand_b,
 			secondary_snap_remaining > 0.0,
-			2
+			2,
+			delta
 		)
 	if not has_any_connection():
 		_update_free_hand_metrics()
@@ -338,7 +340,8 @@ func _process_hold_pair(
 	hand_a_side: int,
 	hand_b_side: int,
 	is_snapping: bool,
-	slot: int
+	slot: int,
+	delta: float = 1.0 / 120.0
 ) -> float:
 	var hand_a := dancer_a.get_hand_world_position(hand_a_side)
 	var hand_b := dancer_b.get_hand_world_position(hand_b_side)
@@ -374,8 +377,9 @@ func _process_hold_pair(
 		)
 
 	var force := Vector2.ZERO
+	var direction := delta_position / separation_length if separation_length > 0.001 else Vector2.RIGHT
+	var normal_stiffness := stiffness
 	if separation_length > 0.001:
-		var direction := delta_position / separation_length
 		var normal_speed := delta_velocity.dot(direction)
 		var tangential_velocity := delta_velocity - direction * normal_speed
 		force = direction * (
@@ -384,21 +388,63 @@ func _process_hold_pair(
 		)
 		force += tangential_velocity * tangential_damping
 		if separation_length > maximum_hand_separation:
+			normal_stiffness += separation_stiffness
 			separation_limit_active = true
 			var separating_speed := maxf(0.0, normal_speed)
 			force += direction * (
 				(separation_length - maximum_hand_separation) * separation_stiffness
 				+ separating_speed * separation_damping
 			)
+			if normal_speed > 0.0:
+				normal_damping += separation_damping
 	else:
 		force = delta_velocity * tangential_damping
-	force = force.limit_length(maximum_constraint_force)
-
 	var offset_a := hand_a - dancer_a.global_position
 	var offset_b := hand_b - dancer_b.global_position
+	force = _implicit_spring_force(force, delta_velocity, direction,
+		Vector2(normal_stiffness, stiffness), Vector2(normal_damping, tangential_damping),
+		offset_a, offset_b, delta).limit_length(maximum_constraint_force)
 	dancer_a.apply_force(force, offset_a)
 	dancer_b.apply_force(-force, offset_b)
 	return force.length()
+
+
+func _implicit_spring_force(requested: Vector2, velocity: Vector2, normal: Vector2,
+		stiffness: Vector2, damping: Vector2, offset_a: Vector2, offset_b: Vector2,
+		delta: float) -> Vector2:
+	if delta <= 0.0:
+		return Vector2.ZERO
+	# Endpoint inverse mass includes rotation about each body's centre. Ignoring
+	# those lever arms makes even modest explicit damping reverse hand velocity
+	# every tick. Backward Euler evaluates spring/damping at the resulting velocity.
+	var inverse_mass := 1.0 / dancer_a.mass + 1.0 / dancer_b.mass
+	var lever_a := Vector2(-offset_a.y, offset_a.x)
+	var lever_b := Vector2(-offset_b.y, offset_b.x)
+	var inverse_inertia_a := 1.0 / maxf(dancer_a.inertia, 0.001)
+	var inverse_inertia_b := 1.0 / maxf(dancer_b.inertia, 0.001)
+	# Two simultaneous pairs share the same bodies. This conservative block
+	# bound budgets the response across both, avoiding competing independent solves.
+	var pairs := float(maxi(get_active_connection_count(), 1))
+	var kxx := pairs * (inverse_mass + lever_a.x * lever_a.x * inverse_inertia_a
+		+ lever_b.x * lever_b.x * inverse_inertia_b)
+	var kxy := pairs * (lever_a.x * lever_a.y * inverse_inertia_a
+		+ lever_b.x * lever_b.y * inverse_inertia_b)
+	var kyy := pairs * (inverse_mass + lever_a.y * lever_a.y * inverse_inertia_a
+		+ lever_b.y * lever_b.y * inverse_inertia_b)
+	var normal_coefficient := delta * damping.x + delta * delta * stiffness.x
+	var tangent_coefficient := delta * damping.y + delta * delta * stiffness.y
+	var difference := normal_coefficient - tangent_coefficient
+	var bxx := tangent_coefficient + difference * normal.x * normal.x
+	var bxy := difference * normal.x * normal.y
+	var byy := tangent_coefficient + difference * normal.y * normal.y
+	var a11 := 1.0 + bxx * kxx + bxy * kxy
+	var a12 := bxx * kxy + bxy * kyy
+	var a21 := bxy * kxx + byy * kxy
+	var a22 := 1.0 + bxy * kxy + byy * kyy
+	var rhs := requested + delta * (stiffness.y * velocity
+		+ (stiffness.x - stiffness.y) * normal * velocity.dot(normal))
+	var determinant := a11 * a22 - a12 * a21
+	return Vector2(a22 * rhs.x - a12 * rhs.y, a11 * rhs.y - a21 * rhs.x) / determinant
 
 
 func _enforce_active_maximum_separations(delta: float) -> void:
@@ -536,9 +582,8 @@ func _endpoint_can_be_caught(endpoint: int, side: int) -> bool:
 func _update_dancer_collision_exception() -> void:
 	if not is_instance_valid(dancer_a) or not is_instance_valid(dancer_b):
 		return
-	# The 12 px circles are intentionally small enough for a proper two-hand
-	# frame. Keeping them active prevents a double hold from collapsing both body
-	# centres into the same space when the two constraints briefly disagree.
+	# Keep the torso circles active in both holds so the bodies retain their
+	# space even when the two constraints briefly disagree.
 	dancer_a.remove_collision_exception_with(dancer_b)
 	dancer_b.remove_collision_exception_with(dancer_a)
 

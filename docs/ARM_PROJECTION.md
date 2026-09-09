@@ -6,9 +6,10 @@ This makes shoulder adduction and elbow flexion readable without lighting,
 shadows, or a second 3D character rig.
 
 The dancers are upright humans viewed from directly overhead, not bodies lying
-in the floor plane. Each head occludes the torso's full centre and the torso
-stays within the head's front-to-rear footprint. Only a short neck, shoulders,
-and compact clothing edges remain visible around it. A small nose marks local
+in the floor plane. Each head occludes the upper torso's centre. A rounded belly
+becomes visible forward of the head as weight rises in 5 kg bands, rather than
+stretching the entire body into a frontal silhouette. A short neck, shoulders,
+and clothing edges remain visible around the head. A small nose marks local
 forward on the corrected side. The black man's head remains solid black, with
 angular tuxedo shoulders. The white woman uses a filled rear hair cap and side
 locks, long hair draped over rounded shoulders, restrained bodice lobes, and
@@ -79,6 +80,25 @@ projected forearm places each hand over the pectoral on the same side of the
 body; hands do not cross the centreline.
 
 ## Gameplay authority
+
+Arms are drawn as tapered, rounded upper-arm and forearm segments with a thin
+contrasting outline and a short cuff mark when there is room. Both segment
+outlines are drawn before their fills, avoiding an elbow seam. At zero projected
+length, round caps remain valid without a degenerate polygon. Drawing uses the
+existing shoulder, elbow, and hand coordinates through every trigger and D-pad
+pose; the artwork does not change physical reach. The torso alone uses the
+weight-dependent clothing scale and rounded belly contour documented in `TUNING.md`.
+
+Hands use rounded palm silhouettes with a narrow wrist and a small mirrored thumb
+bump. Their direction follows the forearm. A visual axial roll blends normalized
+shoulder adduction and elbow flexion equally: the extended pose shows the back,
+the intermediate pose is edge-on, and the tucked pose shows the palm. D-pad
+adduction also contributes. This is an authored pose coupling, not an anatomical
+constraint or a new physical wrist joint. Projected palm width follows cosine
+of roll, with a 2 px half-thickness at edge-on and a faint crease on the palm face.
+The thumb crosses sides continuously rather than flipping instantly. The
+grip point remains at the palm centre; catch distances and connection markers are
+unchanged. Individual fingers are omitted for readability at gameplay scale.
 
 The projected hand position is used consistently for drawing, hand catches,
 constraint forces, hand velocity, and effective rotational inertia. Presentation
