@@ -88,6 +88,7 @@ var _current_arm_lengths := {
 }
 var _double_hold_arm_active := {-1: false, 1: false}
 var _double_hold_arm_effort := {-1: 0.0, 1: 0.0}
+var _double_hold_request_mismatch := {-1: 0.0, 1: 0.0}
 var _unwrapped_rotation := 0.0
 var _previous_wrapped_rotation := 0.0
 var _desired_facing_rotation := 0.0
@@ -107,6 +108,7 @@ const REFERENCE_WEIGHT_KG := 75.0
 const REFERENCE_BODY_MASS := 1.2
 const MAXIMUM_VISUAL_WEIGHT_GAIN_KG := 30.0
 const FIGHT_HAND_COLOR := Color("ff4038")
+const ARM_EFFORT_TINT_DEADZONE := 0.10
 
 
 func _ready() -> void:
@@ -278,7 +280,8 @@ func get_weight_scale() -> float:
 func set_double_hold_arm_state(
 	side: int,
 	achieved_flexion: float,
-	requested_flexion: float
+	requested_flexion: float,
+	permitted_flexion: float = -1.0
 ) -> void:
 	var signed_side := signi(side)
 	var flexion := clampf(achieved_flexion, 0.0, 1.0)
@@ -287,6 +290,11 @@ func set_double_hold_arm_state(
 		0.0,
 		clampf(requested_flexion, 0.0, 1.0) - flexion
 	)
+	# Geometry may limit both partners equally at torso contact. Keep that raw
+	# effort for diagnostics, but colour only an unmatched partner request.
+	var feedback_reference := flexion if permitted_flexion < 0.0 else clampf(permitted_flexion, 0.0, 1.0)
+	_double_hold_request_mismatch[signed_side] = maxf(0.0,
+		clampf(requested_flexion, 0.0, 1.0) - feedback_reference)
 	set_current_arm_length(
 		signed_side,
 		lerpf(maximum_arm_length, minimum_arm_length, flexion)
@@ -297,10 +305,15 @@ func clear_double_hold_arm_states() -> void:
 	for side in HAND_SIDES:
 		_double_hold_arm_active[side] = false
 		_double_hold_arm_effort[side] = 0.0
+		_double_hold_request_mismatch[side] = 0.0
 
 
 func get_double_hold_arm_effort(side: int) -> float:
 	return float(_double_hold_arm_effort[signi(side)])
+
+
+func get_double_hold_request_mismatch(side: int) -> float:
+	return float(_double_hold_request_mismatch[signi(side)])
 
 
 func adjust_extended_arm_pose(
@@ -614,8 +627,8 @@ func _update_effective_inertia() -> void:
 
 
 func get_hand_display_color(side: int) -> Color:
-	var effort := get_double_hold_arm_effort(side)
-	var fight_blend := sqrt(clampf(effort, 0.0, 1.0))
+	var effort := get_double_hold_request_mismatch(side)
+	var fight_blend := smoothstep(ARM_EFFORT_TINT_DEADZONE, 1.0, effort)
 	return body_color.lerp(FIGHT_HAND_COLOR, fight_blend)
 
 

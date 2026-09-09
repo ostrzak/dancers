@@ -33,6 +33,37 @@ func _physics_process(delta: float) -> void:
 	_select_gamepads_if_needed()
 	_apply_player_input(left_dancer, _player_one_device, delta)
 	_apply_player_input(right_dancer, _player_two_device, delta)
+	_apply_arm_pose_inputs(_read_dpad(_player_one_device), _read_dpad(_player_two_device), delta)
+
+
+func _apply_arm_pose_inputs(left_input: Vector2, right_input: Vector2, delta: float) -> void:
+	if get_tree().paused:
+		return
+	var agreed := Vector2(_agreed_pose_axis(left_input.x, right_input.x),
+		_agreed_pose_axis(left_input.y, right_input.y))
+	var step := minf(left_dancer.arm_stance_adjustment_rate_degrees,
+		right_dancer.arm_stance_adjustment_rate_degrees) * maxf(delta, 0.0)
+	var elbow_step := -agreed.x * step
+	var sweep_step := agreed.y * step
+	# Both dancers receive the same bounded adjustment. Either partner's limit
+	# stops that axis, so a shared stance cannot drift apart at an endpoint.
+	for dancer in [left_dancer, right_dancer]:
+		elbow_step = clampf(elbow_step,
+			dancer.minimum_extended_elbow_flexion_degrees - dancer.extended_elbow_flexion_degrees,
+			dancer.maximum_extended_elbow_flexion_degrees - dancer.extended_elbow_flexion_degrees)
+		sweep_step = clampf(sweep_step,
+			dancer.minimum_extended_forward_sweep_degrees - dancer.extended_forward_sweep_degrees,
+			dancer.maximum_extended_forward_sweep_degrees - dancer.extended_forward_sweep_degrees)
+	for dancer in [left_dancer, right_dancer]:
+		dancer.extended_elbow_flexion_degrees += elbow_step
+		dancer.extended_forward_sweep_degrees += sweep_step
+		dancer.queue_redraw()
+
+
+func _agreed_pose_axis(left: float, right: float) -> float:
+	if left * right <= 0.0:
+		return 0.0
+	return signf(left) * minf(minf(absf(left), absf(right)), 1.0)
 
 
 func _input(event: InputEvent) -> void:
@@ -57,7 +88,7 @@ func _input(event: InputEvent) -> void:
 				dancer.toggle_rotation_lock()
 
 
-func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
+func _apply_player_input(dancer: Dancer, device: int, _delta: float) -> void:
 	if not is_instance_valid(dancer):
 		return
 	hand_connection.set_grip_button_state(
@@ -70,14 +101,12 @@ func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
 		1,
 		_read_button(device, JOY_BUTTON_RIGHT_SHOULDER)
 	)
-	var dpad := _read_dpad(device)
 	var facing_stick := _read_stick(
 		device,
 		JOY_AXIS_RIGHT_X,
 		JOY_AXIS_RIGHT_Y,
 		false
 	)
-	dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
 	dancer.set_control_input(
 		_read_stick(device, JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y),
 		facing_stick,

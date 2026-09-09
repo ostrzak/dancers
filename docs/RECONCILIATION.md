@@ -3,6 +3,11 @@
 This integration combines the previously divergent gameplay and artwork using
 the user's explicit precedence decisions:
 
+Follow-up refinement: simultaneous, per-axis D-pad consent has been restored.
+Red-arm feedback now allows a 10% partner-request mismatch and ignores shared
+torso-limited flexion, so matching full tuck stays neutral. The table below
+records the original merge; the current controls are described in TUNING.md.
+
 | Area | Source and outcome |
 | --- | --- |
 | Gameplay baseline | `885d265` (hybrid): common skeleton, grip ownership/latching, independent D-pad stance, toggle locks, weighted LS and lock authority, sensitivity tuning |

@@ -605,22 +605,26 @@ func _apply_double_hold_flexions(flexions: Array, record_effort: bool) -> void:
 	dancer_a.set_double_hold_arm_state(
 		_connected_hand_a,
 		float(flexions[0]),
-		request_a_primary
+		request_a_primary,
+		double_hold_primary_permission if record_effort else float(flexions[0])
 	)
 	dancer_b.set_double_hold_arm_state(
 		_connected_hand_b,
 		float(flexions[1]),
-		request_b_primary
+		request_b_primary,
+		double_hold_primary_permission if record_effort else float(flexions[1])
 	)
 	dancer_a.set_double_hold_arm_state(
 		_secondary_hand_a,
 		float(flexions[2]),
-		request_a_secondary
+		request_a_secondary,
+		double_hold_secondary_permission if record_effort else float(flexions[2])
 	)
 	dancer_b.set_double_hold_arm_state(
 		_secondary_hand_b,
 		float(flexions[3]),
-		request_b_secondary
+		request_b_secondary,
+		double_hold_secondary_permission if record_effort else float(flexions[3])
 	)
 
 

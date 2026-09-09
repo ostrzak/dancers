@@ -225,6 +225,7 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 func _build_arm_sample(dancer: Dancer, side: int) -> Dictionary:
 	return {
 		"trigger": _float_for_json(dancer.get_trigger_value(side)),
+		"request_mismatch": _float_for_json(dancer.get_double_hold_request_mismatch(side)),
 		"hand_roll_radians": _float_for_json(dancer.get_hand_roll_radians(side)),
 		"double_hold_effort": _float_for_json(
 			dancer.get_double_hold_arm_effort(side)

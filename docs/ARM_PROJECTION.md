@@ -53,8 +53,9 @@ fixed 20 px body circle stay unchanged. Fit weight changes appearance only.
 
 ## Extended stance
 
-Each controller's D-pad adjusts the fully extended pose of both arms on that
-dancer. Left and right narrow or widen the stance by changing the baseline
+Both controllers must hold matching D-pad directions to adjust the fully
+extended stance of both dancers. Consent is per axis, apart or connected.
+Left and right narrow or widen the stance by changing the baseline
 elbow flexion. Up and down sweep both arm chains forward or backward relative to
 the nose. Holding a direction adjusts continuously at 40 degrees per second.
 The authored neutral stance begins 25 degrees forward, giving two facing dancers

@@ -46,21 +46,23 @@ In a double hold, triggers remain independent requests. For each connected pair,
 contraction advances only to the lesser of the two partners' requests. One
 partner can therefore ask for more flexion, but the arm and frame budge only as
 far as the other partner permits. The requesting dancer's entire arm and hand shift
-toward bright red in proportion to the unfulfilled request, using the historical
-rigid version's square-root colour response. Before solving the
+toward bright red when its request exceeds the partner's by more than 10%,
+with a smooth colour fade above that quiet zone. Before solving the
 contacts, the arm geometry
 is projected so the two local hand spans match; this removes the impossible
 geometry that formerly made the two constraints fight and oscillate.
 
 The projection also respects the actual torso-circle separation. If fully
 tucking both partners would require the bodies to overlap, achieved flexion
-stops at the compatible pose and the remaining request appears as red effort.
+stops at the compatible pose. Matching requests remain their normal colour;
+the geometry limit alone does not turn the arms red.
 This keeps the restored rigid contacts compatible with the larger body circles;
 the fit-weight setting does not change that limit.
 
 Both visual styles use hybrid's identical mechanical skeleton. Effort is the
 positive difference between requested and achieved flexion, not a measurement
-of joint force. Palm supination follows the achieved pose, even when a trigger
+of joint force. The tint instead uses the partners' request mismatch so small
+differences and matching full tuck stay neutral. Palm supination follows the achieved pose, even when a trigger
 requests more flexion than the hold permits.
 
 Therefore, during both single and double holds:

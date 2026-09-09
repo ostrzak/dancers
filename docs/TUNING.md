@@ -56,7 +56,9 @@ Frictionless body contacts preserve turning at arena walls.
 
 ## D-pad and physical locks
 
-During play, each controller's D-pad adjusts only that dancer's extended stance.
+During play, D-pad adjustment requires both controllers to hold the same
+direction simultaneously, independently per axis, in free motion and all holds.
+Agreed input applies the same bounded adjustment to both dancers' stances.
 Left/right narrow or widen the arm frame through baseline elbow flexion;
 up/down sweep it backward or forward. The neutral forward sweep is 25 degrees.
 While paused the D-pad remains menu navigation.
@@ -72,4 +74,8 @@ Version `dancers-coop-telemetry-v11` records weights, fit weights, visual excess
 bands, derived mass/inertia, controller assignments, sensitivities, radial RS
 state and authority, achieved hand roll, and rigid-joint acquisition/correction
 metrics. Double holds include mutual flexion permissions and per-arm effort.
+Arm tint uses the difference between partners' requests with a 10% quiet zone
+and a smooth fade into red. Matching full-tuck requests remain neutral even
+when torso clearance limits the achieved pose. Raw request-minus-achieved
+effort remains in telemetry alongside `request_mismatch`.
 This identifies the combined behavior without relying on the checkout name.
