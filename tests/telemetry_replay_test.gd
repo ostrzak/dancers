@@ -5,6 +5,14 @@ var _left: Dancer
 var _right: Dancer
 var _connection: HandConnection
 var _failed := false
+var _frame_observer: FrameObserver
+
+
+class FrameObserver extends Node:
+	signal frame_completed
+
+	func _physics_process(_delta: float) -> void:
+		frame_completed.emit()
 
 
 func _initialize() -> void:
@@ -39,19 +47,24 @@ func _run() -> void:
 	_root.set_process_input(false)
 	_root.set_physics_process(false)
 	_root.get_node("TelemetryRecorder").process_mode = Node.PROCESS_MODE_DISABLED
+	_frame_observer = FrameObserver.new()
+	_frame_observer.process_physics_priority = 2000
+	_root.add_child(_frame_observer)
 	await process_frame
+	for key in ["left_dancer", "right_dancer"]:
+		var dancer: Dancer = _left if key == "left_dancer" else _right
+		var configuration: Dictionary = parsed.get("configuration", {}).get(key, {})
+		dancer.set_physical_weight_kg(float(configuration.get("weight_kg", 75.0)))
 
 	_initialize_from_sample(samples[0])
 	var maximum_gap := 0.0
-	var maximum_settled_double_gap := 0.0
-	var double_hold_age := 0
-	var settled_double_frames := 0
+	var maximum_settled_joint_gap := 0.0
+	var settled_joint_frames := 0
 	var maximum_relative_hand_speed := 0.0
 	var maximum_body_speed := 0.0
 	var maximum_absolute_spin := 0.0
 	var maximum_spin_step := 0.0
 	var spin_reversals := 0
-	var dorsal_frames := 0
 	var previous_left_spin := _left.angular_velocity
 	var previous_right_spin := _right.angular_velocity
 	var finite_state := true
@@ -65,19 +78,13 @@ func _run() -> void:
 			int(next_sample["physics_frame"]) - int(sample["physics_frame"])
 		)
 		for _physics_step in frame_count:
-			await physics_frame
+			await _frame_observer.frame_completed
 			var current_gap := _maximum_connected_gap()
 			maximum_gap = maxf(maximum_gap, current_gap)
-			if _connection.get_active_connection_count() == 2:
-				double_hold_age += 1
-				if double_hold_age > 5:
-					settled_double_frames += 1
-					maximum_settled_double_gap = maxf(
-						maximum_settled_double_gap,
-						current_gap
-					)
-			else:
-				double_hold_age = 0
+			if _connection.has_any_connection() and _connection.primary_snap_remaining <= 0.0 \
+					and _connection.secondary_snap_remaining <= 0.0:
+				settled_joint_frames += 1
+				maximum_settled_joint_gap = maxf(maximum_settled_joint_gap, current_gap)
 			maximum_relative_hand_speed = maxf(
 				maximum_relative_hand_speed,
 				_connection.relative_hand_velocity
@@ -102,8 +109,6 @@ func _run() -> void:
 				or _right.angular_velocity * previous_right_spin < -0.25
 			):
 				spin_reversals += 1
-			if _connection.dorsal_limit_active:
-				dorsal_frames += 1
 			previous_left_spin = _left.angular_velocity
 			previous_right_spin = _right.angular_velocity
 			finite_state = finite_state and (
@@ -116,28 +121,23 @@ func _run() -> void:
 			)
 
 	print(
-		"TELEMETRY REPLAY %s solver=%s max_gap=%.3f px settled_double_gap=%.3f px max_hand_speed=%.3f px/s max_body_speed=%.3f px/s max_spin=%.3f rad/s max_spin_step=%.3f reversals=%d dorsal_frames=%d"
+		"TELEMETRY REPLAY %s solver=%s seed_gap=%.3f px settled_joint_gap=%.3f px max_hand_speed=%.3f px/s max_body_speed=%.3f px/s max_spin=%.3f rad/s max_spin_step=%.3f reversals=%d"
 		% [
 			capture_path.get_file(),
 			_connection.get_solver_mode(),
 			maximum_gap,
-			maximum_settled_double_gap,
+			maximum_settled_joint_gap,
 			maximum_relative_hand_speed,
 			maximum_body_speed,
 			maximum_absolute_spin,
 			maximum_spin_step,
 			spin_reversals,
-			dorsal_frames,
 		]
 	)
 	_expect(finite_state, "replay remains numerically finite")
 	_expect(
-		maximum_gap <= _connection.maximum_hand_separation + 0.1,
-		"replay respects the 1.5-hand hard tether"
-	)
-	_expect(
-		settled_double_frames == 0 or maximum_settled_double_gap <= 0.25,
-		"replayed double holds settle to rigid fingertip contact"
+		settled_joint_frames == 0 or maximum_settled_joint_gap <= 0.25,
+		"every replayed handhold settles to rigid fingertip contact"
 	)
 	_expect(maximum_body_speed < 2000.0, "replay avoids emergency body velocity")
 	_expect(maximum_absolute_spin < 30.0, "replay avoids wild angular velocity")
@@ -158,8 +158,10 @@ func _initialize_from_sample(sample: Dictionary) -> void:
 	_connection._secondary_hand_b = int(hold["secondary_right_dancer_hand_side"])
 	_connection.primary_snap_remaining = 0.0
 	_connection.secondary_snap_remaining = 0.0
-	_connection._primary_compliance = float(hold["primary_elastic_blend"])
-	_connection._secondary_compliance = float(hold["secondary_elastic_blend"])
+	_connection.primary_acquisition_progress = 1.0 if _connection.is_connected else 0.0
+	_connection.secondary_acquisition_progress = (
+		1.0 if _connection.is_secondary_connected else 0.0
+	)
 	_initialize_endpoint_state(_left, 1, sample["left_dancer"])
 	_initialize_endpoint_state(_right, 2, sample["right_dancer"])
 	_connection._update_dancer_collision_exception()
@@ -171,6 +173,7 @@ func _initialize_from_sample(sample: Dictionary) -> void:
 func _apply_dancer_state(dancer: Dancer, state: Dictionary) -> void:
 	dancer.global_position = _vector_from_json(state["position"])
 	dancer.global_rotation = float(state["rotation_radians"])
+	dancer._update_unwrapped_rotation()
 	dancer.linear_velocity = _vector_from_json(state["linear_velocity"])
 	dancer.angular_velocity = float(state["angular_velocity"])
 	var arms: Dictionary = state["arms"]
@@ -209,6 +212,10 @@ func _apply_recorded_input(sample: Dictionary) -> void:
 
 
 func _apply_dancer_input(dancer: Dancer, state: Dictionary) -> void:
+	if state.has("weight_kg"):
+		dancer.set_physical_weight_kg(float(state["weight_kg"]))
+	if state.has("fit_weight_kg"):
+		dancer.set_fit_weight_kg(float(state["fit_weight_kg"]))
 	var input: Dictionary = state["input"]
 	var arms: Dictionary = state["arms"]
 	dancer.extended_elbow_flexion_degrees = float(

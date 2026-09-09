@@ -13,12 +13,16 @@ extends CanvasLayer
 @onready var quit_button: Button = $Center/Panel/Menu/Tabs/GENERAL/Quit
 @onready var trigger_sensitivity_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/TriggerSensitivity
 @onready var stick_sensitivity_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/StickSensitivity
-@onready var man_weight_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/ManWeight
-@onready var woman_weight_slider: HSlider = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/WomanWeight
+@onready var man_weight_slider: HSlider = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/ManWeight
+@onready var woman_weight_slider: HSlider = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanWeight
 @onready var trigger_sensitivity_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/TriggerSensitivityValue
 @onready var stick_sensitivity_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/StickSensitivityValue
-@onready var man_weight_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/ManWeightValue
-@onready var woman_weight_value: Label = $Center/Panel/Menu/Tabs/TUNING/TuningGrid/WomanWeightValue
+@onready var man_weight_value: Label = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/ManWeightValue
+@onready var man_fit_weight_slider: HSlider = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/ManFitWeight
+@onready var man_fit_weight_value: Label = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/ManFitWeightValue
+@onready var woman_weight_value: Label = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanWeightValue
+@onready var woman_fit_weight_slider: HSlider = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanFitWeight
+@onready var woman_fit_weight_value: Label = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanFitWeightValue
 
 
 func _ready() -> void:
@@ -34,6 +38,8 @@ func _ready() -> void:
 		stick_sensitivity_slider,
 		man_weight_slider,
 		woman_weight_slider,
+		man_fit_weight_slider,
+		woman_fit_weight_slider,
 	]:
 		slider.value_changed.connect(_on_tuning_changed)
 	_sync_tuning_controls()
@@ -96,8 +102,10 @@ func _switch_tab(direction: int) -> void:
 	tabs.current_tab = wrapi(tabs.current_tab + direction, 0, tabs.get_tab_count())
 	if tabs.current_tab == 0:
 		resume_button.grab_focus()
-	else:
+	elif tabs.current_tab == 1:
 		trigger_sensitivity_slider.grab_focus()
+	else:
+		man_weight_slider.grab_focus()
 
 
 func _sync_tuning_controls() -> void:
@@ -107,6 +115,8 @@ func _sync_tuning_controls() -> void:
 	stick_sensitivity_slider.set_value_no_signal(controller.stick_sensitivity)
 	man_weight_slider.set_value_no_signal(controller.man_weight_kg)
 	woman_weight_slider.set_value_no_signal(controller.woman_weight_kg)
+	man_fit_weight_slider.set_value_no_signal(controller.man_fit_weight_kg)
+	woman_fit_weight_slider.set_value_no_signal(controller.woman_fit_weight_kg)
 	_refresh_tuning_labels()
 
 
@@ -117,7 +127,9 @@ func _on_tuning_changed(_value: float) -> void:
 		trigger_sensitivity_slider.value,
 		stick_sensitivity_slider.value,
 		man_weight_slider.value,
-		woman_weight_slider.value
+		woman_weight_slider.value,
+		man_fit_weight_slider.value,
+		woman_fit_weight_slider.value
 	)
 	_refresh_tuning_labels()
 
@@ -127,6 +139,8 @@ func _refresh_tuning_labels() -> void:
 	stick_sensitivity_value.text = "%.2fx" % stick_sensitivity_slider.value
 	man_weight_value.text = "%d kg" % int(man_weight_slider.value)
 	woman_weight_value.text = "%d kg" % int(woman_weight_slider.value)
+	man_fit_weight_value.text = "%d kg" % int(man_fit_weight_slider.value)
+	woman_fit_weight_value.text = "%d kg" % int(woman_fit_weight_slider.value)
 
 
 func _activate_focused_control() -> void:

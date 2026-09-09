@@ -20,7 +20,7 @@ func _process(_delta: float) -> void:
 		return
 	left_readout.text = "%s\n%s" % [left_dancer.dancer_name, _format_dancer(left_dancer)]
 	right_readout.text = "%s\n%s" % [right_dancer.dancer_name, _format_dancer(right_dancer)]
-	connection_readout.text = "HANDS %s [%s]   primed B:%s/%s W:%s/%s   gap %6.2f px   relative %6.2f px/s   force %7.1f   elastic %3.0f/%3.0f%%   effort %3.0f%%" % [
+	connection_readout.text = "HANDS %s [%s]   primed B:%s/%s W:%s/%s   gap %6.2f px   relative %6.2f px/s   acquire %3.0f/%3.0f%%   effort %3.0f%%" % [
 		hand_connection.get_hold_mode().to_upper(),
 		hand_connection.get_solver_mode().to_upper(),
 		"L" if hand_connection.is_hand_primed(left_dancer, -1) else "-",
@@ -29,9 +29,8 @@ func _process(_delta: float) -> void:
 		"R" if hand_connection.is_hand_primed(right_dancer, 1) else "-",
 		hand_connection.distance_error,
 		hand_connection.relative_hand_velocity,
-		hand_connection.connection_force,
-		hand_connection.primary_elastic_blend * 100.0,
-		hand_connection.secondary_elastic_blend * 100.0,
+		hand_connection.primary_acquisition_progress * 100.0,
+		hand_connection.secondary_acquisition_progress * 100.0,
 		hand_connection.double_hold_maximum_effort * 100.0,
 	]
 

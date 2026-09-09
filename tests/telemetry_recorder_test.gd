@@ -60,8 +60,8 @@ func _run() -> void:
 		and sample["hand_connection"].has("hold_mode")
 		and sample["hand_connection"].has("primary_snap_remaining")
 		and sample["hand_connection"].has("secondary_snap_remaining")
-		and sample["hand_connection"].has("primary_elastic_blend")
-		and sample["hand_connection"].has("secondary_elastic_blend")
+		and sample["hand_connection"].has("primary_acquisition_progress")
+		and sample["hand_connection"].has("secondary_acquisition_progress")
 		and sample["hand_connection"].has("primary_hand_separation")
 		and sample["hand_connection"].has("secondary_hand_separation")
 		and sample["hand_connection"].has("primary_allowed_separation")
@@ -70,16 +70,23 @@ func _run() -> void:
 		and sample["hand_connection"].has("secondary_position_correction")
 		and sample["hand_connection"].has("primary_velocity_correction")
 		and sample["hand_connection"].has("secondary_velocity_correction")
-		and sample["hand_connection"].has("dorsal_limit_active")
 		and sample["hand_connection"].has("double_hold_orbital_angular_velocity")
 		and sample["hand_connection"].has("double_hold_alignment_error")
 		and sample["hand_connection"].has("double_hold_primary_permission")
 		and sample["hand_connection"].has("double_hold_maximum_effort")
-		and sample["hand_connection"]["solver_mode"] == "hybrid",
-		"connection samples identify the single-spring double-rigid solver"
+		and sample["hand_connection"]["solver_mode"] == "joint",
+		"connection samples identify the all-rigid joint solver"
 	)
 	_expect(sample["left_dancer"]["input"]["movement"] == [0.25, -0.75], "effective LS input is recorded")
 	_expect(sample["left_dancer"]["input"]["facing"] == [1.0, 0.0], "effective RS facing input is recorded")
+	_expect(sample["left_dancer"]["facing_dial"]["active"]
+		and sample["left_dancer"]["facing_dial"]["response_scale"] == 1.0
+		and not sample["left_dancer"]["facing_dial"].has("pending_rotation_radians"),
+		"RS telemetry records radial heading authority without queued turns")
+	_expect(sample["left_dancer"]["fit_weight_kg"] == 75.0
+		and sample["left_dancer"]["visual_weight_gain_kg"] == 0.0
+		and sample["left_dancer"]["arms"]["left"].has("hand_roll_radians"),
+		"samples record fit-relative appearance and achieved palm roll")
 	_expect(
 		float(sample["left_dancer"]["input"]["left_trigger"]) == 0.6
 		and float(sample["left_dancer"]["input"]["right_trigger"]) == 0.2,
@@ -115,9 +122,16 @@ func _run() -> void:
 	)
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
-	_expect(payload["schema"] == "dancers-coop-telemetry-v9", "payload uses the versioned co-op schema")
+	_expect(payload["schema"] == "dancers-coop-telemetry-v11", "payload uses the versioned co-op schema")
 	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
 	_expect(payload["configuration"].has("controller"), "payload includes exact controller tuning")
+	_expect(payload["configuration"]["controller"]["man_fit_weight_kg"] == 75.0
+		and payload["configuration"]["controller"]["woman_fit_weight_kg"] == 75.0
+		and payload["configuration"]["left_dancer"]["maximum_visual_weight_gain_kg"] == 30.0
+		and payload["configuration"]["hand_connection"]["double_hold_body_clearance"]
+		and payload["configuration"]["hand_connection"]["minimum_double_hold_body_distance"] == 40.0
+		and payload["configuration"]["left_dancer"]["facing_mode"] == "radial_heading_response",
+		"configuration identifies the combined rigid, radial RS and fit-weight behavior")
 	_expect(
 		payload["configuration"]["controller"].has("preferred_player_one_device")
 		and payload["configuration"]["controller"].has("preferred_player_two_device")
@@ -148,30 +162,18 @@ func _run() -> void:
 	)
 	_expect(
 		float(payload["configuration"]["hand_connection"]["catch_radius"]) == 54.0
-		and float(payload["configuration"]["hand_connection"]["maximum_hand_separation"]) == 27.0
-		and float(payload["configuration"]["hand_connection"]["welded_hand_separation"]) == 2.0
-		and float(payload["configuration"]["hand_connection"]["dorsal_safety_margin"]) == 2.0
-		and int(payload["configuration"]["hand_connection"]["separation_projection_iterations"]) == 8
-		and int(payload["configuration"]["hand_connection"]["velocity_projection_iterations"]) == 1,
-		"capture records the catch-assist and firm-hold distances"
+		and float(payload["configuration"]["hand_connection"]["snap_duration"]) == 0.22
+		and int(payload["configuration"]["hand_connection"]["rigid_position_iterations"]) == 32
+		and int(payload["configuration"]["hand_connection"]["rigid_velocity_iterations"]) == 6,
+		"capture records the smooth acquisition and rigid joint solver"
 	)
 	_expect(
-		payload["configuration"]["hand_connection"].has("snap_duration")
-		and payload["configuration"]["hand_connection"].has("snap_response_rate")
-		and payload["configuration"]["hand_connection"].has("snap_velocity_correction"),
-		"capture records the magnetic catch duration"
-	)
-	_expect(
-		payload["configuration"]["hand_connection"].has("weld_speed_threshold")
-		and payload["configuration"]["hand_connection"].has("elastic_speed_threshold")
-		and payload["configuration"]["hand_connection"].has("weld_response_rate")
-		and payload["configuration"]["hand_connection"].has("elastic_response_rate")
-		and payload["configuration"]["hand_connection"].has("compliance_open_rate")
-		and payload["configuration"]["hand_connection"].has("compliance_close_rate")
-		and payload["configuration"]["hand_connection"].has("rigid_position_iterations")
+		not payload["configuration"]["hand_connection"].has("weld_speed_threshold")
+		and not payload["configuration"]["hand_connection"].has("elastic_speed_threshold")
+		and not payload["configuration"]["hand_connection"].has("maximum_hand_separation")
 		and payload["configuration"]["hand_connection"].has("rigid_span_tolerance")
-		and payload["configuration"]["hand_connection"]["solver_mode"] == "hybrid",
-		"capture records both the one-hand spring and rigid double-frame tuning"
+		and payload["configuration"]["hand_connection"]["solver_mode"] == "joint",
+		"capture contains no spring or elastic hold tuning"
 	)
 	_expect(
 		not payload["configuration"]["hand_connection"].has("closed_hold_minimum_body_distance"),
@@ -192,7 +194,7 @@ func _run() -> void:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saved_path))
 		_expect(parsed is Dictionary, "saved capture is valid JSON")
 		if parsed is Dictionary:
-			_expect(parsed["schema"] == "dancers-coop-telemetry-v9", "saved JSON retains the co-op schema")
+			_expect(parsed["schema"] == "dancers-coop-telemetry-v11", "saved JSON retains the co-op schema")
 			_expect(int(parsed["sample_count"]) >= 1, "saved JSON contains telemetry samples")
 		DirAccess.remove_absolute(saved_path)
 	_pause_menu._resume()

@@ -6,9 +6,9 @@ This makes shoulder adduction and elbow flexion readable without lighting,
 shadows, or a second 3D character rig.
 
 The dancers are upright humans viewed from directly overhead, not bodies lying
-in the floor plane. Each head occludes the torso's full centre and the torso
-stays within the head's front-to-rear footprint. Only a short neck, shoulders,
-and compact clothing edges remain visible around it. A small nose marks local
+in the floor plane. Each head occludes the torso's centre; the weight-dependent
+belly can extend beyond its front edge. The neck, shoulders, and clothing edges
+remain visible around it. A small nose marks local
 forward on the corrected side. The black man's head remains solid black, with
 angular tuxedo shoulders. The white woman uses a filled rear hair cap and side
 locks, long hair draped over rounded shoulders, restrained bodice lobes, and
@@ -29,7 +29,27 @@ arm:
 - `t = 1`: arm fully adducted and flexed.
 
 LT moves the left arm continuously between these endpoints; RT independently
-moves the right arm.
+moves the right arm. In a double hold the triggers are requests, while the
+mutual flexion permission and compatible hand spans determine the achieved pose.
+
+## Arms, hands, and relative weight
+
+Arms use outlined tapered segments and a small cuff. Hands use rounded palm
+meshes with mirrored thumbs, anchored at the physical contact points. They have
+no separate collision shapes. Visual supination combines achieved shoulder
+adduction and elbow flexion; blocked requests do not rotate the palm farther.
+The restored effort colour fills the whole arm and palm without changing their
+outline or geometry.
+
+Both styles allow 40-120 kg actual weight in 1 kg steps and independent fit
+weight in 5 kg steps. At or below fit weight the dancer keeps the slimmest mesh.
+Each full 5 kg above fit adds a visual band, up to six increments at +30 kg.
+The largest mesh is then retained. These are the same slim and full artwork
+endpoints as main's earlier absolute-weight visuals.
+
+The abdomen half-width varies from 13 to 24 px; its forward edge from 14 to
+26 px. Clothing scales with the band, while the head, mechanical skeleton, and
+fixed 20 px body circle stay unchanged. Fit weight changes appearance only.
 
 ## Extended stance
 

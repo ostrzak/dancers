@@ -120,7 +120,7 @@ func save_capture(reason: String = "manual") -> String:
 
 func build_capture_payload(reason: String = "manual") -> Dictionary:
 	return {
-		"schema": "dancers-coop-telemetry-v9",
+		"schema": "dancers-coop-telemetry-v11",
 		"reason": reason,
 		"captured_at": Time.get_datetime_string_from_system(),
 		"captured_at_utc": Time.get_datetime_string_from_system(true),
@@ -172,6 +172,14 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 		"angular_velocity": _float_for_json(dancer.angular_velocity),
 		"target_angular_velocity": _float_for_json(dancer.target_angular_velocity),
 		"heading_error": _float_for_json(dancer.heading_error),
+		"weight_kg": dancer.weight_kg,
+		"fit_weight_kg": dancer.fit_weight_kg,
+		"visual_weight_gain_kg": dancer.get_visual_weight_gain_kg(),
+		"facing_dial": {
+			"active": dancer.facing_dial_active,
+			"applied_rotation_radians": _float_for_json(dancer.facing_dial_total_rotation),
+			"response_scale": _float_for_json(dancer.facing_dial_response_scale),
+		},
 		"desired_facing_direction": _vector2_for_json(dancer.desired_facing_direction),
 		"input": {
 			"movement": _vector2_for_json(dancer.movement_input),
@@ -217,6 +225,7 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 func _build_arm_sample(dancer: Dancer, side: int) -> Dictionary:
 	return {
 		"trigger": _float_for_json(dancer.get_trigger_value(side)),
+		"hand_roll_radians": _float_for_json(dancer.get_hand_roll_radians(side)),
 		"double_hold_effort": _float_for_json(
 			dancer.get_double_hold_arm_effort(side)
 		),
@@ -267,18 +276,11 @@ func _build_connection_sample() -> Dictionary:
 		"relative_hand_velocity": _float_for_json(
 			hand_connection.relative_hand_velocity
 		),
-		"constraint_force": _float_for_json(hand_connection.connection_force),
-		"primary_constraint_force": _float_for_json(
-			hand_connection.primary_connection_force
+		"primary_acquisition_progress": _float_for_json(
+			hand_connection.primary_acquisition_progress
 		),
-		"secondary_constraint_force": _float_for_json(
-			hand_connection.secondary_connection_force
-		),
-		"primary_elastic_blend": _float_for_json(
-			hand_connection.primary_elastic_blend
-		),
-		"secondary_elastic_blend": _float_for_json(
-			hand_connection.secondary_elastic_blend
+		"secondary_acquisition_progress": _float_for_json(
+			hand_connection.secondary_acquisition_progress
 		),
 		"primary_hand_separation": _float_for_json(
 			hand_connection.primary_hand_separation
@@ -320,7 +322,6 @@ func _build_connection_sample() -> Dictionary:
 			hand_connection.double_hold_maximum_effort
 		),
 		"separation_limit_active": hand_connection.separation_limit_active,
-		"dorsal_limit_active": hand_connection.dorsal_limit_active,
 		"primary_snap_remaining": _float_for_json(
 			hand_connection.primary_snap_remaining
 		),
@@ -347,44 +348,6 @@ func _build_configuration() -> Dictionary:
 			),
 			"release_cooldown": hand_connection.release_cooldown,
 			"snap_duration": hand_connection.snap_duration,
-			"snap_response_rate": hand_connection.snap_response_rate,
-			"snap_velocity_correction": (
-				hand_connection.snap_velocity_correction
-			),
-			"weld_speed_threshold": hand_connection.weld_speed_threshold,
-			"elastic_speed_threshold": hand_connection.elastic_speed_threshold,
-			"weld_response_rate": hand_connection.weld_response_rate,
-			"weld_velocity_correction": (
-				hand_connection.weld_velocity_correction
-			),
-			"weld_tangential_correction": (
-				hand_connection.weld_tangential_correction
-			),
-			"elastic_response_rate": hand_connection.elastic_response_rate,
-			"elastic_velocity_correction": (
-				hand_connection.elastic_velocity_correction
-			),
-			"elastic_tangential_correction": (
-				hand_connection.elastic_tangential_correction
-			),
-			"maximum_spring_closing_speed": (
-				hand_connection.maximum_spring_closing_speed
-			),
-			"maximum_hand_separation": hand_connection.maximum_hand_separation,
-			"welded_hand_separation": hand_connection.welded_hand_separation,
-			"dorsal_safety_margin": hand_connection.dorsal_safety_margin,
-			"separation_projection_margin": (
-				hand_connection.separation_projection_margin
-			),
-			"compliance_open_rate": hand_connection.compliance_open_rate,
-			"compliance_close_rate": hand_connection.compliance_close_rate,
-			"separation_projection_iterations": (
-				hand_connection.separation_projection_iterations
-			),
-			"velocity_projection_iterations": (
-				hand_connection.velocity_projection_iterations
-			),
-			"maximum_constraint_force": hand_connection.maximum_constraint_force,
 			"rigid_position_iterations": hand_connection.rigid_position_iterations,
 			"rigid_velocity_iterations": hand_connection.rigid_velocity_iterations,
 			"rigid_span_tolerance": hand_connection.rigid_span_tolerance,
@@ -392,6 +355,8 @@ func _build_configuration() -> Dictionary:
 				hand_connection.rigid_span_projection_iterations
 			),
 			"solver_mode": hand_connection.get_solver_mode(),
+			"double_hold_body_clearance": true,
+			"minimum_double_hold_body_distance": hand_connection._get_body_contact_distance(),
 		},
 	}
 	if is_instance_valid(controller):
@@ -405,6 +370,8 @@ func _build_configuration() -> Dictionary:
 			"stick_sensitivity": controller.stick_sensitivity,
 			"man_weight_kg": controller.man_weight_kg,
 			"woman_weight_kg": controller.woman_weight_kg,
+			"man_fit_weight_kg": controller.man_fit_weight_kg,
+			"woman_fit_weight_kg": controller.woman_fit_weight_kg,
 		}
 	return configuration
 
@@ -414,6 +381,9 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 		"name": dancer.dancer_name,
 		"body_style": dancer.body_style,
 		"weight_kg": dancer.weight_kg,
+		"fit_weight_kg": dancer.fit_weight_kg,
+		"visual_weight_step_kg": 5.0,
+		"maximum_visual_weight_gain_kg": dancer.MAXIMUM_VISUAL_WEIGHT_GAIN_KG,
 		"reference_weight_kg": dancer.REFERENCE_WEIGHT_KG,
 		"mass": dancer.mass,
 		"movement_force": dancer.movement_force,
@@ -422,6 +392,12 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 		"spin_torque": dancer.spin_torque,
 		"spin_response_gain": dancer.spin_response_gain,
 		"facing_response_rate": dancer.facing_response_rate,
+		"facing_mode": "radial_heading_response",
+		"facing_dial_engage_threshold": dancer.facing_dial_engage_threshold,
+		"facing_dial_release_threshold": dancer.facing_dial_release_threshold,
+		"facing_dial_minimum_response": dancer.facing_dial_minimum_response,
+		"facing_dial_acceleration": dancer.facing_dial_acceleration,
+		"facing_dial_braking": dancer.facing_dial_braking,
 		"minimum_target_angular_velocity": dancer.minimum_target_angular_velocity,
 		"maximum_target_angular_velocity": dancer.maximum_target_angular_velocity,
 		"spin_angular_damping": dancer.spin_angular_damping,

@@ -9,8 +9,10 @@ extends Node2D
 @export_category("Runtime Tuning")
 @export_range(0.5, 2.0, 0.05) var trigger_sensitivity := 1.0
 @export_range(0.5, 2.0, 0.05) var stick_sensitivity := 1.0
-@export_range(40.0, 150.0, 1.0) var man_weight_kg := 75.0
-@export_range(40.0, 150.0, 1.0) var woman_weight_kg := 75.0
+@export_range(40.0, 120.0, 1.0) var man_weight_kg := 75.0
+@export_range(40.0, 120.0, 1.0) var woman_weight_kg := 75.0
+@export_range(40.0, 120.0, 5.0) var man_fit_weight_kg := 75.0
+@export_range(40.0, 120.0, 5.0) var woman_fit_weight_kg := 75.0
 
 @onready var left_dancer: Dancer = $LeftDancer
 @onready var right_dancer: Dancer = $RightDancer
@@ -72,7 +74,8 @@ func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
 	var facing_stick := _read_stick(
 		device,
 		JOY_AXIS_RIGHT_X,
-		JOY_AXIS_RIGHT_Y
+		JOY_AXIS_RIGHT_Y,
+		false
 	)
 	dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
 	dancer.set_control_input(
@@ -85,7 +88,9 @@ func _apply_player_input(dancer: Dancer, device: int, delta: float) -> void:
 	)
 
 
-func _read_stick(device: int, axis_x: int, axis_y: int) -> Vector2:
+func _read_stick(
+	device: int, axis_x: int, axis_y: int, apply_sensitivity: bool = true
+) -> Vector2:
 	if device < 0:
 		return Vector2.ZERO
 	var value := Vector2(
@@ -102,7 +107,7 @@ func _read_stick(device: int, axis_x: int, axis_y: int) -> Vector2:
 	)
 	return value.normalized() * _apply_input_sensitivity(
 		scaled_magnitude,
-		stick_sensitivity
+		stick_sensitivity if apply_sensitivity else 1.0
 	)
 
 
@@ -138,12 +143,18 @@ func set_runtime_tuning(
 	new_trigger_sensitivity: float,
 	new_stick_sensitivity: float,
 	new_man_weight_kg: float,
-	new_woman_weight_kg: float
+	new_woman_weight_kg: float,
+	new_man_fit_weight_kg: float = -1.0,
+	new_woman_fit_weight_kg: float = -1.0
 ) -> void:
 	trigger_sensitivity = clampf(new_trigger_sensitivity, 0.5, 2.0)
 	stick_sensitivity = clampf(new_stick_sensitivity, 0.5, 2.0)
-	man_weight_kg = clampf(new_man_weight_kg, 40.0, 150.0)
-	woman_weight_kg = clampf(new_woman_weight_kg, 40.0, 150.0)
+	man_weight_kg = new_man_weight_kg
+	woman_weight_kg = new_woman_weight_kg
+	if new_man_fit_weight_kg >= 0.0:
+		man_fit_weight_kg = new_man_fit_weight_kg
+	if new_woman_fit_weight_kg >= 0.0:
+		woman_fit_weight_kg = new_woman_fit_weight_kg
 	_apply_runtime_tuning()
 
 
@@ -158,6 +169,12 @@ func get_player_two_device() -> int:
 func _apply_runtime_tuning() -> void:
 	left_dancer.set_physical_weight_kg(man_weight_kg)
 	right_dancer.set_physical_weight_kg(woman_weight_kg)
+	left_dancer.set_fit_weight_kg(man_fit_weight_kg)
+	right_dancer.set_fit_weight_kg(woman_fit_weight_kg)
+	man_weight_kg = left_dancer.weight_kg
+	woman_weight_kg = right_dancer.weight_kg
+	man_fit_weight_kg = left_dancer.fit_weight_kg
+	woman_fit_weight_kg = right_dancer.fit_weight_kg
 
 
 func _apply_input_sensitivity(value: float, sensitivity: float) -> float:
