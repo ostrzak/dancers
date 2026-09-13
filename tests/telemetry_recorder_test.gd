@@ -3,6 +3,7 @@ extends SceneTree
 const TelemetryRecorderScript = preload("res://telemetry_recorder.gd")
 
 var _failures: Array[String] = []
+var _checks := 0
 var _root: PrototypeController
 var _recorder: Node
 var _pause_menu: PauseMenu
@@ -18,30 +19,47 @@ func _run() -> void:
 	_recorder = _root.get_node("TelemetryRecorder")
 	_pause_menu = _root.get_node("PauseMenu")
 
-	_expect(_recorder.capture_duration_seconds == 12.0, "capture keeps twelve seconds")
+	_expect(
+		_recorder.capture_duration_seconds == 12.0,
+		"capture keeps twelve seconds"
+	)
 	_expect(_recorder.sample_rate_hz == 60.0, "capture samples at sixty hertz")
-	_expect(_recorder.get_max_samples() == 720, "rolling buffer is capped at 720 samples")
-	_expect(_recorder.capture_directory == "res://diagnostics", "captures target the project diagnostics folder")
+	_expect(
+		_recorder.get_max_samples() == 720,
+		"rolling buffer is capped at 720 samples"
+	)
+	_expect(
+		_recorder.capture_directory == "res://diagnostics",
+		"captures target the project diagnostics folder"
+	)
 	_expect(
 		_recorder.left_dancer == _root.get_node("LeftDancer")
 		and _recorder.right_dancer == _root.get_node("RightDancer")
-		and _recorder.hand_connection == _root.get_node("HandConnection"),
-		"recorder is wired to both dancers and the hand connection"
+		and _recorder.hand_connection == _root.get_node("HandConnection")
+		and _recorder.controller == _root,
+		"recorder is wired to the dancers, spring, and controller"
 	)
-	_expect(_pause_menu.telemetry_recorder == _recorder, "pause menu is wired to the recorder")
+	_expect(
+		_pause_menu.telemetry_recorder == _recorder,
+		"pause menu is wired to the recorder"
+	)
 
 	_recorder.clear()
 	await _wait_physics_frames(12)
 	_expect(
-		_recorder.get_sample_count() >= 5 and _recorder.get_sample_count() <= 7,
-		"recorder continuously samples gameplay near sixty hertz"
+		_recorder.get_sample_count() >= 5
+		and _recorder.get_sample_count() <= 7,
+		"recorder samples gameplay near sixty hertz"
 	)
 
 	_recorder.clear()
 	for sample_id in 721:
 		_recorder.append_sample({"id": sample_id})
 	_expect(_recorder.get_sample_count() == 720, "old samples are discarded")
-	_expect(int(_recorder.get_samples()[0]["id"]) == 1, "the most recent rolling window is retained")
+	_expect(
+		int(_recorder.get_samples()[0]["id"]) == 1,
+		"the most recent rolling window is retained"
+	)
 
 	_recorder.clear()
 	var left: Dancer = _root.get_node("LeftDancer")
@@ -50,35 +68,98 @@ func _run() -> void:
 	left.diagnostic_spin_torque = 1234.0
 	_recorder.record_current_sample()
 	var sample: Dictionary = _recorder.get_samples()[0]
-	_expect(sample.has("left_dancer") and sample.has("right_dancer"), "each sample contains both dancers")
-	_expect(sample.has("pair") and sample.has("hand_connection"), "each sample contains pair and connection state")
-	_expect(sample["left_dancer"]["input"]["movement"] == [0.25, -0.75], "effective movement input is recorded")
-	_expect(float(sample["left_dancer"]["input"]["trigger"]) == 0.6, "trigger input is recorded")
-	_expect(sample["left_dancer"]["applied"]["movement_force"] == [225.0, -675.0], "applied movement force is recorded")
-	_expect(float(sample["left_dancer"]["applied"]["spin_torque"]) == 1234.0, "applied spin torque is recorded")
 	_expect(
-		sample["hand_connection"].has("separation_limit_active")
-		and sample["hand_connection"].has("separation_position_correction")
-		and sample["hand_connection"].has("separation_velocity_impulse"),
-		"connection samples expose maximum-separation interventions"
+		sample.has("left_dancer") and sample.has("right_dancer"),
+		"each sample contains both dancers"
+	)
+	_expect(
+		sample.has("pair") and sample.has("hand_connection"),
+		"each sample contains pair and spring state"
+	)
+	_expect(
+		sample["left_dancer"]["input"]["movement"] == [0.25, -0.75],
+		"effective movement input is recorded"
+	)
+	_expect(
+		float(sample["left_dancer"]["input"]["left_trigger"]) == 0.6
+		and float(sample["left_dancer"]["input"]["right_trigger"]) == 0.6,
+		"the single-player trigger mapping records both physical arms"
+	)
+	_expect(
+		sample["left_dancer"]["applied"]["movement_force"]
+		== [225.0, -675.0],
+		"applied movement force is recorded"
+	)
+	_expect(
+		float(sample["left_dancer"]["applied"]["spin_torque"]) == 1234.0,
+		"applied spin torque is recorded"
+	)
+	_expect(
+		sample["hand_connection"]["solver_mode"] == "spring"
+		and sample["hand_connection"].has("primary_elastic_blend")
+		and sample["hand_connection"].has("primary_hand_separation")
+		and sample["hand_connection"].has("primary_allowed_separation")
+		and sample["hand_connection"].has("primary_position_correction")
+		and sample["hand_connection"].has("primary_velocity_correction"),
+		"connection samples expose the migrated spring response"
+	)
+	_expect(
+		sample["left_dancer"]["hands"]["left"].has("button_down")
+		and sample["left_dancer"]["hands"]["left"].has("primed")
+		and sample["left_dancer"]["hands"]["left"].has("release_tap_armed"),
+		"per-hand telemetry exposes bumper grip state"
 	)
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
-	_expect(payload["schema"] == "dancers-telemetry-capture-v1", "payload uses the versioned Dancers schema")
-	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
-	_expect(payload["configuration"].has("controller"), "payload includes exact controller tuning")
 	_expect(
-		payload["configuration"]["controller"].has("spin_speed_scale")
-		and payload["configuration"]["controller"].has("move_speed_scale")
-		and payload["configuration"]["controller"].has("spin_move_ratio")
-		and payload["configuration"]["controller"].has("trigger_sensitivity")
-		and payload["configuration"]["controller"].has("stick_sensitivity"),
+		payload["schema"] == "dancers-single-controller-telemetry-v1",
+		"payload uses the versioned single-controller schema"
+	)
+	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
+	_expect(
+		payload["configuration"].has("controller"),
+		"payload includes exact controller tuning"
+	)
+	var controller_config: Dictionary = payload["configuration"]["controller"]
+	_expect(
+		controller_config["left_stick_dancer"] == "left"
+		and controller_config["right_stick_dancer"] == "right"
+		and controller_config["left_trigger_dancer"] == "left"
+		and controller_config["right_trigger_dancer"] == "right"
+		and controller_config["left_bumper_dancer"] == "left"
+		and controller_config["right_bumper_dancer"] == "right"
+		and controller_config["left_stick_button_spin_toggle"] == "left"
+		and controller_config["right_stick_button_spin_toggle"] == "right"
+		and controller_config["spin_requires_trigger"],
+		"payload records the single-controller ownership map"
+	)
+	_expect(
+		controller_config.has("spin_speed_scale")
+		and controller_config.has("move_speed_scale")
+		and controller_config.has("spin_move_ratio")
+		and controller_config.has("trigger_sensitivity")
+		and controller_config.has("stick_sensitivity"),
 		"payload includes all live tuning controls"
 	)
-	_expect(payload["configuration"].has("hand_connection"), "payload includes exact connection tuning")
+	var hand_config: Dictionary = payload["configuration"]["hand_connection"]
 	_expect(
-		float(payload["configuration"]["hand_connection"]["maximum_hand_separation"]) == 36.0,
-		"capture records the two-hand-width separation limit"
+		float(hand_config["maximum_hand_separation"]) == 27.0
+		and float(hand_config["welded_hand_separation"]) == 2.0,
+		"capture records the coop spring's firm and hard distances"
+	)
+	_expect(
+		hand_config["solver_mode"] == "spring"
+		and hand_config.has("elastic_response_rate")
+		and hand_config.has("maximum_spring_closing_speed"),
+		"capture records the spring solver and response constants"
+	)
+	_expect(
+		int(payload["configuration"]["left_dancer"]["intended_spin_direction"])
+		== 1
+		and int(
+			payload["configuration"]["right_dancer"]["intended_spin_direction"]
+		) == -1,
+		"capture records each dancer's selected spin direction"
 	)
 
 	_pause_menu._pause()
@@ -86,31 +167,56 @@ func _run() -> void:
 	_pause_menu._input(_joy_button_event(JOY_BUTTON_A))
 	var saved_path: String = _recorder.last_capture_path
 	var expected_directory := ProjectSettings.globalize_path("res://diagnostics")
-	_expect(not saved_path.is_empty(), "gamepad A on the pause action saves a capture")
-	_expect(saved_path.begins_with(expected_directory), "saved JSON stays inside the project")
+	_expect(
+		not saved_path.is_empty(),
+		"gamepad A on the pause action saves a capture"
+	)
+	_expect(
+		saved_path.begins_with(expected_directory),
+		"saved JSON stays inside the project"
+	)
 	_expect(FileAccess.file_exists(saved_path), "saved JSON exists on disk")
-	_expect(_pause_menu.capture_status.visible, "the pause menu reports the save result")
+	_expect(
+		_pause_menu.capture_status.visible,
+		"the pause menu reports the save result"
+	)
 	await process_frame
 	if FileAccess.file_exists(saved_path):
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saved_path))
+		var parsed: Variant = JSON.parse_string(
+			FileAccess.get_file_as_string(saved_path)
+		)
 		_expect(parsed is Dictionary, "saved capture is valid JSON")
 		if parsed is Dictionary:
-			_expect(parsed["schema"] == "dancers-telemetry-capture-v1", "saved JSON retains the schema")
-			_expect(int(parsed["sample_count"]) >= 1, "saved JSON contains telemetry samples")
+			_expect(
+				parsed["schema"]
+				== "dancers-single-controller-telemetry-v1",
+				"saved JSON retains the schema"
+			)
+			_expect(
+				int(parsed["sample_count"]) >= 1,
+				"saved JSON contains telemetry samples"
+			)
 		DirAccess.remove_absolute(saved_path)
 	_pause_menu._resume()
 
 	if _failures.is_empty():
-		print("TELEMETRY RECORDER: 29/29 checks passed")
+		print(
+			"TELEMETRY RECORDER: %d/%d checks passed"
+			% [_checks, _checks]
+		)
 		quit(0)
 	else:
 		for failure in _failures:
 			push_error(failure)
-		print("TELEMETRY RECORDER: %d failure(s)" % _failures.size())
+		print(
+			"TELEMETRY RECORDER: %d failure(s) across %d checks"
+			% [_failures.size(), _checks]
+		)
 		quit(1)
 
 
 func _expect(condition: bool, description: String) -> void:
+	_checks += 1
 	if not condition:
 		_failures.append(description)
 

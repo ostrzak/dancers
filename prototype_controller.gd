@@ -4,7 +4,6 @@ extends Node2D
 @export_category("Input")
 @export var preferred_gamepad_device := 0
 @export var stick_deadzone := 0.16
-@export var bumper_chord_window := 0.085
 
 @export_category("Runtime Tuning")
 @export_range(0.5, 2.0, 0.05) var spin_speed_scale := 1.0
@@ -18,13 +17,6 @@ extends Node2D
 @onready var hand_connection: HandConnection = $HandConnection
 
 var _gamepad_device := -1
-var _pending_bumper := -1
-var _pending_bumper_time := 0.0
-var _previous_keyboard_left_bumper := false
-var _previous_keyboard_right_bumper := false
-
-const LEFT_BUMPER := 0
-const RIGHT_BUMPER := 1
 
 
 func _ready() -> void:
@@ -36,84 +28,77 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_select_gamepad_if_needed()
+
 	var left_move := _read_stick(JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y)
 	var right_move := _read_stick(JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y)
+	left_move = (
+		left_move
+		+ _read_keyboard_vector(KEY_A, KEY_D, KEY_W, KEY_S)
+	).limit_length(1.0)
+	right_move = (
+		right_move
+		+ _read_keyboard_vector(KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN)
+	).limit_length(1.0)
 
-	# Keyboard fallbacks keep editor iteration possible without changing the
-	# intended one-controller experiment: WASD/Shift/Q and arrows/Enter/E.
-	left_move = (left_move + _read_keyboard_vector(KEY_A, KEY_D, KEY_W, KEY_S)).limit_length(1.0)
-	right_move = (right_move + _read_keyboard_vector(KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN)).limit_length(1.0)
-	var left_trigger := maxf(_read_trigger(JOY_AXIS_TRIGGER_LEFT), 1.0 if Input.is_physical_key_pressed(KEY_SHIFT) else 0.0)
-	var right_trigger := maxf(_read_trigger(JOY_AXIS_TRIGGER_RIGHT), 1.0 if Input.is_physical_key_pressed(KEY_ENTER) else 0.0)
+	var left_trigger := maxf(
+		_read_trigger(JOY_AXIS_TRIGGER_LEFT),
+		1.0 if Input.is_physical_key_pressed(KEY_SHIFT) else 0.0
+	)
+	var right_trigger := maxf(
+		_read_trigger(JOY_AXIS_TRIGGER_RIGHT),
+		1.0 if Input.is_physical_key_pressed(KEY_ENTER) else 0.0
+	)
+	var dpad := _read_dpad()
+	apply_control_state(
+		left_move,
+		right_move,
+		left_trigger,
+		right_trigger,
+		dpad,
+		delta
+	)
 
-	left_dancer.set_control_input(left_move, left_trigger)
-	right_dancer.set_control_input(right_move, right_trigger)
-	_poll_keyboard_bumpers()
-	_resolve_pending_bumper(delta)
+	hand_connection.set_dancer_grip_state(
+		left_dancer,
+		_read_button(JOY_BUTTON_LEFT_SHOULDER)
+		or Input.is_physical_key_pressed(KEY_Q)
+	)
+	hand_connection.set_dancer_grip_state(
+		right_dancer,
+		_read_button(JOY_BUTTON_RIGHT_SHOULDER)
+		or Input.is_physical_key_pressed(KEY_E)
+	)
 
 
 func _input(event: InputEvent) -> void:
 	if get_tree() != null and get_tree().paused:
 		return
-	if event is InputEventJoypadButton and event.pressed:
-		if _gamepad_device >= 0 and event.device != _gamepad_device:
-			return
-		match event.button_index:
-			JOY_BUTTON_LEFT_SHOULDER:
-				_register_bumper_press(LEFT_BUMPER)
-			JOY_BUTTON_RIGHT_SHOULDER:
-				_register_bumper_press(RIGHT_BUMPER)
-			JOY_BUTTON_A:
-				hand_connection.release_hands()
-	elif event is InputEventKey \
-			and event.pressed \
-			and not event.echo \
-			and event.physical_keycode == KEY_SPACE:
-		hand_connection.release_hands()
-
-
-func _register_bumper_press(bumper: int) -> void:
-	if _pending_bumper == -1:
-		_pending_bumper = bumper
-		_pending_bumper_time = bumper_chord_window
-	elif _pending_bumper != bumper and _pending_bumper_time > 0.0:
-		_pending_bumper = -1
-		_pending_bumper_time = 0.0
-		left_dancer.reverse_spin()
-		right_dancer.reverse_spin()
-	elif _pending_bumper != bumper:
-		_execute_pending_bumper()
-		_pending_bumper = bumper
-		_pending_bumper_time = bumper_chord_window
-
-
-func _resolve_pending_bumper(delta: float) -> void:
-	if _pending_bumper == -1:
+	if not (
+		event is InputEventJoypadButton
+		and event.pressed
+	):
 		return
-	_pending_bumper_time -= delta
-	if _pending_bumper_time > 0.0:
+	if _gamepad_device >= 0 and event.device != _gamepad_device:
 		return
-	_execute_pending_bumper()
+	match event.button_index:
+		JOY_BUTTON_LEFT_STICK:
+			left_dancer.reverse_spin()
+		JOY_BUTTON_RIGHT_STICK:
+			right_dancer.reverse_spin()
 
 
-func _execute_pending_bumper() -> void:
-	if _pending_bumper == LEFT_BUMPER:
-		left_dancer.reverse_spin()
-	elif _pending_bumper == RIGHT_BUMPER:
-		right_dancer.reverse_spin()
-	_pending_bumper = -1
-	_pending_bumper_time = 0.0
-
-
-func _poll_keyboard_bumpers() -> void:
-	var left_pressed := Input.is_physical_key_pressed(KEY_Q)
-	var right_pressed := Input.is_physical_key_pressed(KEY_E)
-	if left_pressed and not _previous_keyboard_left_bumper:
-		_register_bumper_press(LEFT_BUMPER)
-	if right_pressed and not _previous_keyboard_right_bumper:
-		_register_bumper_press(RIGHT_BUMPER)
-	_previous_keyboard_left_bumper = left_pressed
-	_previous_keyboard_right_bumper = right_pressed
+func apply_control_state(
+	left_stick: Vector2,
+	right_stick: Vector2,
+	left_trigger: float,
+	right_trigger: float,
+	dpad: Vector2,
+	delta: float
+) -> void:
+	left_dancer.set_control_input(left_stick, left_trigger)
+	right_dancer.set_control_input(right_stick, right_trigger)
+	left_dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
+	right_dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
 
 
 func _read_stick(axis_x: int, axis_y: int) -> Vector2:
@@ -126,7 +111,11 @@ func _read_stick(axis_x: int, axis_y: int) -> Vector2:
 	var magnitude := value.length()
 	if magnitude <= stick_deadzone:
 		return Vector2.ZERO
-	var scaled_magnitude := inverse_lerp(stick_deadzone, 1.0, minf(magnitude, 1.0))
+	var scaled_magnitude := inverse_lerp(
+		stick_deadzone,
+		1.0,
+		minf(magnitude, 1.0)
+	)
 	return value.normalized() * _apply_input_sensitivity(
 		scaled_magnitude,
 		stick_sensitivity
@@ -139,6 +128,28 @@ func _read_trigger(axis: int) -> float:
 	return _apply_input_sensitivity(
 		clampf(Input.get_joy_axis(_gamepad_device, axis), 0.0, 1.0),
 		trigger_sensitivity
+	)
+
+
+func _read_button(button: int) -> bool:
+	return (
+		_gamepad_device >= 0
+		and Input.is_joy_button_pressed(_gamepad_device, button)
+	)
+
+
+func _read_dpad() -> Vector2:
+	if _gamepad_device < 0:
+		return Vector2.ZERO
+	return Vector2(
+		float(
+			int(_read_button(JOY_BUTTON_DPAD_RIGHT))
+			- int(_read_button(JOY_BUTTON_DPAD_LEFT))
+		),
+		float(
+			int(_read_button(JOY_BUTTON_DPAD_UP))
+			- int(_read_button(JOY_BUTTON_DPAD_DOWN))
+		)
 	)
 
 
@@ -155,6 +166,10 @@ func set_runtime_tuning(
 	trigger_sensitivity = clampf(new_trigger_sensitivity, 0.5, 2.0)
 	stick_sensitivity = clampf(new_stick_sensitivity, 0.5, 2.0)
 	_apply_runtime_tuning()
+
+
+func get_gamepad_device() -> int:
+	return _gamepad_device
 
 
 func _apply_runtime_tuning() -> void:
@@ -216,6 +231,16 @@ func _draw() -> void:
 	draw_rect(arena, Color("858585"), true)
 	draw_rect(arena, Color("555555"), false, 3.0)
 	for x in range(60, 1260, 50):
-		draw_line(Vector2(x, 20), Vector2(x, 700), Color(0.70, 0.70, 0.70, 0.34), 1.0)
+		draw_line(
+			Vector2(x, 20),
+			Vector2(x, 700),
+			Color(0.70, 0.70, 0.70, 0.34),
+			1.0
+		)
 	for y in range(60, 700, 50):
-		draw_line(Vector2(20, y), Vector2(1260, y), Color(0.70, 0.70, 0.70, 0.34), 1.0)
+		draw_line(
+			Vector2(20, y),
+			Vector2(1260, y),
+			Color(0.70, 0.70, 0.70, 0.34),
+			1.0
+		)

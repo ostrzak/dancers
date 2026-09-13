@@ -1,31 +1,77 @@
-# Hand connection
+# Single-controller hand connection
 
-Connected hands use a soft spring plus a firm maximum-separation tether.
+One controller drives both dancers:
 
-Each drawn hand has a 9 px radius, so one hand width is 18 px. The connection
-may stretch, but the two hand centres must remain no more than two hand widths
-(36 px) apart under maximum opposing input or rapid arm retraction.
+- LS moves the black dancer.
+- RS moves the white dancer.
+- LT contracts or extends both independently modelled arms of the black dancer.
+- RT contracts or extends both independently modelled arms of the white dancer.
+- The D-pad changes the shared extended-arm stance for both dancers.
+- LB controls the black dancer's grip intention.
+- RB controls the white dancer's grip intention.
 
-## Ordinary response
+With released triggers, neither dancer requests any spin. Contracting a
+dancer's arms creates and progressively raises that dancer's target spin speed.
+Through the existing arm-to-move ratio, contraction can also increase movement
+speed. L3 reverses the black dancer's selected spin direction; R3 independently
+reverses the white dancer's.
 
-The spring uses a stiffness of 32 and damping of 6. This retains visible leeway
-and elastic motion while settling substantially faster than the original
-18 / 2.2 tuning.
+## Hold to prime, release to latch
 
-## Separation limit
+Holding LB primes whichever black hand is currently closest to either white
+hand. Holding RB does the same for the white dancer. A small opposite-colour
+ring marks each currently selected candidate hand.
 
-`maximum_hand_separation` is 36 px. The connection predicts separation from
-the current relative hand velocity and cancels only velocity that would cross
-the limit. If moving arm anchors or an earlier physics step already placed the
-hands beyond the limit, an inverse-mass-weighted positional correction brings
-them back to 36 px. Tangential and converging motion are preserved.
+A catch requires both LB and RB to remain held. The system chooses the single
+closest eligible black-white hand pair within 54 px and below 280 px/s relative
+hand speed. It latches exactly that one pair; no second or double hold can form.
 
-`maximum_numerical_safety_force` still limits the ordinary spring force. It is
-not the separation limit.
+A successful catch consumes both primed states. Releasing the bumpers after the
+catch does not disconnect the hands. Once a bumper has returned up, its next
+fresh press releases the hold. Either LB or RB can perform that release. The
+release press is consumed until it comes up again, preventing an immediate
+re-catch. All hands receive a short 0.35 s catch cooldown.
+
+The first 0.22 s uses the firmest closing response while the hands settle. Any
+catch gap outside the hard tether is corrected by the constraint on the next
+physics step.
+
+## Physical one-hand spring
+
+The retained coop solver is a radial, damped constraint between the actual hand
+endpoints. It asks for a bounded closing speed instead of stacking a spring
+force, a full velocity weld, and repeated position rotation. The response uses
+the two bodies' effective mass at the hands, including arm leverage, so an
+extended arm does not make it overshoot.
+
+Below 80 px/s, the hold closes firmly toward a 2 px fingertip overlap and removes
+only a controlled fraction of relative hand motion each tick. From 80 to
+400 px/s it changes smoothly toward a softer response with very little
+tangential damping. That fast region can stretch and rebound while preserving
+an orbit. The elastic blend opens quickly under a fast maneuver and closes more
+slowly, creating damped recoil instead of abrupt switching.
+
+The connection never averages movement, changes trigger-driven spin targets, or
+replaces the trigger-driven arm pose. Movement, turns, pulls, and under-arm
+motion emerge from the two dancers and the single off-centre spring.
+
+At 27 px—one and a half 18 px hand diameters—the hands reach an unconditional
+geometric limit. A prediction margin, eight position passes, and one
+separating-velocity pass keep the rendered endpoints inside it. The correction
+acts only along the current hand gap.
+
+A hand may pass behind one dancer during an under-arm turn. Only mutual dorsal
+separation—each connected hand displaced behind the other dancer at the same
+time—collapses to the 2 px firm-contact distance. Releasing the spring removes
+only that relationship and preserves both dancers' linear and angular momentum.
+
+Minimal 12 px torso colliders remain active in free and connected motion so the
+body centres cannot collapse into the same space.
 
 ## Telemetry
 
-Connection samples report `separation_limit_active`,
-`separation_position_correction`, and `separation_velocity_impulse`. These
-distinguish ordinary spring behavior from frames where the firm tether had to
-intervene. Captures also record `maximum_hand_separation` in their configuration.
+Captures distinguish free and single hold states. For each hand they record
+button-down, candidate priming, and release-tap state. Connection data includes
+the selected pair, measured and authorized separation, elastic blend, position
+and velocity correction, dorsal and radial limit activation, snap time, catch
+cooldown, force, and solver mode.

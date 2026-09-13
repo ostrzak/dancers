@@ -120,7 +120,7 @@ func save_capture(reason: String = "manual") -> String:
 
 func build_capture_payload(reason: String = "manual") -> Dictionary:
 	return {
-		"schema": "dancers-telemetry-capture-v1",
+		"schema": "dancers-single-controller-telemetry-v1",
 		"reason": reason,
 		"captured_at": Time.get_datetime_string_from_system(),
 		"captured_at_utc": Time.get_datetime_string_from_system(true),
@@ -171,30 +171,28 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 		"speed": _float_for_json(dancer.linear_velocity.length()),
 		"angular_velocity": _float_for_json(dancer.angular_velocity),
 		"target_angular_velocity": _float_for_json(dancer.target_angular_velocity),
-		"intended_spin_direction": dancer.intended_spin_direction,
 		"input": {
 			"movement": _vector2_for_json(dancer.movement_input),
-			"trigger": _float_for_json(dancer.trigger_value),
+			"left_trigger": _float_for_json(dancer.left_trigger_value),
+			"right_trigger": _float_for_json(dancer.right_trigger_value),
 		},
 		"applied": {
 			"movement_force": _vector2_for_json(dancer.diagnostic_movement_force),
 			"spin_torque": _float_for_json(dancer.diagnostic_spin_torque),
 		},
-		"arm": {
-			"current_length": _float_for_json(dancer.current_arm_length),
-			"flexion_ratio": _float_for_json(dancer.get_arm_flexion()),
-			"projected_upper_arm_length": _float_for_json(
-				dancer.get_projected_upper_arm_length()
-			),
-			"projected_forearm_length": _float_for_json(
-				dancer.get_projected_forearm_length()
-			),
-			"abduction_degrees": _float_for_json(dancer.get_abduction_degrees()),
-			"elbow_flexion_degrees": _float_for_json(
-				dancer.get_elbow_flexion_degrees()
-			),
-			"forearm_out_of_plane_degrees": _float_for_json(
-				dancer.get_forearm_out_of_plane_degrees()
+		"arms": {
+			"left": _build_arm_sample(dancer, -1),
+			"right": _build_arm_sample(dancer, 1),
+			"extended_stance": {
+				"elbow_flexion_degrees": _float_for_json(
+					dancer.extended_elbow_flexion_degrees
+				),
+				"forward_sweep_degrees": _float_for_json(
+					dancer.extended_forward_sweep_degrees
+				),
+			},
+			"average_flexion_ratio": _float_for_json(
+				dancer.get_average_arm_flexion()
 			),
 			"effective_inertia": _float_for_json(dancer.inertia),
 		},
@@ -205,12 +203,36 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 	}
 
 
+func _build_arm_sample(dancer: Dancer, side: int) -> Dictionary:
+	return {
+		"trigger": _float_for_json(dancer.get_trigger_value(side)),
+		"current_length": _float_for_json(dancer.get_current_arm_length(side)),
+		"flexion_ratio": _float_for_json(dancer.get_arm_flexion(side)),
+		"projected_upper_arm_length": _float_for_json(
+			dancer.get_projected_upper_arm_length(side)
+		),
+		"projected_forearm_length": _float_for_json(
+			dancer.get_projected_forearm_length(side)
+		),
+		"abduction_degrees": _float_for_json(dancer.get_abduction_degrees(side)),
+		"elbow_flexion_degrees": _float_for_json(
+			dancer.get_elbow_flexion_degrees(side)
+		),
+		"forearm_out_of_plane_degrees": _float_for_json(
+			dancer.get_forearm_out_of_plane_degrees(side)
+		),
+	}
+
+
 func _build_hand_sample(dancer: Dancer, side: int) -> Dictionary:
 	var velocity := dancer.get_hand_velocity(side)
 	return {
 		"world_position": _vector2_for_json(dancer.get_hand_world_position(side)),
 		"velocity": _vector2_for_json(velocity),
 		"speed": _float_for_json(velocity.length()),
+		"button_down": hand_connection.is_grip_button_down(dancer, side),
+		"primed": hand_connection.is_hand_primed(dancer, side),
+		"release_tap_armed": hand_connection.is_release_tap_armed(dancer, side),
 	}
 
 
@@ -218,22 +240,44 @@ func _build_connection_sample() -> Dictionary:
 	var connected_sides := hand_connection.get_connected_hand_sides()
 	return {
 		"connected": hand_connection.is_connected,
+		"connection_count": hand_connection.get_active_connection_count(),
+		"hold_mode": hand_connection.get_hold_mode(),
+		"solver_mode": hand_connection.get_solver_mode(),
 		"left_dancer_hand_side": connected_sides[0],
 		"right_dancer_hand_side": connected_sides[1],
 		"distance_error": _float_for_json(hand_connection.distance_error),
 		"relative_hand_velocity": _float_for_json(
 			hand_connection.relative_hand_velocity
 		),
-		"spring_force": _float_for_json(hand_connection.connection_force),
-		"separation_limit_active": hand_connection.separation_limit_active,
-		"separation_position_correction": _float_for_json(
-			hand_connection.separation_position_correction
+		"constraint_force": _float_for_json(hand_connection.connection_force),
+		"primary_constraint_force": _float_for_json(
+			hand_connection.primary_connection_force
 		),
-		"separation_velocity_impulse": _float_for_json(
-			hand_connection.separation_velocity_impulse
+		"primary_elastic_blend": _float_for_json(
+			hand_connection.primary_elastic_blend
+		),
+		"primary_hand_separation": _float_for_json(
+			hand_connection.primary_hand_separation
+		),
+		"primary_allowed_separation": _float_for_json(
+			hand_connection.primary_allowed_separation
+		),
+		"primary_position_correction": _float_for_json(
+			hand_connection.primary_position_correction
+		),
+		"primary_velocity_correction": _float_for_json(
+			hand_connection.primary_velocity_correction
+		),
+		"separation_limit_active": hand_connection.separation_limit_active,
+		"dorsal_limit_active": hand_connection.dorsal_limit_active,
+		"primary_snap_remaining": _float_for_json(
+			hand_connection.primary_snap_remaining
 		),
 		"catch_cooldown_remaining": _float_for_json(
 			hand_connection.get_cooldown_remaining()
+		),
+		"mutual_body_collision_disabled": (
+			hand_connection.is_mutual_body_collision_disabled()
 		),
 	}
 
@@ -248,19 +292,62 @@ func _build_configuration() -> Dictionary:
 				hand_connection.maximum_relative_catch_velocity
 			),
 			"release_cooldown": hand_connection.release_cooldown,
-			"spring_stiffness": hand_connection.spring_stiffness,
-			"spring_damping": hand_connection.spring_damping,
-			"maximum_hand_separation": hand_connection.maximum_hand_separation,
-			"maximum_numerical_safety_force": (
-				hand_connection.maximum_numerical_safety_force
+			"snap_duration": hand_connection.snap_duration,
+			"snap_response_rate": hand_connection.snap_response_rate,
+			"snap_velocity_correction": (
+				hand_connection.snap_velocity_correction
 			),
+			"weld_speed_threshold": hand_connection.weld_speed_threshold,
+			"elastic_speed_threshold": hand_connection.elastic_speed_threshold,
+			"weld_response_rate": hand_connection.weld_response_rate,
+			"weld_velocity_correction": (
+				hand_connection.weld_velocity_correction
+			),
+			"weld_tangential_correction": (
+				hand_connection.weld_tangential_correction
+			),
+			"elastic_response_rate": hand_connection.elastic_response_rate,
+			"elastic_velocity_correction": (
+				hand_connection.elastic_velocity_correction
+			),
+			"elastic_tangential_correction": (
+				hand_connection.elastic_tangential_correction
+			),
+			"maximum_spring_closing_speed": (
+				hand_connection.maximum_spring_closing_speed
+			),
+			"maximum_hand_separation": hand_connection.maximum_hand_separation,
+			"welded_hand_separation": hand_connection.welded_hand_separation,
+			"dorsal_safety_margin": hand_connection.dorsal_safety_margin,
+			"separation_projection_margin": (
+				hand_connection.separation_projection_margin
+			),
+			"compliance_open_rate": hand_connection.compliance_open_rate,
+			"compliance_close_rate": hand_connection.compliance_close_rate,
+			"separation_projection_iterations": (
+				hand_connection.separation_projection_iterations
+			),
+			"velocity_projection_iterations": (
+				hand_connection.velocity_projection_iterations
+			),
+			"maximum_constraint_force": hand_connection.maximum_constraint_force,
+			"solver_mode": hand_connection.get_solver_mode(),
 		},
 	}
 	if is_instance_valid(controller):
 		configuration["controller"] = {
 			"preferred_gamepad_device": controller.preferred_gamepad_device,
+			"assigned_gamepad_device": controller.get_gamepad_device(),
+			"left_stick_dancer": "left",
+			"right_stick_dancer": "right",
+			"left_trigger_dancer": "left",
+			"right_trigger_dancer": "right",
+			"left_bumper_dancer": "left",
+			"right_bumper_dancer": "right",
+			"left_stick_button_spin_toggle": "left",
+			"right_stick_button_spin_toggle": "right",
+			"spin_requires_trigger": true,
 			"stick_deadzone": controller.stick_deadzone,
-			"bumper_chord_window": controller.bumper_chord_window,
 			"spin_speed_scale": controller.spin_speed_scale,
 			"move_speed_scale": controller.move_speed_scale,
 			"spin_move_ratio": controller.spin_move_ratio,
@@ -273,6 +360,8 @@ func _build_configuration() -> Dictionary:
 func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 	return {
 		"name": dancer.dancer_name,
+		"body_style": dancer.body_style,
+		"intended_spin_direction": dancer.intended_spin_direction,
 		"mass": dancer.mass,
 		"movement_force": dancer.movement_force,
 		"movement_linear_damping": dancer.movement_linear_damping,
@@ -290,8 +379,24 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 		"forearm_length": dancer.forearm_length,
 		"minimum_abduction_degrees": dancer.minimum_abduction_degrees,
 		"maximum_abduction_degrees": dancer.maximum_abduction_degrees,
-		"minimum_elbow_flexion_degrees": dancer.minimum_elbow_flexion_degrees,
 		"maximum_elbow_flexion_degrees": dancer.maximum_elbow_flexion_degrees,
+		"extended_elbow_flexion_degrees": dancer.extended_elbow_flexion_degrees,
+		"minimum_extended_elbow_flexion_degrees": (
+			dancer.minimum_extended_elbow_flexion_degrees
+		),
+		"maximum_extended_elbow_flexion_degrees": (
+			dancer.maximum_extended_elbow_flexion_degrees
+		),
+		"extended_forward_sweep_degrees": dancer.extended_forward_sweep_degrees,
+		"minimum_extended_forward_sweep_degrees": (
+			dancer.minimum_extended_forward_sweep_degrees
+		),
+		"maximum_extended_forward_sweep_degrees": (
+			dancer.maximum_extended_forward_sweep_degrees
+		),
+		"arm_stance_adjustment_rate_degrees": (
+			dancer.arm_stance_adjustment_rate_degrees
+		),
 		"minimum_forearm_out_of_plane_degrees": (
 			dancer.minimum_forearm_out_of_plane_degrees
 		),
