@@ -37,7 +37,7 @@ func _run() -> void:
 		and _recorder.right_dancer == _root.get_node("RightDancer")
 		and _recorder.hand_connection == _root.get_node("HandConnection")
 		and _recorder.controller == _root,
-		"recorder is wired to the dancers, spring, and controller"
+		"recorder is wired to the dancers, joint, and controller"
 	)
 	_expect(
 		_pause_menu.telemetry_recorder == _recorder,
@@ -74,7 +74,7 @@ func _run() -> void:
 	)
 	_expect(
 		sample.has("pair") and sample.has("hand_connection"),
-		"each sample contains pair and spring state"
+		"each sample contains pair and joint state"
 	)
 	_expect(
 		sample["left_dancer"]["input"]["movement"] == [0.25, -0.75],
@@ -95,13 +95,13 @@ func _run() -> void:
 		"applied spin torque is recorded"
 	)
 	_expect(
-		sample["hand_connection"]["solver_mode"] == "spring"
-		and sample["hand_connection"].has("primary_elastic_blend")
+		sample["hand_connection"]["solver_mode"] == "joint"
+		and sample["hand_connection"].has("primary_acquisition_progress")
 		and sample["hand_connection"].has("primary_hand_separation")
 		and sample["hand_connection"].has("primary_allowed_separation")
 		and sample["hand_connection"].has("primary_position_correction")
 		and sample["hand_connection"].has("primary_velocity_correction"),
-		"connection samples expose the migrated spring response"
+		"connection samples expose the migrated joint response"
 	)
 	_expect(
 		sample["left_dancer"]["hands"]["left"].has("button_down")
@@ -112,7 +112,7 @@ func _run() -> void:
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
 	_expect(
-		payload["schema"] == "dancers-single-controller-telemetry-v1",
+		payload["schema"] == "dancers-single-controller-telemetry-v2",
 		"payload uses the versioned single-controller schema"
 	)
 	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
@@ -143,15 +143,14 @@ func _run() -> void:
 	)
 	var hand_config: Dictionary = payload["configuration"]["hand_connection"]
 	_expect(
-		float(hand_config["maximum_hand_separation"]) == 27.0
-		and float(hand_config["welded_hand_separation"]) == 2.0,
-		"capture records the coop spring's firm and hard distances"
+		is_equal_approx(float(hand_config["snap_duration"]), 0.22),
+		"capture records the smooth acquisition duration"
 	)
 	_expect(
-		hand_config["solver_mode"] == "spring"
-		and hand_config.has("elastic_response_rate")
-		and hand_config.has("maximum_spring_closing_speed"),
-		"capture records the spring solver and response constants"
+		hand_config["solver_mode"] == "joint"
+		and hand_config.has("rigid_position_iterations")
+		and hand_config.has("rigid_velocity_iterations"),
+		"capture records the joint solver and response constants"
 	)
 	_expect(
 		int(payload["configuration"]["left_dancer"]["intended_spin_direction"])
@@ -189,7 +188,7 @@ func _run() -> void:
 		if parsed is Dictionary:
 			_expect(
 				parsed["schema"]
-				== "dancers-single-controller-telemetry-v1",
+				== "dancers-single-controller-telemetry-v2",
 				"saved JSON retains the schema"
 			)
 			_expect(

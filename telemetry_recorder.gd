@@ -120,7 +120,7 @@ func save_capture(reason: String = "manual") -> String:
 
 func build_capture_payload(reason: String = "manual") -> Dictionary:
 	return {
-		"schema": "dancers-single-controller-telemetry-v1",
+		"schema": "dancers-single-controller-telemetry-v2",
 		"reason": reason,
 		"captured_at": Time.get_datetime_string_from_system(),
 		"captured_at_utc": Time.get_datetime_string_from_system(true),
@@ -249,13 +249,7 @@ func _build_connection_sample() -> Dictionary:
 		"relative_hand_velocity": _float_for_json(
 			hand_connection.relative_hand_velocity
 		),
-		"constraint_force": _float_for_json(hand_connection.connection_force),
-		"primary_constraint_force": _float_for_json(
-			hand_connection.primary_connection_force
-		),
-		"primary_elastic_blend": _float_for_json(
-			hand_connection.primary_elastic_blend
-		),
+		"primary_acquisition_progress": _float_for_json(hand_connection.primary_acquisition_progress),
 		"primary_hand_separation": _float_for_json(
 			hand_connection.primary_hand_separation
 		),
@@ -269,7 +263,6 @@ func _build_connection_sample() -> Dictionary:
 			hand_connection.primary_velocity_correction
 		),
 		"separation_limit_active": hand_connection.separation_limit_active,
-		"dorsal_limit_active": hand_connection.dorsal_limit_active,
 		"primary_snap_remaining": _float_for_json(
 			hand_connection.primary_snap_remaining
 		),
@@ -293,44 +286,8 @@ func _build_configuration() -> Dictionary:
 			),
 			"release_cooldown": hand_connection.release_cooldown,
 			"snap_duration": hand_connection.snap_duration,
-			"snap_response_rate": hand_connection.snap_response_rate,
-			"snap_velocity_correction": (
-				hand_connection.snap_velocity_correction
-			),
-			"weld_speed_threshold": hand_connection.weld_speed_threshold,
-			"elastic_speed_threshold": hand_connection.elastic_speed_threshold,
-			"weld_response_rate": hand_connection.weld_response_rate,
-			"weld_velocity_correction": (
-				hand_connection.weld_velocity_correction
-			),
-			"weld_tangential_correction": (
-				hand_connection.weld_tangential_correction
-			),
-			"elastic_response_rate": hand_connection.elastic_response_rate,
-			"elastic_velocity_correction": (
-				hand_connection.elastic_velocity_correction
-			),
-			"elastic_tangential_correction": (
-				hand_connection.elastic_tangential_correction
-			),
-			"maximum_spring_closing_speed": (
-				hand_connection.maximum_spring_closing_speed
-			),
-			"maximum_hand_separation": hand_connection.maximum_hand_separation,
-			"welded_hand_separation": hand_connection.welded_hand_separation,
-			"dorsal_safety_margin": hand_connection.dorsal_safety_margin,
-			"separation_projection_margin": (
-				hand_connection.separation_projection_margin
-			),
-			"compliance_open_rate": hand_connection.compliance_open_rate,
-			"compliance_close_rate": hand_connection.compliance_close_rate,
-			"separation_projection_iterations": (
-				hand_connection.separation_projection_iterations
-			),
-			"velocity_projection_iterations": (
-				hand_connection.velocity_projection_iterations
-			),
-			"maximum_constraint_force": hand_connection.maximum_constraint_force,
+			"rigid_position_iterations": hand_connection.rigid_position_iterations,
+			"rigid_velocity_iterations": hand_connection.rigid_velocity_iterations,
 			"solver_mode": hand_connection.get_solver_mode(),
 		},
 	}

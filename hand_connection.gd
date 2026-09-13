@@ -9,28 +9,10 @@ signal grip_state_changed
 @export var maximum_relative_catch_velocity := 280.0
 @export var release_cooldown := 0.35
 @export var snap_duration := 0.22
-@export var snap_response_rate := 18.0
-@export var snap_velocity_correction := 0.7
 
-@export_category("Physical Hold")
-@export var weld_speed_threshold := 80.0
-@export var elastic_speed_threshold := 400.0
-@export var weld_response_rate := 12.0
-@export var weld_velocity_correction := 0.55
-@export var weld_tangential_correction := 0.35
-@export var elastic_response_rate := 4.0
-@export var elastic_velocity_correction := 0.18
-@export var elastic_tangential_correction := 0.02
-@export var maximum_spring_closing_speed := 240.0
-@export var maximum_hand_separation := 27.0
-@export var welded_hand_separation := 2.0
-@export var dorsal_safety_margin := 2.0
-@export var compliance_open_rate := 10.0
-@export var compliance_close_rate := 3.5
-@export var separation_projection_margin := 2.0
-@export_range(1, 16, 1) var separation_projection_iterations := 8
-@export_range(1, 4, 1) var velocity_projection_iterations := 1
-@export var maximum_constraint_force := 4200.0
+@export_category("Rigid Joint")
+@export_range(1, 32, 1) var rigid_position_iterations := 32
+@export_range(1, 8, 1) var rigid_velocity_iterations := 6
 
 @export var dancer_a: Dancer
 @export var dancer_b: Dancer
@@ -39,13 +21,7 @@ var is_connected := false
 var is_secondary_connected := false
 var distance_error := 0.0
 var relative_hand_velocity := 0.0
-var connection_force := 0.0
-var primary_connection_force := 0.0
-var secondary_connection_force := 0.0
-var primary_elastic_blend := 0.0
-var secondary_elastic_blend := 0.0
 var separation_limit_active := false
-var dorsal_limit_active := false
 var primary_hand_separation := 0.0
 var secondary_hand_separation := 0.0
 var primary_allowed_separation := 0.0
@@ -55,6 +31,10 @@ var secondary_position_correction := 0.0
 var primary_velocity_correction := 0.0
 var secondary_velocity_correction := 0.0
 var primary_snap_remaining := 0.0
+var primary_acquisition_progress := 0.0
+var secondary_acquisition_progress := 0.0
+var _primary_catch_separation := 0.0
+var _secondary_catch_separation := 0.0
 var secondary_snap_remaining := 0.0
 var double_hold_orbital_angular_velocity := 0.0
 var double_hold_alignment_error := 0.0
@@ -73,8 +53,6 @@ var _button_consumed_a := {-1: false, 1: false}
 var _button_consumed_b := {-1: false, 1: false}
 var _cooldown_a := {-1: 0.0, 1: 0.0}
 var _cooldown_b := {-1: 0.0, 1: 0.0}
-var _primary_compliance := 0.0
-var _secondary_compliance := 0.0
 var _dancer_grip := {1: false, 2: false}
 var _dancer_button_down := {1: false, 2: false}
 var _dancer_release_tap_armed := {1: false, 2: false}
@@ -94,33 +72,16 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_try_connect_waiting_dancers()
-	var double_hold_active := is_connected and is_secondary_connected
-	_update_hold_compliance(delta, double_hold_active)
 	if is_connected:
 		primary_snap_remaining = maxf(0.0, primary_snap_remaining - delta)
-		primary_connection_force = _process_hold_pair(
-			_connected_hand_a,
-			_connected_hand_b,
-			1,
-			double_hold_active,
-			delta
-		)
+		primary_acquisition_progress = _get_acquisition_progress(1)
 	if is_secondary_connected:
 		secondary_snap_remaining = maxf(0.0, secondary_snap_remaining - delta)
-		secondary_connection_force = _process_hold_pair(
-			_secondary_hand_a,
-			_secondary_hand_b,
-			2,
-			double_hold_active,
-			delta
-		)
+		secondary_acquisition_progress = _get_acquisition_progress(2)
 	_solve_active_hold_constraints(delta)
 	_update_active_hold_metrics()
-	if double_hold_active:
-		_update_double_hold_metrics()
 	if not has_any_connection():
 		_update_free_hand_metrics()
-	connection_force = primary_connection_force + secondary_connection_force
 	queue_redraw()
 
 
@@ -272,7 +233,7 @@ func get_hold_mode() -> String:
 
 
 func get_solver_mode() -> String:
-	return "spring"
+	return "joint"
 
 
 func is_mutual_body_collision_disabled() -> bool:
@@ -297,16 +258,6 @@ func get_cooldown_remaining() -> float:
 		remaining = maxf(remaining, float(_cooldown_a[side]))
 		remaining = maxf(remaining, float(_cooldown_b[side]))
 	return remaining
-
-
-func get_elastic_blend_for_speed(speed: float) -> float:
-	var blend := inverse_lerp(
-		weld_speed_threshold,
-		maxf(weld_speed_threshold + 0.001, elastic_speed_threshold),
-		maxf(0.0, speed)
-	)
-	blend = clampf(blend, 0.0, 1.0)
-	return blend * blend * (3.0 - 2.0 * blend)
 
 
 func _try_connect_waiting_hands() -> void:
@@ -426,7 +377,9 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 	_connected_hand_b = signi(hand_b_side)
 	is_connected = true
 	primary_snap_remaining = snap_duration
-	_primary_compliance = 0.0
+	_primary_catch_separation = dancer_a.get_hand_world_position(_connected_hand_a).distance_to(
+		dancer_b.get_hand_world_position(_connected_hand_b))
+	primary_acquisition_progress = 0.0
 	if dancer_level_ready:
 		_consume_dancer_catch_input()
 	else:
@@ -443,11 +396,13 @@ func _release_pair(slot: int, hand_a_side: int, hand_b_side: int) -> void:
 	if slot == 1:
 		is_connected = false
 		primary_snap_remaining = 0.0
-		_primary_compliance = 0.0
+		_primary_catch_separation = 0.0
+		primary_acquisition_progress = 0.0
 	else:
 		is_secondary_connected = false
 		secondary_snap_remaining = 0.0
-		_secondary_compliance = 0.0
+		_secondary_catch_separation = 0.0
+		secondary_acquisition_progress = 0.0
 	for side in HAND_SIDES:
 		_set_cooldown(1, side, release_cooldown)
 		_set_cooldown(2, side, release_cooldown)
@@ -490,180 +445,18 @@ func _consume_dancer_release_input() -> void:
 		_dancer_release_tap_armed[endpoint] = false
 
 
-func _process_hold_pair(
-	hand_a_side: int,
-	hand_b_side: int,
-	slot: int,
-	double_hold_active: bool,
-	delta: float
-) -> float:
-	var hand_a := dancer_a.get_hand_world_position(hand_a_side)
-	var hand_b := dancer_b.get_hand_world_position(hand_b_side)
-	var delta_position := hand_b - hand_a
-	var separation_length := delta_position.length()
-	var elastic_blend := (
-		_primary_compliance if slot == 1 else _secondary_compliance
-	)
-	if double_hold_active:
-		elastic_blend = 0.0
-	var response_rate := lerpf(
-		weld_response_rate,
-		elastic_response_rate,
-		elastic_blend
-	)
-	var velocity_correction := lerpf(
-		weld_velocity_correction,
-		elastic_velocity_correction,
-		elastic_blend
-	)
-	var tangential_correction := lerpf(
-		weld_tangential_correction,
-		elastic_tangential_correction,
-		elastic_blend
-	)
-	var snap_remaining := (
-		primary_snap_remaining if slot == 1 else secondary_snap_remaining
-	)
-	if snap_remaining > 0.0:
-		response_rate = maxf(response_rate, snap_response_rate)
-		velocity_correction = maxf(
-			velocity_correction,
-			snap_velocity_correction
-		)
-	var maximum_impulse := maximum_constraint_force * maxf(delta, 0.0)
-	var applied_impulse := 0.0
-	if separation_length > 0.001:
-		var direction := delta_position / separation_length
-		var tangent := direction.orthogonal()
-		var delta_velocity := (
-			dancer_b.get_hand_velocity(hand_b_side)
-			- dancer_a.get_hand_velocity(hand_a_side)
-		)
-		var extension := maxf(0.0, separation_length - welded_hand_separation)
-		var desired_normal_speed := -minf(
-			extension * response_rate,
-			maximum_spring_closing_speed
-		)
-		var normal_correction := (
-			(delta_velocity.dot(direction) - desired_normal_speed)
-			* velocity_correction
-		)
-		applied_impulse += absf(_apply_pair_velocity_axis(
-			hand_a_side,
-			hand_b_side,
-			direction,
-			normal_correction,
-			slot,
-			false,
-			maximum_impulse
-		))
-		delta_velocity = (
-			dancer_b.get_hand_velocity(hand_b_side)
-			- dancer_a.get_hand_velocity(hand_a_side)
-		)
-		applied_impulse += absf(_apply_pair_velocity_axis(
-			hand_a_side,
-			hand_b_side,
-			tangent,
-			delta_velocity.dot(tangent) * tangential_correction,
-			slot,
-			false,
-			maxf(0.0, maximum_impulse - applied_impulse)
-		))
-	else:
-		for axis in [Vector2.RIGHT, Vector2.DOWN]:
-			var relative_speed := (
-				dancer_b.get_hand_velocity(hand_b_side)
-				- dancer_a.get_hand_velocity(hand_a_side)
-			).dot(axis)
-			applied_impulse += absf(_apply_pair_velocity_axis(
-				hand_a_side,
-				hand_b_side,
-				axis,
-				relative_speed * tangential_correction,
-				slot,
-				false,
-				maxf(0.0, maximum_impulse - applied_impulse)
-			))
-	return applied_impulse / maxf(delta, 0.000001)
-
-
-func _update_hold_compliance(delta: float, double_hold_active: bool) -> void:
-	if is_connected:
-		_primary_compliance = _next_pair_compliance(
-			_primary_compliance,
-			_connected_hand_a,
-			_connected_hand_b,
-			primary_snap_remaining > 0.0,
-			double_hold_active,
-			delta
-		)
-	else:
-		_primary_compliance = 0.0
-	if is_secondary_connected:
-		_secondary_compliance = _next_pair_compliance(
-			_secondary_compliance,
-			_secondary_hand_a,
-			_secondary_hand_b,
-			secondary_snap_remaining > 0.0,
-			double_hold_active,
-			delta
-		)
-	else:
-		_secondary_compliance = 0.0
-	primary_elastic_blend = _primary_compliance
-	secondary_elastic_blend = _secondary_compliance
-
-
-func _next_pair_compliance(
-	current: float,
-	hand_a_side: int,
-	hand_b_side: int,
-	is_snapping: bool,
-	double_hold_active: bool,
-	delta: float
-) -> float:
-	# A new catch begins conservatively. After that, the hold responds to its own
-	# physical travel rather than inventing a shared arm pose or body alignment.
-	if is_snapping:
-		return 0.0
-	var relative_speed := (
-		dancer_b.get_hand_velocity(hand_b_side)
-		- dancer_a.get_hand_velocity(hand_a_side)
-	).length()
-	var offset_a := (
-		dancer_a.get_hand_world_position(hand_a_side) - dancer_a.global_position
-	)
-	var offset_b := (
-		dancer_b.get_hand_world_position(hand_b_side) - dancer_b.global_position
-	)
-	# Include body/arm travel so a firm low-speed spring can still graduate into
-	# the faster fingertip-tether response.
-	var maneuver_speed := (
-		(dancer_b.linear_velocity - dancer_a.linear_velocity).length()
-		+ absf(dancer_a.angular_velocity) * offset_a.length()
-		+ absf(dancer_b.angular_velocity) * offset_b.length()
-	)
-	var speed := maxf(relative_speed, maneuver_speed)
-	if double_hold_active:
-		return 0.0
-	var target := get_elastic_blend_for_speed(speed)
-	var rate := compliance_open_rate if target > current else compliance_close_rate
-	return move_toward(current, target, maxf(0.0, rate * delta))
-
-
 func _solve_active_hold_constraints(delta: float) -> void:
 	primary_allowed_separation = (
-		_get_pair_allowed_separation(_connected_hand_a, _connected_hand_b)
+		_get_acquisition_separation(1)
 		if is_connected
 		else 0.0
 	)
 	secondary_allowed_separation = (
-		_get_pair_allowed_separation(_secondary_hand_a, _secondary_hand_b)
+		_get_acquisition_separation(2)
 		if is_secondary_connected
 		else 0.0
 	)
-	for _iteration in separation_projection_iterations:
+	for _iteration in rigid_position_iterations:
 		var corrected_any := false
 		if is_connected:
 			corrected_any = (
@@ -687,48 +480,76 @@ func _solve_active_hold_constraints(delta: float) -> void:
 			)
 		if not corrected_any:
 			break
-	for _iteration in velocity_projection_iterations:
+	for _iteration in rigid_velocity_iterations:
 		if is_connected:
-			_solve_pair_velocity(
-				_connected_hand_a,
-				_connected_hand_b,
-				primary_allowed_separation,
-				delta,
-				1
-			)
+			if primary_snap_remaining <= 0.0:
+				_solve_rigid_pair_velocity(
+					_connected_hand_a,
+					_connected_hand_b,
+					delta,
+					1
+				)
+			else:
+				_solve_pair_velocity(
+					_connected_hand_a,
+					_connected_hand_b,
+					primary_allowed_separation,
+					delta,
+					1
+				)
 		if is_secondary_connected:
-			_solve_pair_velocity(
-				_secondary_hand_a,
-				_secondary_hand_b,
-				secondary_allowed_separation,
-				delta,
-				2
-			)
+			if secondary_snap_remaining <= 0.0:
+				_solve_rigid_pair_velocity(
+					_secondary_hand_a,
+					_secondary_hand_b,
+					delta,
+					2
+				)
+			else:
+				_solve_pair_velocity(
+					_secondary_hand_a,
+					_secondary_hand_b,
+					secondary_allowed_separation,
+					delta,
+					2
+				)
 
 
-func _get_pair_allowed_separation(hand_a_side: int, hand_b_side: int) -> float:
-	var hand_a := dancer_a.get_hand_world_position(hand_a_side)
-	var hand_b := dancer_b.get_hand_world_position(hand_b_side)
-	var gap := hand_b - hand_a
-	if gap.length() <= dorsal_safety_margin:
-		return maximum_hand_separation
-	var dorsal_a := dancer_a.get_dorsal_local_direction().rotated(
-		dancer_a.global_rotation
+func _get_acquisition_progress(slot: int) -> float:
+	if snap_duration <= 0.000001:
+		return 1.0
+	var remaining := primary_snap_remaining if slot == 1 else secondary_snap_remaining
+	var linear_progress := clampf(1.0 - remaining / snap_duration, 0.0, 1.0)
+	# Smoothstep has zero velocity at both ends, so the catch starts and finishes
+	# without a positional kick. This is an acquisition path, not a spring.
+	return linear_progress * linear_progress * (3.0 - 2.0 * linear_progress)
+
+
+func _get_acquisition_separation(slot: int) -> float:
+	var catch_separation := (
+		_primary_catch_separation if slot == 1 else _secondary_catch_separation
 	)
-	var dorsal_b := dancer_b.get_dorsal_local_direction().rotated(
-		dancer_b.global_rotation
-	)
-	var dorsal_to_dorsal := (
-		gap.dot(dorsal_a) > dorsal_safety_margin
-		and (-gap).dot(dorsal_b) > dorsal_safety_margin
-	)
-	if dorsal_to_dorsal:
-		dorsal_limit_active = true
-		return welded_hand_separation
-	return maxf(
-		welded_hand_separation,
-		maximum_hand_separation - separation_projection_margin
-	)
+	return catch_separation * (1.0 - _get_acquisition_progress(slot))
+
+
+func _solve_rigid_pair_velocity(
+	hand_a_side: int,
+	hand_b_side: int,
+	delta: float,
+	slot: int
+) -> void:
+	for axis in [Vector2.RIGHT, Vector2.DOWN]:
+		var relative_speed := (
+			_get_predicted_hand_velocity(dancer_b, hand_b_side, delta)
+			- _get_predicted_hand_velocity(dancer_a, hand_a_side, delta)
+		).dot(axis)
+		_apply_pair_velocity_axis(
+			hand_a_side,
+			hand_b_side,
+			axis,
+			relative_speed,
+			slot
+		)
 
 
 func _solve_pair_position(
@@ -1063,7 +884,7 @@ func _endpoint_can_be_caught(endpoint: int, side: int) -> bool:
 func _update_dancer_collision_exception() -> void:
 	if not is_instance_valid(dancer_a) or not is_instance_valid(dancer_b):
 		return
-	# The minimal torso circles remain active during the one-hand spring.
+	# The minimal torso circles remain active during the one-hand joint.
 	dancer_a.remove_collision_exception_with(dancer_b)
 	dancer_b.remove_collision_exception_with(dancer_a)
 
@@ -1148,15 +969,7 @@ func _update_cooldowns(delta: float) -> void:
 func _reset_diagnostics() -> void:
 	distance_error = 0.0
 	relative_hand_velocity = 0.0
-	connection_force = 0.0
-	primary_connection_force = 0.0
-	secondary_connection_force = 0.0
-	primary_elastic_blend = _primary_compliance if is_connected else 0.0
-	secondary_elastic_blend = (
-		_secondary_compliance if is_secondary_connected else 0.0
-	)
 	separation_limit_active = false
-	dorsal_limit_active = false
 	primary_hand_separation = 0.0
 	secondary_hand_separation = 0.0
 	primary_allowed_separation = 0.0

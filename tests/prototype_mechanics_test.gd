@@ -8,6 +8,14 @@ var _right: Dancer
 var _connection: HandConnection
 var _debug_overlay: DebugOverlay
 var _pause_menu: PauseMenu
+var _frame_observer: FrameObserver
+
+
+class FrameObserver extends Node:
+	signal frame_completed
+
+	func _physics_process(_delta: float) -> void:
+		frame_completed.emit()
 
 
 func _initialize() -> void:
@@ -23,6 +31,9 @@ func _run() -> void:
 	_debug_overlay = _root.get_node("DebugOverlay")
 	_pause_menu = _root.get_node("PauseMenu")
 	_root.set_physics_process(false)
+	_frame_observer = FrameObserver.new()
+	_frame_observer.process_physics_priority = 2000
+	_root.add_child(_frame_observer)
 
 	_expect(
 		ProjectSettings.get_setting("display/window/size/mode") == 3,
@@ -49,7 +60,7 @@ func _run() -> void:
 	_expect(
 		is_equal_approx(_left.get_node("CollisionShape2D").shape.radius, 12.0)
 		and is_equal_approx(_right.get_node("CollisionShape2D").shape.radius, 12.0),
-		"minimal torso colliders leave room for the hand spring"
+		"minimal torso colliders leave room for the hand joint"
 	)
 	_expect(
 		_left.physics_material_override.friction == 0.0
@@ -57,10 +68,19 @@ func _run() -> void:
 		"frictionless dancer contacts preserve spin at the walls"
 	)
 	_expect(
-		_connection.get_solver_mode() == "spring"
-		and is_equal_approx(_connection.maximum_hand_separation, 27.0),
-		"the migrated solver is the coop one-hand spring with its hard tether"
+		_connection.get_solver_mode() == "joint",
+		"the migrated solver uses rigid hand joints"
 	)
+
+	_expect(is_equal_approx(_left.mass, 1.2) and is_equal_approx(_right.mass, 1.2),
+		"artwork preserves both existing physical masses")
+	_expect(is_equal_approx(_left.shoulder_half_width, 17.0)
+		and is_equal_approx(_right.shoulder_half_width, 16.0)
+		and is_equal_approx(_left.upper_arm_length, 36.4)
+		and is_equal_approx(_right.upper_arm_length, 38.5)
+		and is_equal_approx(_left.forearm_length, 36.4)
+		and is_equal_approx(_right.forearm_length, 38.5),
+		"artwork preserves each dancer's existing mechanical skeleton")
 
 	await _wait_physics_frames(150)
 	_expect(
@@ -78,6 +98,7 @@ func _run() -> void:
 		"drawn arms use their independent projected segment lengths"
 	)
 
+	_expect(is_zero_approx(_left.get_hand_roll_radians(1)), "extended palm begins without visual roll")
 	var right_extended_hand := _left.get_hand_local_position(1)
 	var extended_inertia := _left.inertia
 	_root.apply_control_state(
@@ -94,6 +115,8 @@ func _run() -> void:
 		and _left.get_arm_flexion(1) > 0.99,
 		"LT contracts both independent black-dancer arms"
 	)
+	_expect(is_equal_approx(_left.get_hand_roll_radians(1), deg_to_rad(120.0)),
+		"fully tucked palm uses the co-op 120-degree visual roll")
 	_expect(
 		_right.get_arm_flexion(-1) < 0.01
 		and _right.get_arm_flexion(1) < 0.01,
@@ -203,6 +226,23 @@ func _run() -> void:
 		== _right.minimum_extended_elbow_flexion_degrees,
 		"D-pad stance adjustment applies identically to both dancers"
 	)
+	_left.extended_elbow_flexion_degrees = 10.0
+	_right.extended_elbow_flexion_degrees = 20.0
+	_left.extended_forward_sweep_degrees = 40.0
+	_right.extended_forward_sweep_degrees = 30.0
+	_root._apply_arm_pose_inputs(Vector2.ONE, 1.0)
+	_expect(is_equal_approx(_left.extended_elbow_flexion_degrees, 5.0)
+		and is_equal_approx(_right.extended_elbow_flexion_degrees, 15.0)
+		and is_equal_approx(_left.extended_forward_sweep_degrees, 45.0)
+		and is_equal_approx(_right.extended_forward_sweep_degrees, 35.0),
+		"shared D-pad stops each axis at either dancer's limit without changing pose differences")
+	_root._apply_arm_pose_inputs(Vector2.ONE, 1.0)
+	_expect(is_equal_approx(_right.extended_elbow_flexion_degrees, 15.0)
+		and is_equal_approx(_right.extended_forward_sweep_degrees, 35.0),
+		"continued D-pad input cannot drift the partner past a shared limit")
+	for dancer in [_left, _right]:
+		dancer.extended_elbow_flexion_degrees = 5.0
+		dancer.extended_forward_sweep_degrees = 25.0
 	await _wait_physics_frames(180)
 	_expect(
 		is_zero_approx(_left.target_angular_velocity)
@@ -258,53 +298,45 @@ func _run() -> void:
 		"a successful catch consumes both primed states"
 	)
 	_expect(
-		_connected_gap() <= _connection.maximum_hand_separation + 0.1
-		and _connection.primary_allowed_separation
-		<= _connection.maximum_hand_separation,
-		"the catch enters the coop spring's hard fingertip tether"
+		_connected_gap() <= _connection.primary_allowed_separation + 0.1
+		and _connection.primary_acquisition_progress > 0.0
+		and _connection.primary_acquisition_progress < 1.0,
+		"catch closes within its smooth acquisition envelope"
 	)
+	var previous_allowed := _connection.primary_allowed_separation
+	var acquisition_monotonic := true
+	for _frame in 30:
+		await _frame_observer.frame_completed
+		acquisition_monotonic = acquisition_monotonic and (
+			_connection.primary_allowed_separation <= previous_allowed + 0.001)
+		previous_allowed = _connection.primary_allowed_separation
+	_expect(acquisition_monotonic and _connected_gap() < 0.05
+		and is_equal_approx(_connection.primary_acquisition_progress, 1.0),
+		"acquisition reaches zero gap without reopening its envelope")
 
 	_left.freeze = false
 	_right.freeze = false
 	_left.set_control_input(Vector2.LEFT, 1.0)
 	_right.set_control_input(Vector2.RIGHT, 0.0)
+	_left.set_runtime_tuning(1.0, 1.0, 1.0)
+	_right.set_runtime_tuning(1.0, 1.0, 1.0)
 	var peak_gap := 0.0
-	var peak_force := 0.0
-	var peak_elastic_blend := 0.0
-	var tether_activated := false
+	var peak_correction := 0.0
 	for _frame in 180:
-		await physics_frame
+		await _frame_observer.frame_completed
 		peak_gap = maxf(peak_gap, _connected_gap())
-		peak_force = maxf(peak_force, _connection.connection_force)
-		peak_elastic_blend = maxf(
-			peak_elastic_blend,
-			_connection.primary_elastic_blend
-		)
-		tether_activated = tether_activated or _connection.separation_limit_active
-	print(
-		"single spring stress: peak_gap=%.3f force=%.3f blend=%.3f tether=%s"
-		% [peak_gap, peak_force, peak_elastic_blend, str(tether_activated)]
-	)
-	_expect(_connection.is_connected, "ordinary spring tension does not auto-release")
-	_expect(peak_force > 10.0, "the hand spring produces a physical constraint response")
-	_expect(
-		peak_gap <= _connection.maximum_hand_separation + 0.1,
-		"strong opposing movement remains inside the coop tether"
-	)
-	_expect(
-		tether_activated or peak_gap < _connection.maximum_hand_separation,
-		"the stress case is bounded before or through the hard projection"
-	)
-	_expect(
-		peak_elastic_blend > 0.5,
-		"fast one-hand movement opens the softer elastic response"
-	)
+		peak_correction = maxf(peak_correction, _connection.primary_velocity_correction)
+	print("single rigid hold stress: peak_gap=%.3f velocity_correction=%.3f" % [peak_gap, peak_correction])
+	_expect(_connection.is_connected, "ordinary joint tension does not auto-release")
+	_expect(peak_correction > 0.1, "the joint responds to opposing movement and trigger spin")
+	# Co-op uses 0.1 px for settled point contact; retain that subpixel tolerance.
+	_expect(peak_gap <= 0.1, "strong opposing movement and trigger spin preserve rigid hand contact")
 	_expect(
 		_left.get_arm_flexion(-1) > 0.99
 		and _left.get_arm_flexion(1) > 0.99
 		and _right.get_arm_flexion(-1) < 0.01
 		and _right.get_arm_flexion(1) < 0.01,
-		"the latched spring does not replace either dancer's trigger pose"
+		"the latched joint does not replace either dancer's trigger pose"
 	)
 	_expect(
 		_left.linear_velocity.is_finite()
@@ -367,6 +399,10 @@ func _run() -> void:
 	)
 	_pause_menu._pause()
 	_expect(paused and _pause_menu.visible, "pause menu pauses the simulation")
+	var paused_stance := _left.extended_elbow_flexion_degrees
+	_root._apply_arm_pose_inputs(Vector2.LEFT, 1.0)
+	_expect(is_equal_approx(_left.extended_elbow_flexion_degrees, paused_stance),
+		"D-pad does not adjust arms while paused")
 	_pause_menu.telemetry_toggle.grab_focus()
 	_pause_menu._input(_joy_button_event(JOY_BUTTON_A))
 	_expect(
@@ -404,7 +440,7 @@ func _run() -> void:
 
 	if _failures.is_empty():
 		print(
-			"SINGLE-PLAYER SPRING MECHANICS: %d/%d checks passed"
+			"SINGLE-PLAYER JOINT MECHANICS: %d/%d checks passed"
 			% [_checks, _checks]
 		)
 		quit(0)
@@ -412,7 +448,7 @@ func _run() -> void:
 		for failure in _failures:
 			push_error(failure)
 		print(
-			"SINGLE-PLAYER SPRING MECHANICS: %d failure(s) across %d checks"
+			"SINGLE-PLAYER JOINT MECHANICS: %d failure(s) across %d checks"
 			% [_failures.size(), _checks]
 		)
 		quit(1)
@@ -460,7 +496,7 @@ func _connected_gap() -> float:
 
 func _wait_physics_frames(count: int) -> void:
 	for _frame in count:
-		await physics_frame
+		await _frame_observer.frame_completed
 
 
 func _expect(condition: bool, description: String) -> void:

@@ -97,8 +97,30 @@ func apply_control_state(
 ) -> void:
 	left_dancer.set_control_input(left_stick, left_trigger)
 	right_dancer.set_control_input(right_stick, right_trigger)
-	left_dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
-	right_dancer.adjust_extended_arm_pose(dpad.x, dpad.y, delta)
+	_apply_arm_pose_inputs(dpad, delta)
+
+
+func _apply_arm_pose_inputs(dpad: Vector2, delta: float) -> void:
+	if get_tree() != null and get_tree().paused:
+		return
+	var agreed := dpad.clamp(Vector2(-1.0, -1.0), Vector2.ONE)
+	var step := minf(left_dancer.arm_stance_adjustment_rate_degrees,
+		right_dancer.arm_stance_adjustment_rate_degrees) * maxf(delta, 0.0)
+	var elbow_step := -agreed.x * step
+	var sweep_step := agreed.y * step
+	# Both dancers receive the same bounded adjustment. Either partner's limit
+	# stops that axis, so a shared stance cannot drift apart at an endpoint.
+	for dancer in [left_dancer, right_dancer]:
+		elbow_step = clampf(elbow_step,
+			dancer.minimum_extended_elbow_flexion_degrees - dancer.extended_elbow_flexion_degrees,
+			dancer.maximum_extended_elbow_flexion_degrees - dancer.extended_elbow_flexion_degrees)
+		sweep_step = clampf(sweep_step,
+			dancer.minimum_extended_forward_sweep_degrees - dancer.extended_forward_sweep_degrees,
+			dancer.maximum_extended_forward_sweep_degrees - dancer.extended_forward_sweep_degrees)
+	for dancer in [left_dancer, right_dancer]:
+		dancer.extended_elbow_flexion_degrees += elbow_step
+		dancer.extended_forward_sweep_degrees += sweep_step
+		dancer.queue_redraw()
 
 
 func _read_stick(axis_x: int, axis_y: int) -> Vector2:

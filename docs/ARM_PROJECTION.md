@@ -29,10 +29,13 @@ moves the two arms of one dancer together.
 The D-pad adjusts the fully extended pose of both arms on both dancers.
 Left/right narrows or widens the stance by changing baseline elbow flexion;
 up/down sweeps the chains backward or forward relative to each dancer's nose.
-Holding a direction adjusts continuously at 40 degrees per second.
+Holding a direction adjusts continuously at 40 degrees per second. Both dancers
+receive the same bounded delta on each axis: either dancer reaching its limit
+stops that axis for both, preserving any existing difference between their poses.
+The single controller supplies this shared input directly.
 
 The authored neutral stance begins 25 degrees forward. Extended elbow flexion is
-limited to 5–55 degrees and sweep to 25 degrees rearward through 45 degrees
+limited to 5â€“55 degrees and sweep to 25 degrees rearward through 45 degrees
 forward. The extrema cannot cross either hand over its dancer's centreline.
 Trigger contraction fades out the extended-stance influence so the authored
 145-degree tucked endpoint remains authoritative.
@@ -60,8 +63,8 @@ applied. Left and right chains remain mirrored around each dancer's body axis.
 
 ## Gameplay authority
 
-The projected hand position is authoritative for drawing, catches, spring
-forces, hand velocity, and effective rotational inertia. Presentation and
+The projected hand position is authoritative for drawing, catches, joint
+constraints, hand velocity, and effective rotational inertia. Presentation and
 gameplay therefore agree about where every visible hand is.
 
 Relevant tuning properties include minimum_abduction_degrees,
@@ -69,3 +72,15 @@ maximum_abduction_degrees, extended_elbow_flexion_degrees,
 extended_forward_sweep_degrees, maximum_elbow_flexion_degrees,
 minimum_forearm_out_of_plane_degrees, and
 maximum_forearm_out_of_plane_degrees.
+
+## Artwork migration
+
+Tapered outlined arms, cuffs, rounded palms with mirrored thumbs, updated torso
+contours and clothing, and the man's white forelock come from the current co-op
+artwork, including its uncommitted visual refinements. Appearance uses a fixed
+slim silhouette; there are no weight or fit-weight controls in this variant.
+Palm roll follows achieved shoulder adduction and elbow flexion up to 120 degrees.
+
+Drawing uses the existing physical hand positions. Body mass, inertia calculation,
+12 px torso colliders, and each dancer's existing shoulder spacing and arm lengths
+are unchanged. Co-op's common skeleton and 20 px colliders are not migrated.

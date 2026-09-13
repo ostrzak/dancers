@@ -32,46 +32,28 @@ fresh press releases the hold. Either LB or RB can perform that release. The
 release press is consumed until it comes up again, preventing an immediate
 re-catch. All hands receive a short 0.35 s catch cooldown.
 
-The first 0.22 s uses the firmest closing response while the hands settle. Any
-catch gap outside the hard tether is corrected by the constraint on the next
-physics step.
+The accepted catch gap closes over 0.22 seconds using co-op's smoothstep
+acquisition curve. Corrections use the actual body masses and hand leverage.
 
-## Physical one-hand spring
+## Rigid one-hand hold
 
-The retained coop solver is a radial, damped constraint between the actual hand
-endpoints. It asks for a bounded closing speed instead of stacking a spring
-force, a full velocity weld, and repeated position rotation. The response uses
-the two bodies' effective mass at the hands, including arm leverage, so an
-extended arm does not make it overshoot.
+After acquisition, the actual hand endpoints share a zero-gap point joint.
+Position and velocity constraints replace the older elastic spring, 27 px
+tether, and mutual-dorsal exception. The joint does not prescribe relative body
+orientation: turning, pulling and orbiting remain possible around the hand.
 
-Below 80 px/s, the hold closes firmly toward a 2 px fingertip overlap and removes
-only a controlled fraction of relative hand motion each tick. From 80 to
-400 px/s it changes smoothly toward a softer response with very little
-tangential damping. That fast region can stretch and rebound while preserving
-an orbit. The elastic blend opens quickly under a fast maneuver and closes more
-slowly, creating damped recoil instead of abrupt switching.
+The connection does not average movement, change trigger-driven spin targets,
+or replace either dancer's trigger-driven arm pose. Releasing the hold preserves
+both dancers' linear and angular momentum. There is still exactly one connection;
+co-op's double-hold flexion permission and red request-mismatch tint do not apply.
 
-The connection never averages movement, changes trigger-driven spin targets, or
-replaces the trigger-driven arm pose. Movement, turns, pulls, and under-arm
-motion emerge from the two dancers and the single off-centre spring.
-
-At 27 px—one and a half 18 px hand diameters—the hands reach an unconditional
-geometric limit. A prediction margin, eight position passes, and one
-separating-velocity pass keep the rendered endpoints inside it. The correction
-acts only along the current hand gap.
-
-A hand may pass behind one dancer during an under-arm turn. Only mutual dorsal
-separation—each connected hand displaced behind the other dancer at the same
-time—collapses to the 2 px firm-contact distance. Releasing the spring removes
-only that relationship and preserves both dancers' linear and angular momentum.
-
-Minimal 12 px torso colliders remain active in free and connected motion so the
-body centres cannot collapse into the same space.
+Existing 12 px torso colliders, 1.2 body masses, individual skeleton dimensions,
+and movement/spin tuning are retained. New artwork does not change these values.
 
 ## Telemetry
 
-Captures distinguish free and single hold states. For each hand they record
-button-down, candidate priming, and release-tap state. Connection data includes
-the selected pair, measured and authorized separation, elastic blend, position
-and velocity correction, dorsal and radial limit activation, snap time, catch
-cooldown, force, and solver mode.
+Captures use `dancers-single-controller-telemetry-v2` and solver mode `joint`.
+They distinguish free and single holds, record candidate priming and release-tap
+state, selected pair, measured and acquisition-authorized separation, smooth
+acquisition progress, position/velocity corrections, cooldown and solver iterations.
+Old spring-force, compliance and dorsal-limit fields have been removed.

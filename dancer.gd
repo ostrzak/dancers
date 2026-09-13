@@ -454,42 +454,146 @@ func _update_effective_inertia() -> void:
 	inertia = maxf(1.0, base_effective_inertia + arm_inertia * effective_inertia_influence)
 
 
+func get_visual_body_scale() -> Vector2:
+	return Vector2(0.88, 0.92)
+
+
+func get_belly_profile() -> Vector2:
+	# Fixed slim abdomen, centred 3 px forward of the body origin.
+	var slim_depth := 9.0 if body_style == 0 else 11.0
+	return Vector2(13.0, slim_depth)
+
+
+func _belly_front_contour() -> PackedVector2Array:
+	var profile := get_belly_profile()
+	var body_scale := get_visual_body_scale()
+	var contour := PackedVector2Array()
+	for index in 25:
+		var angle := PI * float(index) / 24.0
+		# Cancel the clothing transform so the actual belly envelope is explicit.
+		contour.append(Vector2(cos(angle) * profile.x, 3.0 + sin(angle) * profile.y) / body_scale)
+	return contour
+
+
 func _draw() -> void:
 	for side in HAND_SIDES:
-		var shoulder := get_shoulder_local_position(side)
-		var elbow := get_elbow_local_position(side)
-		var hand := get_hand_local_position(side)
-		draw_line(shoulder, elbow, body_color, 8.0, true)
-		draw_line(elbow, hand, body_color, 8.0, true)
-		draw_circle(elbow, get_elbow_joint_radius(side), body_color)
-		draw_circle(hand, HAND_RADIUS, body_color)
+		_draw_arm(side)
 	_draw_simple_body()
 
 
+func _draw_arm(side: int) -> void:
+	var shoulder := get_shoulder_local_position(side)
+	var elbow := get_elbow_local_position(side)
+	var hand := get_hand_local_position(side)
+	var shoulder_radius := lerpf(6.5, 8.0, get_arm_flexion(side))
+	var elbow_radius := lerpf(4.5, 7.0, get_arm_flexion(side))
+	# Outline the union first, then fill it. This avoids rings at the elbow and
+	# stays well-defined when the projected upper arm disappears completely.
+	for border in [1.5, 0.0]:
+		var color := detail_color if border > 0.0 else body_color
+		_draw_tapered_segment(shoulder, elbow, shoulder_radius + border, elbow_radius + border, color)
+		_draw_tapered_segment(elbow, hand, elbow_radius + border, 3.5 + border, color)
+		_draw_palm(side, border, color)
+	# One short cuff line adds clothing detail without extra joint markers.
+	var forearm := hand - elbow
+	if forearm.length() > HAND_RADIUS + 8.0:
+		var direction := forearm.normalized()
+		var normal := direction.orthogonal()
+		var cuff := hand - direction * (HAND_RADIUS + 3.0)
+		draw_line(cuff - normal * 3.6, cuff + normal * 3.6, detail_color, 1.2, true)
+
+
+func get_hand_roll_radians(side: int) -> float:
+	# Authored visual coupling, not an extra physical wrist joint. Both actual
+	# shoulder adduction and elbow flexion contribute, including D-pad stance.
+	var adduction := 1.0 - clampf(inverse_lerp(minimum_abduction_degrees,
+		maximum_abduction_degrees, get_abduction_degrees(side)), 0.0, 1.0)
+	var flexion := clampf(inverse_lerp(extended_elbow_flexion_degrees,
+		maximum_elbow_flexion_degrees, get_elbow_flexion_degrees(side)), 0.0, 1.0)
+	return deg_to_rad(120.0) * (adduction + flexion) * 0.5
+
+
+func _draw_palm(side: int, border: float, color: Color) -> void:
+	# The grip stays at the palm centre. Mirror the thumb across the forearm
+	# for left/right hands, using pose direction even in foreshortened poses.
+	var hand := get_hand_local_position(side)
+	var forward := get_forearm_local_direction(side)
+	var thumbward := Vector2(-forward.y, forward.x) * float(signi(side))
+	var roll := get_hand_roll_radians(side)
+	var projected_width := cos(roll)
+	var edge_thickness := 2.0 * sin(roll)
+	# Wrist -> rounded finger block -> small thumb -> wrist. No individual fingers.
+	var profile := PackedVector2Array([
+		Vector2(-8.0, -3.0), Vector2(-4.0, -5.0), Vector2(4.0, -5.5),
+		Vector2(7.0, -4.0), Vector2(8.5, -1.0), Vector2(8.0, 2.5),
+		Vector2(6.0, 4.5), Vector2(2.0, 5.0), Vector2(0.0, 7.0),
+		Vector2(-2.5, 8.0), Vector2(-4.5, 6.5), Vector2(-5.0, 4.0),
+		Vector2(-8.0, 3.0),
+	])
+	# One corner-cutting pass rounds the silhouette at gameplay resolution.
+	var contour := PackedVector2Array()
+	for index in profile.size():
+		var a := profile[index]
+		var b := profile[(index + 1) % profile.size()]
+		for fraction in [0.25, 0.75]:
+			var point := a.lerp(b, fraction)
+			var centre := hand + forward * point.x + thumbward * point.y * projected_width
+			# Project a thin palm volume: finite edge-on thickness, with the thumb
+			# continuously crossing to the opposite side as the palm turns upward.
+			contour.append(centre + thumbward * edge_thickness)
+			contour.append(centre - thumbward * edge_thickness)
+	contour = Geometry2D.convex_hull(contour)
+	draw_colored_polygon(contour, color)
+	if border > 0.0:
+		draw_polyline(contour, color, border * 2.0, true)
+	elif projected_width < -0.15:
+		# A restrained crease distinguishes the palm face from the hand's back.
+		var crease_color := detail_color
+		crease_color.a *= smoothstep(0.15, 0.75, -projected_width)
+		draw_line(hand - forward * 2.0 + thumbward * projected_width * 2.5,
+			hand + forward * 1.5, crease_color, 1.0, true)
+
+
+func _draw_tapered_segment(start: Vector2, end: Vector2,
+		start_radius: float, end_radius: float, color: Color) -> void:
+	var segment := end - start
+	if segment.length_squared() > 0.0001:
+		var normal := segment.normalized().orthogonal()
+		draw_colored_polygon(PackedVector2Array([
+			start + normal * start_radius, end + normal * end_radius,
+			end - normal * end_radius, start - normal * start_radius,
+		]), color)
+	draw_circle(start, start_radius, color, true, -1, true)
+	draw_circle(end, end_radius, color, true, -1, true)
+
+
 func _draw_simple_body() -> void:
+	# Fixed slim artwork only; collider, physical anchors, mass and inertia remain unchanged.
+	draw_set_transform(Vector2.ZERO, 0.0, get_visual_body_scale())
 	if body_style == 1:
 		_draw_woman_body()
 	else:
 		_draw_man_body()
+	draw_set_transform(Vector2.ZERO)
+	_draw_overhead_head(body_style == 1)
 
 
 func _draw_man_body() -> void:
-	# An upright torso projects almost entirely beneath the head. Only the neck,
-	# angular shoulders, and jacket edges escape the head's footprint.
+	# Shoulders retain their overhead shape; the abdomen forms one continuous
+	# rounded front edge, rather than a separate circle or a longer flat chest.
 	var torso := PackedVector2Array([
 		Vector2(-6.0, NECK_REAR_Y),
 		Vector2(6.0, NECK_REAR_Y),
 		Vector2(9.0, BODY_REAR_Y),
 		Vector2(20.0, -8.0),
 		Vector2(25.0, -3.0),
-		Vector2(22.0, 6.0),
-		Vector2(12.0, BODY_FORWARD_Y),
-		Vector2(-12.0, BODY_FORWARD_Y),
-		Vector2(-22.0, 6.0),
+	])
+	torso.append_array(_belly_front_contour())
+	torso.append_array(PackedVector2Array([
 		Vector2(-25.0, -3.0),
 		Vector2(-20.0, -8.0),
 		Vector2(-9.0, BODY_REAR_Y),
-	])
+	]))
 	draw_colored_polygon(torso, body_color)
 	var torso_outline := torso.duplicate()
 	torso_outline.append(torso[0])
@@ -512,7 +616,6 @@ func _draw_man_body() -> void:
 		Vector2(9.0, -8.0),
 		Vector2(12.0, 5.0),
 	]), detail_color)
-	_draw_overhead_head(false)
 
 
 func _draw_woman_body() -> void:
@@ -542,20 +645,18 @@ func _draw_woman_body() -> void:
 	])
 	draw_colored_polygon(hair, detail_color)
 
-	# The dress is a rounded shoulder-and-bodice footprint no longer than the
-	# head. Two small front lobes suggest the bosom from above.
+	# The dress follows the same slim abdomen under the bodice.
 	var dress := PackedVector2Array([
 		Vector2(-8.0, BODY_REAR_Y),
 		Vector2(8.0, BODY_REAR_Y),
 		Vector2(19.0, -7.0),
 		Vector2(24.0, -2.0),
-		Vector2(23.0, 5.0),
-		Vector2(16.0, BODY_FORWARD_Y),
-		Vector2(-16.0, BODY_FORWARD_Y),
-		Vector2(-23.0, 5.0),
+	])
+	dress.append_array(_belly_front_contour())
+	dress.append_array(PackedVector2Array([
 		Vector2(-24.0, -2.0),
 		Vector2(-19.0, -7.0),
-	])
+	]))
 	draw_colored_polygon(dress, body_color)
 	var dress_outline := dress.duplicate()
 	dress_outline.append(dress[0])
@@ -565,11 +666,10 @@ func _draw_woman_body() -> void:
 		2.0,
 		true
 	)
-	draw_circle(Vector2(-8.0, 6.0), 6.0, body_color)
-	draw_circle(Vector2(8.0, 6.0), 6.0, body_color)
-	draw_arc(Vector2(-8.0, 6.0), 6.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
-	draw_arc(Vector2(8.0, 6.0), 6.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
-	_draw_overhead_head(true)
+	draw_circle(Vector2(-9.0, 7.0), 7.0, body_color)
+	draw_circle(Vector2(9.0, 7.0), 7.0, body_color)
+	draw_arc(Vector2(-9.0, 7.0), 7.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
+	draw_arc(Vector2(9.0, 7.0), 7.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
 
 
 func _draw_overhead_head(has_long_hair: bool) -> void:
@@ -598,22 +698,12 @@ func _draw_overhead_head(has_long_hair: bool) -> void:
 		draw_circle(Vector2(-9.5, -2.0), 3.0, detail_color)
 		draw_circle(Vector2(9.5, -2.0), 3.0, detail_color)
 	else:
-		# The dark head doubles as a close-cropped horseshoe of hair. A light,
-		# forward-reaching crown makes the male-pattern baldness legible from the
-		# gameplay camera without adding facial detail to the overhead figure.
-		var bald_crown := PackedVector2Array([
-			Vector2(-4.0, -6.5),
-			Vector2(4.0, -6.5),
-			Vector2(6.5, -3.0),
-			Vector2(7.0, 2.0),
-			Vector2(5.0, 7.0),
-			Vector2(2.5, 9.0),
-			Vector2(-2.5, 9.0),
-			Vector2(-5.0, 7.0),
-			Vector2(-7.0, 2.0),
-			Vector2(-6.5, -3.0),
-		])
-		draw_colored_polygon(bald_crown, detail_color)
-		var crown_outline := bald_crown.duplicate()
-		crown_outline.append(bald_crown[0])
-		draw_polyline(crown_outline, body_color, 1.25, true)
+		# A tapered white forelock across the crown, inside the head outline.
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-5.0, -8.0), Vector2(-1.0, -9.0), Vector2(3.0, -7.0),
+			Vector2(5.0, -3.0), Vector2(4.8, 0.5), Vector2(3.5, 2.5),
+			Vector2(1.5, 3.0), Vector2(0.0, 1.5), Vector2(0.5, 0.0),
+			Vector2(1.2, 1.1), Vector2(2.4, 1.0), Vector2(3.0, -0.2),
+			Vector2(2.0, -2.0),
+			Vector2(-1.0, -4.0), Vector2(-4.0, -4.0),
+		]), Color.WHITE)

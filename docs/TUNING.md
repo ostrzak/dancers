@@ -24,7 +24,9 @@ does the same for the white dancer. Releasing either stick button has no effect.
 During unpaused play, the D-pad changes the extended stance of both dancers:
 left/right narrows or widens all arm chains, while up/down sweeps them backward
 or forward. The setting is session-local. While paused, the D-pad remains
-exclusively menu navigation.
+exclusively menu navigation. During play, each axis applies the same bounded
+delta to both dancers and stops when either reaches its limit. Face buttons do
+not adjust the arm stance.
 
 The released-arm default is 25 degrees forward. This gives the pair a useful
 shared stance before either trigger is pressed.
@@ -46,5 +48,5 @@ brings the requested speed back to zero.
 Every capture records all five live tuning values and the single-controller
 assignment. It also states the LS/RS, LT/RT, LB/RB, and L3/R3 ownership map. Applied
 movement force already includes move-speed and arm-to-move scaling. Hold
-telemetry records the 27 px hard limit, current authorized length, mutual-dorsal
-blocking, compliance, solver mode, and hard safety corrections.
+telemetry records rigid-joint solver mode, the current acquisition-authorized
+length, acquisition progress, and position/velocity constraint corrections.
