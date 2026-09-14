@@ -641,7 +641,8 @@ func get_belly_profile() -> Vector2:
 	# Half-width and forward depth of the abdomen, centred 3 px forward of
 	# the body origin. Its fullest front reaches 26 px, beyond the nose/head.
 	var fullness := get_visual_weight_fullness()
-	return Vector2(lerpf(13.0, 24.0, fullness), lerpf(11.0, 23.0, fullness))
+	var slim_depth := 9.0 if body_style == 0 else 11.0
+	return Vector2(lerpf(13.0, 24.0, fullness), lerpf(slim_depth, 23.0, fullness))
 
 
 func _belly_front_contour() -> PackedVector2Array:
@@ -690,7 +691,7 @@ func get_hand_roll_radians(side: int) -> float:
 		maximum_abduction_degrees, get_abduction_degrees(side)), 0.0, 1.0)
 	var flexion := clampf(inverse_lerp(extended_elbow_flexion_degrees,
 		maximum_elbow_flexion_degrees, get_elbow_flexion_degrees(side)), 0.0, 1.0)
-	return PI * (adduction + flexion) * 0.5
+	return deg_to_rad(120.0) * (adduction + flexion) * 0.5
 
 
 func _draw_palm(side: int, border: float, color: Color) -> void:
@@ -846,10 +847,10 @@ func _draw_woman_body() -> void:
 		2.0,
 		true
 	)
-	draw_circle(Vector2(-8.0, 6.0), 6.0, body_color)
-	draw_circle(Vector2(8.0, 6.0), 6.0, body_color)
-	draw_arc(Vector2(-8.0, 6.0), 6.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
-	draw_arc(Vector2(8.0, 6.0), 6.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
+	draw_circle(Vector2(-9.0, 7.0), 7.0, body_color)
+	draw_circle(Vector2(9.0, 7.0), 7.0, body_color)
+	draw_arc(Vector2(-9.0, 7.0), 7.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
+	draw_arc(Vector2(9.0, 7.0), 7.0, 0.1, PI - 0.1, 12, detail_color, 1.5, true)
 
 
 func _draw_overhead_head(has_long_hair: bool) -> void:
@@ -877,3 +878,13 @@ func _draw_overhead_head(has_long_hair: bool) -> void:
 		draw_colored_polygon(hair_cap, detail_color)
 		draw_circle(Vector2(-9.5, -2.0), 3.0, detail_color)
 		draw_circle(Vector2(9.5, -2.0), 3.0, detail_color)
+	else:
+		# A tapered white forelock across the crown, inside the head outline.
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-5.0, -8.0), Vector2(-1.0, -9.0), Vector2(3.0, -7.0),
+			Vector2(5.0, -3.0), Vector2(4.8, 0.5), Vector2(3.5, 2.5),
+			Vector2(1.5, 3.0), Vector2(0.0, 1.5), Vector2(0.5, 0.0),
+			Vector2(1.2, 1.1), Vector2(2.4, 1.0), Vector2(3.0, -0.2),
+			Vector2(2.0, -2.0),
+			Vector2(-1.0, -4.0), Vector2(-4.0, -4.0),
+		]), Color.WHITE)

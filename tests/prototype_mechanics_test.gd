@@ -908,7 +908,7 @@ func _check_weight_and_visual_controls() -> void:
 		dancer.set_physical_weight_kg(1.0)
 		dancer.set_fit_weight_kg(999.0)
 		_expect(dancer.weight_kg == 40.0 and dancer.fit_weight_kg == 120.0
-			and dancer.get_belly_profile().is_equal_approx(Vector2(13.0, 11.0)), "lower slim cap keeps the approved smallest mesh")
+			and dancer.get_belly_profile().is_equal_approx(Vector2(13.0, 9.0 if dancer.body_style == 0 else 11.0)), "lower slim cap keeps each style's smallest mesh")
 		for side in [-1, 1]:
 			dancer.set_current_arm_length(side, dancer.maximum_arm_length)
 			var roll_before: float = dancer.get_hand_roll_radians(side)
@@ -917,7 +917,7 @@ func _check_weight_and_visual_controls() -> void:
 				and dancer.get_hand_display_color(side).is_equal_approx(Dancer.FIGHT_HAND_COLOR),
 				"blocked flexion turns the new arm red while palm roll follows achieved pose")
 			dancer.set_double_hold_arm_state(side, 1.0, 1.0)
-			_expect(is_equal_approx(dancer.get_hand_roll_radians(side), PI)
+			_expect(is_equal_approx(dancer.get_hand_roll_radians(side), deg_to_rad(120.0))
 				and dancer.get_hand_display_color(side).is_equal_approx(dancer.body_color),
 				"achieved full flexion supinates each hand and clears red effort tint")
 		dancer.clear_double_hold_arm_states()
