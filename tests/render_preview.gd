@@ -22,6 +22,20 @@ func _run() -> void:
 				pause_menu._pause()
 				pause_menu.tabs.current_tab = 1
 				pause_menu.trigger_sensitivity_slider.grab_focus()
+			"figures":
+				var pause_menu: PauseMenu = scene.get_node("PauseMenu")
+				if arguments.size() > 2:
+					pause_menu.demonstration.select_figure(int(arguments[2]))
+					pause_menu._refresh_figure_labels()
+				pause_menu._pause()
+				pause_menu._switch_tab(3)
+			"figure_pose":
+				var demonstration: FigureDemonstration = scene.get_node("FigureDemonstration")
+				demonstration.set_process(false)
+				if arguments.size() > 2:
+					demonstration.select_figure(int(arguments[2]))
+				demonstration.elapsed = float(arguments[3]) if arguments.size() > 3 else 3.0
+				demonstration._update_pose()
 	for _frame in 4:
 		await process_frame
 	var image := get_root().get_texture().get_image()

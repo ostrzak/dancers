@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Travelling turn"
+description = "Keep both hands joined, draw one side halfway inward, and circle together while travelling."
+duration = 6.0
+keys = Array[Dictionary]([{
+"time": 0.0, "centre": Vector2(530, 350), "turn": 0.0, "flexion": 0.0
+}, {
+"time": 1.0, "centre": Vector2(530, 350), "turn": 0.0, "flexion": 0.5, "arc": Vector2(0, -60)
+}, {
+"time": 5.0, "centre": Vector2(750, 350), "turn": 3.1415927, "flexion": 0.5
+}, {
+"time": 6.0, "centre": Vector2(750, 350), "turn": 3.1415927, "flexion": 0.0
+}])

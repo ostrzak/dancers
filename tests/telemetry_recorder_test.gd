@@ -122,6 +122,8 @@ func _run() -> void:
 	)
 
 	var payload: Dictionary = _recorder.build_capture_payload("automated_test")
+	_expect(sample["hand_connection"].has("double_hold_pose_limited"),
+		"telemetry distinguishes geometry-limited double-hold input")
 	_expect(payload["schema"] == "dancers-coop-telemetry-v11", "payload uses the versioned co-op schema")
 	_expect(int(payload["sample_count"]) == 1, "payload reports its sample count")
 	_expect(payload["configuration"].has("controller"), "payload includes exact controller tuning")

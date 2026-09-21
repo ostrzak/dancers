@@ -17,6 +17,7 @@ extends Node2D
 @onready var left_dancer: Dancer = $LeftDancer
 @onready var right_dancer: Dancer = $RightDancer
 @onready var hand_connection: HandConnection = $HandConnection
+@onready var figure_demonstration: FigureDemonstration = $FigureDemonstration
 
 var _player_one_device := -1
 var _player_two_device := -1
@@ -34,6 +35,16 @@ func _physics_process(delta: float) -> void:
 	_apply_player_input(left_dancer, _player_one_device, delta)
 	_apply_player_input(right_dancer, _player_two_device, delta)
 	_apply_arm_pose_inputs(_read_dpad(_player_one_device), _read_dpad(_player_two_device), delta)
+
+
+func reset_players_to_corners() -> void:
+	hand_connection.release_secondary_hands()
+	hand_connection.release_hands()
+	for dancer in [left_dancer, right_dancer]:
+		for side in [-1, 1]:
+			hand_connection.set_grip_button_state(dancer, side, false)
+	left_dancer.reset_to_pose(Vector2(150, 570), -PI * 0.75)
+	right_dancer.reset_to_pose(Vector2(1130, 570), PI * 0.75)
 
 
 func _apply_arm_pose_inputs(left_input: Vector2, right_input: Vector2, delta: float) -> void:

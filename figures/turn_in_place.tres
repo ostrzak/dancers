@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Turn in place"
+description = "Keep both hands joined and circle around a shared centre. Complete a full turn without travelling across the floor."
+duration = 6.0
+keys = Array[Dictionary]([{
+"time": 0.0, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0
+}, {
+"time": 0.5, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0
+}, {
+"time": 5.5, "centre": Vector2(640, 330), "turn": 6.2831853, "flexion": 0.0
+}, {
+"time": 6.0, "centre": Vector2(640, 330), "turn": 6.2831853, "flexion": 0.0
+}])

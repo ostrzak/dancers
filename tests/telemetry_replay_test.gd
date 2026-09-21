@@ -6,6 +6,7 @@ var _right: Dancer
 var _connection: HandConnection
 var _failed := false
 var _frame_observer: FrameObserver
+var _previous_recorded_stance: Dictionary = {}
 
 
 class FrameObserver extends Node:
@@ -62,6 +63,13 @@ func _run() -> void:
 	var settled_joint_frames := 0
 	var maximum_relative_hand_speed := 0.0
 	var maximum_body_speed := 0.0
+	var minimum_body_distance := INF
+	var maximum_position_correction := 0.0
+	var geometry_limited_frames := 0
+	var initial_alignment_sign := 0.0
+	var changed_hold_side := false
+	if _connection.get_active_connection_count() == 2:
+		initial_alignment_sign = signf((_right.position - _left.position).dot(Dancer.LOCAL_FORWARD_DIRECTION.rotated(_left.rotation)))
 	var maximum_absolute_spin := 0.0
 	var maximum_spin_step := 0.0
 	var spin_reversals := 0
@@ -85,6 +93,14 @@ func _run() -> void:
 					and _connection.secondary_snap_remaining <= 0.0:
 				settled_joint_frames += 1
 				maximum_settled_joint_gap = maxf(maximum_settled_joint_gap, current_gap)
+			if _connection.get_active_connection_count() == 2:
+				minimum_body_distance = minf(minimum_body_distance, _left.position.distance_to(_right.position))
+				maximum_position_correction = maxf(maximum_position_correction,
+					maxf(_connection.primary_position_correction, _connection.secondary_position_correction))
+				if _connection.double_hold_pose_limited:
+					geometry_limited_frames += 1
+				changed_hold_side = changed_hold_side or initial_alignment_sign * \
+					(_right.position - _left.position).dot(Dancer.LOCAL_FORWARD_DIRECTION.rotated(_left.rotation)) < 0.0
 			maximum_relative_hand_speed = maxf(
 				maximum_relative_hand_speed,
 				_connection.relative_hand_velocity
@@ -135,6 +151,13 @@ func _run() -> void:
 		]
 	)
 	_expect(finite_state, "replay remains numerically finite")
+	if arguments.has("--check-pose-limits"):
+		print("POSE REPLAY minimum_distance=%.4f max_correction=%.4f limited_frames=%d changed_hold_side=%s" % [
+			minimum_body_distance, maximum_position_correction, geometry_limited_frames, changed_hold_side])
+		_expect(minimum_body_distance >= 40.0, "pose replay retains torso clearance")
+		_expect(not changed_hold_side, "pose replay does not switch front/rear hold")
+		_expect(_connection.get_active_connection_count() == 2, "pose replay retains both holds")
+		_expect(geometry_limited_frames > 0, "pose replay reaches and respects the geometry limit")
 	_expect(
 		settled_joint_frames == 0 or maximum_settled_joint_gap <= 0.25,
 		"every replayed handhold settles to rigid fingertip contact"
@@ -218,12 +241,19 @@ func _apply_dancer_input(dancer: Dancer, state: Dictionary) -> void:
 		dancer.set_fit_weight_kg(float(state["fit_weight_kg"]))
 	var input: Dictionary = state["input"]
 	var arms: Dictionary = state["arms"]
-	dancer.extended_elbow_flexion_degrees = float(
-		arms["extended_stance"]["elbow_flexion_degrees"]
-	)
-	dancer.extended_forward_sweep_degrees = float(
-		arms["extended_stance"]["forward_sweep_degrees"]
-	)
+	var stance := Vector2(float(arms["extended_stance"]["elbow_flexion_degrees"]),
+		float(arms["extended_stance"]["forward_sweep_degrees"]))
+	if OS.get_cmdline_user_args().has("--stance-deltas"):
+		# Old captures have achieved stance angles, not raw D-pad buttons. Replay
+		# their changes as requests; absolute angles would overwrite the new limit
+		# and hide the player's immediate reversal behind rejected angle history.
+		var previous: Vector2 = _previous_recorded_stance.get(dancer, stance)
+		dancer.extended_elbow_flexion_degrees += stance.x - previous.x
+		dancer.extended_forward_sweep_degrees += stance.y - previous.y
+		_previous_recorded_stance[dancer] = stance
+	else:
+		dancer.extended_elbow_flexion_degrees = stance.x
+		dancer.extended_forward_sweep_degrees = stance.y
 	dancer.set_control_input(
 		_vector_from_json(input["movement"]),
 		_vector_from_json(input["facing"]),

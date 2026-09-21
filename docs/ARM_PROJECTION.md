@@ -62,6 +62,12 @@ the nose. Holding a direction adjusts continuously at 40 degrees per second.
 The authored neutral stance begins 25 degrees forward, giving two facing dancers
 a useful ballroom frame before either trigger is pressed.
 
+During a two-hand hold, stance changes also stop at the first reachable geometry
+limit: both hand contacts must remain compatible and the torso circles must stay
+clear. Trigger changes use the same check. Reversing the input moves away from
+the limit without a backlog, and blocked D-pad changes do not invent trigger
+contraction or switch the dancers between front and rear holds.
+
 The limits are anatomical rather than cosmetic: extended elbow flexion stays
 between 5 and 55 degrees, forward sweep stays between 25 degrees rearward and
 45 degrees forward, and the chosen extrema cannot cross a hand over the body's

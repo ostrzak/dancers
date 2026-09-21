@@ -81,8 +81,10 @@ func _run() -> void:
 		"the nose projects from the corrected local-forward side of the head"
 	)
 	_expect(
-		absf(wrapf(_right.global_rotation - _left.global_rotation - PI, -PI, PI)) < 0.01,
-		"the dancers begin facing one another"
+		_left.position == Vector2(150, 570) and _right.position == Vector2(1130, 570)
+		and Dancer.LOCAL_FORWARD_DIRECTION.rotated(_left.rotation).dot(Vector2(1, -1).normalized()) > 0.99
+		and Dancer.LOCAL_FORWARD_DIRECTION.rotated(_right.rotation).dot(Vector2(-1, -1).normalized()) > 0.99,
+		"the dancers start in the bottom corners facing into the floor"
 	)
 	_expect(
 		is_equal_approx(_left.get_node("CollisionShape2D").shape.radius, 20.0)

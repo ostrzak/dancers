@@ -8,6 +8,12 @@ Red-arm feedback now allows a 10% partner-request mismatch and ignores shared
 torso-limited flexion, so matching full tuck stays neutral. The table below
 records the original merge; the current controls are described in TUNING.md.
 
+2026-09-21 follow-up: double holds now limit both trigger and D-pad changes along
+the continuous reachable pose path. Torso clearance cannot be rescued by jumping
+between front/rear configurations or inventing contraction for a D-pad request.
+See HAND_CONNECTION.md for the current geometry-limit contract; the projection
+description below documents the earlier integration.
+
 | Area | Source and outcome |
 | --- | --- |
 | Gameplay baseline | `885d265` (hybrid): common skeleton, grip ownership/latching, independent D-pad stance, toggle locks, weighted LS and lock authority, sensitivity tuning |

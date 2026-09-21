@@ -43,6 +43,7 @@ var double_hold_alignment_error := 0.0
 var double_hold_primary_permission := 0.0
 var double_hold_secondary_permission := 0.0
 var double_hold_maximum_effort := 0.0
+var double_hold_pose_limited := false
 
 var _connected_hand_a := 1
 var _connected_hand_b := 1
@@ -61,10 +62,11 @@ var _cooldown_b := {-1: 0.0, 1: 0.0}
 var _primary_catch_separation := 0.0
 var _secondary_catch_separation := 0.0
 var _double_hold_was_active := false
-var _double_hold_primary_flexion := 0.0
-var _double_hold_secondary_flexion := 0.0
+var _double_hold_pose: Array = []
+var _newest_connection_slot := 1
 
 const HAND_SIDES := [-1, 1]
+const DOUBLE_HOLD_CLEARANCE_MARGIN := 0.05
 
 
 func _ready() -> void:
@@ -274,6 +276,7 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 		return false
 
 	if not is_connected:
+		_newest_connection_slot = 1
 		_connected_hand_a = signi(hand_a_side)
 		_connected_hand_b = signi(hand_b_side)
 		is_connected = true
@@ -283,6 +286,7 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 		).distance_to(dancer_b.get_hand_world_position(_connected_hand_b))
 		primary_acquisition_progress = 0.0
 	elif not is_secondary_connected:
+		_newest_connection_slot = 2
 		_secondary_hand_a = signi(hand_a_side)
 		_secondary_hand_b = signi(hand_b_side)
 		is_secondary_connected = true
@@ -303,6 +307,11 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 
 
 func _release_pair(slot: int, hand_a_side: int, hand_b_side: int) -> void:
+	_double_hold_was_active = false
+	double_hold_pose_limited = false
+	_double_hold_pose.clear()
+	dancer_a.clear_double_hold_arm_states()
+	dancer_b.clear_double_hold_arm_states()
 	_consume_release_input(hand_a_side, hand_b_side)
 	if slot == 1:
 		is_connected = false
@@ -427,11 +436,13 @@ func _get_acquisition_separation(slot: int) -> float:
 
 
 func _update_double_hold_arm_frame(active: bool, delta: float) -> void:
+	double_hold_pose_limited = false
 	if not active:
 		if _double_hold_was_active:
 			dancer_a.clear_double_hold_arm_states()
 			dancer_b.clear_double_hold_arm_states()
 		_double_hold_was_active = false
+		_double_hold_pose.clear()
 		double_hold_primary_permission = 0.0
 		double_hold_secondary_permission = 0.0
 		double_hold_maximum_effort = 0.0
@@ -446,14 +457,22 @@ func _update_double_hold_arm_frame(active: bool, delta: float) -> void:
 		dancer_b.get_trigger_value(_secondary_hand_b)
 	)
 	if not _double_hold_was_active:
-		_double_hold_primary_flexion = minf(
-			dancer_a.get_arm_flexion(_connected_hand_a),
-			dancer_b.get_arm_flexion(_connected_hand_b)
-		)
-		_double_hold_secondary_flexion = minf(
-			dancer_a.get_arm_flexion(_secondary_hand_a),
-			dancer_b.get_arm_flexion(_secondary_hand_b)
-		)
+		var initial := _read_double_hold_pose()
+		var flexions := initial.slice(0, 4)
+		_project_double_hold_spans(flexions)
+		var offset := _get_double_hold_body_offset()
+		var current_offset := (dancer_b.global_position - dancer_a.global_position).rotated(-dancer_a.global_rotation)
+		if not _double_hold_geometry_is_valid() or offset.dot(current_offset) <= 0.0:
+			# An incompatible second catch must not pull bodies through each other.
+			_apply_double_hold_pose(initial, false)
+			if _newest_connection_slot == 1:
+				release_hands()
+			else:
+				release_secondary_hands()
+			dancer_a.clear_double_hold_arm_states()
+			dancer_b.clear_double_hold_arm_states()
+			return
+		_double_hold_pose = _read_double_hold_pose()
 	_double_hold_was_active = true
 
 	var normalized_rate := minf(
@@ -462,29 +481,13 @@ func _update_double_hold_arm_frame(active: bool, delta: float) -> void:
 		dancer_b.arm_interpolation_speed
 		/ maxf(dancer_b.maximum_arm_length - dancer_b.minimum_arm_length, 0.001)
 	)
-	_double_hold_primary_flexion = move_toward(
-		_double_hold_primary_flexion,
-		double_hold_primary_permission,
-		normalized_rate * maxf(delta, 0.0)
-	)
-	_double_hold_secondary_flexion = move_toward(
-		_double_hold_secondary_flexion,
-		double_hold_secondary_permission,
-		normalized_rate * maxf(delta, 0.0)
-	)
-
-	# Begin with the mutually permitted flexion for each contact. Then make only
-	# the tiny anatomical adjustment required for both dancers' two hand spans to
-	# match. Equal spans are what make two exact point contacts geometrically
-	# possible without welding either dancer's body orientation.
-	var flexions := [
-		_double_hold_primary_flexion,
-		_double_hold_primary_flexion,
-		_double_hold_secondary_flexion,
-		_double_hold_secondary_flexion,
-	]
-	_project_double_hold_spans(flexions)
-	_apply_double_hold_flexions(flexions, true)
+	# Stance contains this frame's D-pad proposal. Flexion always advances from
+	# the achieved pose, so blocked trigger requests cannot build up a backlog.
+	var target := _read_double_hold_pose()
+	for index in 4:
+		var permission := double_hold_primary_permission if index < 2 else double_hold_secondary_permission
+		target[index] = move_toward(float(_double_hold_pose[index]), permission, normalized_rate * maxf(delta, 0.0))
+	_advance_double_hold_pose(target)
 	double_hold_maximum_effort = maxf(
 		maxf(
 			dancer_a.get_double_hold_arm_effort(_connected_hand_a),
@@ -497,9 +500,85 @@ func _update_double_hold_arm_frame(active: bool, delta: float) -> void:
 	)
 
 
-func _project_double_hold_spans(flexions: Array) -> void:
+func _read_double_hold_pose() -> Array:
+	return [dancer_a.get_arm_flexion(_connected_hand_a), dancer_b.get_arm_flexion(_connected_hand_b),
+		dancer_a.get_arm_flexion(_secondary_hand_a), dancer_b.get_arm_flexion(_secondary_hand_b),
+		dancer_a.extended_elbow_flexion_degrees, dancer_a.extended_forward_sweep_degrees,
+		dancer_b.extended_elbow_flexion_degrees, dancer_b.extended_forward_sweep_degrees]
+
+
+func _apply_double_hold_pose(pose: Array, record_effort: bool) -> void:
+	dancer_a.extended_elbow_flexion_degrees = pose[4]
+	dancer_a.extended_forward_sweep_degrees = pose[5]
+	dancer_b.extended_elbow_flexion_degrees = pose[6]
+	dancer_b.extended_forward_sweep_degrees = pose[7]
+	_apply_double_hold_flexions(pose, record_effort)
+
+
+func _double_hold_geometry_is_valid() -> bool:
+	return absf(_get_double_hold_span_error()) <= rigid_span_tolerance \
+		and _get_double_hold_body_offset().length() >= _get_body_contact_distance() + DOUBLE_HOLD_CLEARANCE_MARGIN - 0.0001
+
+
+func _try_double_hold_pose(proposal: Array, previous: Array, previous_offset: Vector2) -> Array:
+	_apply_double_hold_pose(proposal, false)
+	var flexions := proposal.slice(0, 4)
+	# Span matching may make small compatibility adjustments, but must never
+	# invent contraction to solve torso overlap. Stop the requested motion instead.
+	_project_double_hold_spans(flexions, false)
+	if not _double_hold_geometry_is_valid() or _get_double_hold_body_offset().dot(previous_offset) <= 0.0:
+		return []
+	for index in 4:
+		if absf(float(flexions[index]) - float(previous[index])) > 0.05:
+			return []
+	return _read_double_hold_pose()
+
+
+func _interpolate_double_hold_pose(start: Array, target: Array, weight: float) -> Array:
+	var pose: Array = []
+	for index in start.size():
+		pose.append(lerpf(float(start[index]), float(target[index]), weight))
+	return pose
+
+
+func _advance_double_hold_pose(target: Array) -> void:
+	var start := _double_hold_pose.duplicate()
+	var accepted := start.duplicate()
+	var steps := 1
+	for index in start.size():
+		var step_size := 0.01 if index < 4 else 1.0
+		steps = maxi(steps, ceili(absf(float(target[index]) - float(start[index])) / step_size))
+	# Check the path, not just the endpoint: a valid front pose can lie beyond
+	# an impossible interval when starting in a rear hold (and vice versa).
+	for step in range(1, steps + 1):
+		_apply_double_hold_pose(accepted, false)
+		var previous_offset := _get_double_hold_body_offset()
+		var proposal := _interpolate_double_hold_pose(start, target, float(step) / steps)
+		var candidate := _try_double_hold_pose(proposal, accepted, previous_offset)
+		if not candidate.is_empty():
+			accepted = candidate
+			continue
+		double_hold_pose_limited = true
+		var lower := 0.0
+		var upper := 1.0
+		var last_valid := accepted.duplicate()
+		for _iteration in 12:
+			var middle := (lower + upper) * 0.5
+			candidate = _try_double_hold_pose(_interpolate_double_hold_pose(accepted, proposal, middle), accepted, previous_offset)
+			if candidate.is_empty():
+				upper = middle
+			else:
+				lower = middle
+				last_valid = candidate
+		accepted = last_valid
+		break
+	_double_hold_pose = accepted
+	_apply_double_hold_pose(accepted, true)
+
+
+func _project_double_hold_spans(flexions: Array, project_clearance: bool = true) -> void:
 	const SAMPLE_STEP := 0.01
-	var minimum_body_distance := _get_body_contact_distance()
+	var minimum_body_distance := _get_body_contact_distance() + DOUBLE_HOLD_CLEARANCE_MARGIN if project_clearance else 0.0
 	for _iteration in rigid_span_projection_iterations:
 		_apply_double_hold_flexions(flexions, false)
 		var error := _get_double_hold_span_error()
@@ -543,7 +622,7 @@ func _project_double_hold_spans(flexions: Array) -> void:
 		# Project only incompatible arm geometry. Match both hand spans while
 		# respecting the actual torso circles, so a fully tucked request cannot
 		# close the joints by pulling the two bodies through each other. The
-		# requested trigger values stay intact; unmet flexion is normal red effort.
+		# requested trigger values stay intact; unmet flexion remains diagnostic effort.
 		var span_scale := -error / maxf(denominator, 0.000001)
 		var clearance_scale := 0.0
 		if clearance_error < 0.0:
@@ -1093,21 +1172,8 @@ func _reset_diagnostics() -> void:
 func _draw() -> void:
 	if not is_instance_valid(dancer_a) or not is_instance_valid(dancer_b):
 		return
-	if is_connected:
-		_draw_connected_pair(_connected_hand_a, _connected_hand_b)
-	if is_secondary_connected:
-		_draw_connected_pair(_secondary_hand_a, _secondary_hand_b)
 	_draw_waiting_grips(dancer_a, 1)
 	_draw_waiting_grips(dancer_b, 2)
-
-
-func _draw_connected_pair(hand_a_side: int, hand_b_side: int) -> void:
-	var hand_a := to_local(dancer_a.get_hand_world_position(hand_a_side))
-	var hand_b := to_local(dancer_b.get_hand_world_position(hand_b_side))
-	var midpoint := (hand_a + hand_b) * 0.5
-	draw_line(hand_a, hand_b, Color("f0f0f0"), 4.0, true)
-	draw_circle(midpoint, 13.0, Color(0.15, 0.15, 0.15, 0.22))
-	draw_arc(midpoint, 12.0, 0.0, TAU, 24, Color("202020"), 3.0, true)
 
 
 func _draw_waiting_grips(dancer: Dancer, endpoint: int) -> void:

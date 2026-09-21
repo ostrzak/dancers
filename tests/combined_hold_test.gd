@@ -37,6 +37,8 @@ func _run() -> void:
 		man.set_weight_kg(weights.x)
 		woman.set_weight_kg(weights.y)
 		man.position = Vector2(640, 320)
+		# This fixture authors a face-to-face hold, independently of corner spawns.
+		man.rotation = 0.0
 		woman.rotation = PI
 		woman.position = man.position + man.get_hand_local_position(1) - woman.get_hand_local_position(-1).rotated(PI)
 		if same_sides:

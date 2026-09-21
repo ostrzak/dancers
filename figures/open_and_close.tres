@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Open and close"
+description = "Travel together with both hands joined. Both players press both triggers to draw the frame inward, then release to open it again."
+duration = 6.0
+keys = Array[Dictionary]([{
+"time": 0.0, "centre": Vector2(470, 330), "turn": 0.0, "flexion": 0.0, "secondary_flexion": 0.0
+}, {
+"time": 1.5, "centre": Vector2(555, 330), "turn": 0.0, "flexion": 0.6, "secondary_flexion": 0.6
+}, {
+"time": 3.0, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0, "secondary_flexion": 0.0
+}, {
+"time": 4.5, "centre": Vector2(725, 330), "turn": 0.0, "flexion": 0.6, "secondary_flexion": 0.6
+}, {
+"time": 6.0, "centre": Vector2(810, 330), "turn": 0.0, "flexion": 0.0, "secondary_flexion": 0.0
+}])

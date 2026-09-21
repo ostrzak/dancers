@@ -1,6 +1,6 @@
 # Runtime tuning
 
-The pause menu has `GENERAL`, `TUNING`, and `DANCERS` tabs. While paused, LB and
+The pause menu has `GENERAL`, `TUNING`, `DANCERS`, and `FIGURES` tabs. While paused, LB and
 RB switch tabs, directional input changes focus or a selected slider, A
 activates buttons, and B returns to play. Settings are session-local and reset
 to the authored defaults when the project starts.
@@ -63,6 +63,12 @@ Left/right narrow or widen the arm frame through baseline elbow flexion;
 up/down sweep it backward or forward. The neutral forward sweep is 25 degrees.
 While paused the D-pad remains menu navigation.
 
+In a double hold, D-pad and trigger changes stop where the connected arm frame
+would require torso overlap. Reverse the input to move away from this boundary;
+there is no accumulated blocked motion. This applies to both front and rear
+holds. Release a hand before repositioning across a blocked front/rear transition.
+Free and one-hand controls keep their full anatomical limits.
+
 L3 toggles a position anchor, suppressing LS while leaving rotation free. R3
 toggles an orientation anchor, suppressing RS while leaving translation free.
 Both may be enabled. These retain hybrid's press-to-toggle behavior and weighted
@@ -74,6 +80,8 @@ Version `dancers-coop-telemetry-v11` records weights, fit weights, visual excess
 bands, derived mass/inertia, controller assignments, sensitivities, radial RS
 state and authority, achieved hand roll, and rigid-joint acquisition/correction
 metrics. Double holds include mutual flexion permissions and per-arm effort.
+The additive `double_hold_pose_limited` field identifies a pose request stopped
+by hand-span compatibility, torso clearance, or continuity of the connected frame.
 Arm tint uses the difference between partners' requests with a 10% quiet zone
 and a smooth fade into red. Matching full-tuck requests remain neutral even
 when torso clearance limits the achieved pose. Raw request-minus-achieved

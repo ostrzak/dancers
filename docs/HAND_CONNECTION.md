@@ -52,12 +52,26 @@ contacts, the arm geometry
 is projected so the two local hand spans match; this removes the impossible
 geometry that formerly made the two constraints fight and oscillate.
 
-The projection also respects the actual torso-circle separation. If fully
-tucking both partners would require the bodies to overlap, achieved flexion
-stops at the compatible pose. Matching requests remain their normal colour;
-the geometry limit alone does not turn the arms red.
-This keeps the restored rigid contacts compatible with the larger body circles;
-the fit-weight setting does not change that limit.
+Trigger and D-pad changes share a continuous geometry limit. Starting from the
+last achieved pose, the system checks small steps along the proposed change,
+matches the hand spans, and stops at the first pose that would violate torso
+clearance. It keeps a 0.05 px clearance margin around the actual torso circles.
+It cannot skip an impossible interval to switch a front hold into a rear hold
+or vice versa. Geometry checks change arm parameters only, never body transforms.
+The existing hand joints continue to respond to forces and body motion.
+
+Blocked requests do not accumulate. Releasing a trigger or reversing D-pad input
+moves away from the limit immediately when that direction is reachable. Stance
+telemetry reports the achieved D-pad angles. Matching trigger requests remain
+their normal colour; the geometry limit alone does not turn the arms red.
+The fit-weight setting does not change the limit.
+
+A back-to-back hold retains its small reachable contraction range. There is no
+blanket trigger disable, no automatic front/rear conversion, and no extra arm
+contraction to rescue an impossible D-pad stance. Release one hand to reposition
+when a two-hand transition is blocked. One-hand and free-arm stance controls
+retain their full anatomical range. If a newly acquired second contact cannot
+form a compatible frame, only that new contact is released.
 
 Both visual styles use hybrid's identical mechanical skeleton. Effort is the
 positive difference between requested and achieved flexion, not a measurement
@@ -111,6 +125,9 @@ collision state, both toggle-lock states and applied lock forces, double-hold
 orbital/alignment measurements, and the separate LS, RS, LT, and RT state for
 each dancer. Double-hold samples also record each contact's mutual flexion
 permission and each arm's unfulfilled effort.
+
+The additive `double_hold_pose_limited` flag records when a trigger or stance
+request reaches the connected frame's geometry limit.
 
 The combined configuration uses `dancers-coop-telemetry-v11`, solver `joint`,
 and facing mode `radial_heading_response`. See [RECONCILIATION.md](RECONCILIATION.md)

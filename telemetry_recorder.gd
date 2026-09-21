@@ -322,6 +322,7 @@ func _build_connection_sample() -> Dictionary:
 		"double_hold_maximum_effort": _float_for_json(
 			hand_connection.double_hold_maximum_effort
 		),
+		"double_hold_pose_limited": hand_connection.double_hold_pose_limited,
 		"separation_limit_active": hand_connection.separation_limit_active,
 		"primary_snap_remaining": _float_for_json(
 			hand_connection.primary_snap_remaining

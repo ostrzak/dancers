@@ -137,6 +137,25 @@ func _ready() -> void:
 	queue_redraw()
 
 
+func reset_to_pose(new_position: Vector2, new_rotation: float) -> void:
+	# Explicit player reset only; demonstration playback never calls this.
+	global_position = new_position
+	global_rotation = new_rotation
+	linear_velocity = Vector2.ZERO
+	angular_velocity = 0.0
+	constant_force = Vector2.ZERO
+	constant_torque = 0.0
+	_unwrapped_rotation = new_rotation
+	_previous_wrapped_rotation = new_rotation
+	clear_double_hold_arm_states()
+	set_control_input(Vector2.ZERO, Vector2.ZERO, 0.0, 0.0)
+	desired_facing_direction = LOCAL_FORWARD_DIRECTION.rotated(new_rotation)
+	for side in HAND_SIDES:
+		set_current_arm_length(side, maximum_arm_length)
+	_update_effective_inertia()
+	queue_redraw()
+
+
 func _physics_process(delta: float) -> void:
 	_update_unwrapped_rotation()
 	for side in HAND_SIDES:

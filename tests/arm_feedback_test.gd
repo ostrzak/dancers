@@ -20,6 +20,7 @@ func _run() -> void:
 	for dancer in [man, woman]:
 		dancer.freeze = true
 	man.position = Vector2(640, 280)
+	man.rotation = 0.0
 	woman.rotation = PI
 	woman.position = man.position + man.get_hand_local_position(1) - woman.get_hand_local_position(-1).rotated(PI)
 	await physics_frame

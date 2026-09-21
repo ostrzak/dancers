@@ -23,6 +23,16 @@ extends CanvasLayer
 @onready var woman_weight_value: Label = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanWeightValue
 @onready var woman_fit_weight_slider: HSlider = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanFitWeight
 @onready var woman_fit_weight_value: Label = $Center/Panel/Menu/Tabs/DANCERS/WeightGrid/WomanFitWeightValue
+@onready var demonstration: FigureDemonstration = controller.get_node("FigureDemonstration")
+
+var figure_toggle: CheckButton
+var figure_name: Label
+var figure_description: Label
+var figure_previous: Button
+var figure_next: Button
+var figure_restart: Button
+var figure_reset_players: Button
+var figure_speed_buttons: Array[Button] = []
 
 
 func _ready() -> void:
@@ -43,6 +53,7 @@ func _ready() -> void:
 	]:
 		slider.value_changed.connect(_on_tuning_changed)
 	_sync_tuning_controls()
+	_build_figures_tab()
 	if is_instance_valid(telemetry_recorder):
 		telemetry_recorder.capture_saved.connect(_on_capture_saved)
 		telemetry_recorder.capture_failed.connect(_on_capture_failed)
@@ -104,8 +115,93 @@ func _switch_tab(direction: int) -> void:
 		resume_button.grab_focus()
 	elif tabs.current_tab == 1:
 		trigger_sensitivity_slider.grab_focus()
-	else:
+	elif tabs.current_tab == 2:
 		man_weight_slider.grab_focus()
+	else:
+		figure_toggle.grab_focus()
+
+
+func _build_figures_tab() -> void:
+	var panel := VBoxContainer.new()
+	panel.name = "FIGURES"
+	panel.add_theme_constant_override("separation", 12)
+	tabs.add_child(panel)
+	figure_toggle = CheckButton.new()
+	figure_toggle.text = "SHOW DEMONSTRATION"
+	figure_toggle.custom_minimum_size.y = 44
+	figure_toggle.button_pressed = demonstration.visible
+	figure_toggle.toggled.connect(demonstration.set_demonstration_visible)
+	panel.add_child(figure_toggle)
+	var selection := HBoxContainer.new()
+	panel.add_child(selection)
+	figure_previous = _figure_button(selection, "<", _select_previous_figure)
+	figure_previous.custom_minimum_size.x = 48
+	figure_name = Label.new()
+	figure_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	figure_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	figure_name.add_theme_font_size_override("font_size", 18)
+	selection.add_child(figure_name)
+	figure_next = _figure_button(selection, ">", _select_next_figure)
+	figure_next.custom_minimum_size.x = 48
+	figure_description = Label.new()
+	figure_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	figure_description.custom_minimum_size.y = 64
+	panel.add_child(figure_description)
+	var speed_label := Label.new()
+	speed_label.text = "DEMONSTRATION SPEED"
+	panel.add_child(speed_label)
+	var speeds := HBoxContainer.new()
+	panel.add_child(speeds)
+	var speed_group := ButtonGroup.new()
+	for speed in [0.5, 0.75, 1.0]:
+		var button := _figure_button(speeds, "%sx" % speed, _set_figure_speed.bind(speed))
+		button.toggle_mode = true
+		button.button_group = speed_group
+		button.button_pressed = is_equal_approx(speed, demonstration.playback_speed)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		figure_speed_buttons.append(button)
+	figure_restart = _figure_button(panel, "RESTART DEMONSTRATION", demonstration.restart)
+	figure_reset_players = _figure_button(panel, "RESET PLAYERS TO CORNERS", controller.reset_players_to_corners)
+	var hint := Label.new()
+	hint.text = "Loops with a short pause. Watch, then try it your way."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 14)
+	panel.add_child(hint)
+	_refresh_figure_labels()
+
+
+func _figure_button(parent: Node, text: String, action: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size.y = 42
+	button.pressed.connect(action)
+	parent.add_child(button)
+	return button
+
+
+func _select_previous_figure() -> void:
+	_select_figure(-1)
+
+
+func _select_next_figure() -> void:
+	_select_figure(1)
+
+
+func _select_figure(direction: int) -> void:
+	demonstration.select_figure(demonstration.selected_index + direction)
+	_refresh_figure_labels()
+
+
+func _refresh_figure_labels() -> void:
+	figure_name.text = "%s · %d/%d" % [demonstration.get_figure().title,
+		demonstration.selected_index + 1, demonstration.FIGURES.size()]
+	figure_description.text = demonstration.get_figure().description
+	figure_previous.disabled = demonstration.FIGURES.size() < 2
+	figure_next.disabled = demonstration.FIGURES.size() < 2
+
+
+func _set_figure_speed(speed: float) -> void:
+	demonstration.playback_speed = speed
 
 
 func _sync_tuning_controls() -> void:
@@ -145,16 +241,13 @@ func _refresh_tuning_labels() -> void:
 
 func _activate_focused_control() -> void:
 	var focused_control := get_viewport().gui_get_focus_owner()
-	if focused_control == telemetry_toggle:
-		var is_enabled := not telemetry_toggle.button_pressed
-		telemetry_toggle.set_pressed_no_signal(is_enabled)
-		_on_telemetry_toggled(is_enabled)
-	elif focused_control == resume_button:
-		_resume()
-	elif focused_control == save_telemetry_button:
-		_on_save_telemetry_pressed()
-	elif focused_control == quit_button:
-		_quit()
+	if focused_control is BaseButton and not focused_control.disabled:
+		if focused_control.toggle_mode:
+			if focused_control.button_group != null and not focused_control.button_group.allow_unpress:
+				focused_control.button_pressed = true
+			else:
+				focused_control.button_pressed = not focused_control.button_pressed
+		focused_control.pressed.emit()
 
 
 func _on_save_telemetry_pressed() -> void:
