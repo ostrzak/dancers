@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Open out and return"
+description = "Keep one hand joined. Turn away from each other into an open position, pause, then turn back to face each other."
+duration = 6.0
+single_hand = true
+anchor_first_body = false
+keys = Array[Dictionary]([{
+"time": 0.0000, "centre": Vector2(640, 330), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 0.5000, "centre": Vector2(640, 330), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 2.5000, "centre": Vector2(640, 330), "turn": -1.04719755, "partner_turn": 4.18879020, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 3.2000, "centre": Vector2(640, 330), "turn": -1.04719755, "partner_turn": 4.18879020, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 5.4000, "centre": Vector2(640, 330), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 6.0000, "centre": Vector2(640, 330), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}])
+

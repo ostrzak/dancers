@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Travelling turns"
+description = "No hands. Move across the floor together on parallel paths while each makes one full turn."
+duration = 6.0
+no_hands = true
+keys = Array[Dictionary]([{
+"time": 0.00000000, "centre": Vector2(460, 330), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(0, -95), "position_b": Vector2(0, 95)
+}, {
+"time": 0.50000000, "centre": Vector2(460, 330), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(0, -95), "position_b": Vector2(0, 95)
+}, {
+"time": 5.50000000, "centre": Vector2(820, 330), "turn": 6.28318531, "partner_turn": 6.28318531, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(0, -95), "position_b": Vector2(0, 95)
+}, {
+"time": 6.00000000, "centre": Vector2(820, 330), "turn": 6.28318531, "partner_turn": 6.28318531, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(0, -95), "position_b": Vector2(0, 95)
+}])
+

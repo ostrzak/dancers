@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Solo turns and rejoin"
+description = "Release and step apart. Both close their arms and make full turns in opposite directions, then reach out and join hands again."
+duration = 6.0
+single_hand = true
+anchor_first_body = true
+keys = Array[Dictionary]([{
+"time": 0.00000000, "centre": Vector2(640, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_position": Vector2(720, 390)
+}, {
+"time": 0.40000000, "centre": Vector2(640, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_position": Vector2(720, 390)
+}, {
+"time": 1.40000000, "centre": Vector2(560, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 1.00000000, "partner_flexion": 1.00000000, "free_flexion": 1.00000000, "partner_free_flexion": 1.00000000, "release_weight": 1.00000000, "release_position": Vector2(720, 390)
+}, {
+"time": 4.50000000, "centre": Vector2(560, 290), "turn": 6.28318531, "partner_turn": -3.14159265, "flexion": 1.00000000, "partner_flexion": 1.00000000, "free_flexion": 1.00000000, "partner_free_flexion": 1.00000000, "release_weight": 1.00000000, "release_position": Vector2(720, 390)
+}, {
+"time": 5.60000000, "centre": Vector2(640, 290), "turn": 6.28318531, "partner_turn": -3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_position": Vector2(720, 390)
+}, {
+"time": 6.00000000, "centre": Vector2(640, 290), "turn": 6.28318531, "partner_turn": -3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_position": Vector2(720, 390)
+}])
+

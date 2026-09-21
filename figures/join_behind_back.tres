@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Join behind the back"
+description = "Start apart, back-to-back. Both hold D-pad down to sweep the arms backward, then approach and hold both bumpers to join hands. Stay still."
+duration = 6.0
+joined_from = 4.5
+separate_body_distance = 110.0
+keys = Array[Dictionary]([{
+"time": 0.0, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0, "forward_sweep": 25.0, "join_progress": 0.0
+}, {
+"time": 0.5, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0, "forward_sweep": 25.0, "join_progress": 0.0
+}, {
+"time": 3.0, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0, "forward_sweep": -25.0, "join_progress": 0.0
+}, {
+"time": 3.5, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0, "forward_sweep": -25.0, "join_progress": 0.0
+}, {
+"time": 4.5, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0, "forward_sweep": -25.0, "join_progress": 1.0
+}, {
+"time": 6.0, "centre": Vector2(640, 330), "turn": 0.0, "flexion": 0.0, "forward_sweep": -25.0, "join_progress": 1.0
+}])

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Mirror spins"
+description = "No hands. Stay in your own places and turn once in opposite directions, like two gears."
+duration = 6.0
+no_hands = true
+keys = Array[Dictionary]([{
+"time": 0.00000000, "centre": Vector2(640, 330), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-110, 0), "position_b": Vector2(110, 0)
+}, {
+"time": 0.50000000, "centre": Vector2(640, 330), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-110, 0), "position_b": Vector2(110, 0)
+}, {
+"time": 5.50000000, "centre": Vector2(640, 330), "turn": 4.71238898, "partner_turn": -4.71238898, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-110, 0), "position_b": Vector2(110, 0)
+}, {
+"time": 6.00000000, "centre": Vector2(640, 330), "turn": 4.71238898, "partner_turn": -4.71238898, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-110, 0), "position_b": Vector2(110, 0)
+}])
+

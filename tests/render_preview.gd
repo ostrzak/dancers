@@ -32,6 +32,7 @@ func _run() -> void:
 			"figure_pose":
 				var demonstration: FigureDemonstration = scene.get_node("FigureDemonstration")
 				demonstration.set_process(false)
+				demonstration.set_demonstration_visible(true)
 				if arguments.size() > 2:
 					demonstration.select_figure(int(arguments[2]))
 				demonstration.elapsed = float(arguments[3]) if arguments.size() > 3 else 3.0

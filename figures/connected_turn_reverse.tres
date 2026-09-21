@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Connected turn - reverse"
+description = "Keep one hand joined. The dark dancer stays in place; the light dancer closes both arms and makes a counterclockwise full turn, then extends it again."
+duration = 6.0
+single_hand = true
+anchor_first_body = true
+keys = Array[Dictionary]([{
+"time": 0.0000, "centre": Vector2(690, 330), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 0.5000, "centre": Vector2(690, 330), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 1.3000, "centre": Vector2(690, 330), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 4.6000, "centre": Vector2(690, 330), "turn": 0.00000000, "partner_turn": -3.14159265, "flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 5.5000, "centre": Vector2(690, 330), "turn": 0.00000000, "partner_turn": -3.14159265, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}, {
+"time": 6.0000, "centre": Vector2(690, 330), "turn": 0.00000000, "partner_turn": -3.14159265, "flexion": 0.0, "partner_flexion": 0.0, "release_offset": Vector2(0, 0)
+}])
+

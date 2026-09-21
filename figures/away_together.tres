@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Away and together"
+description = "Release the joined hand, turn outward and travel apart. Turn back toward each other, approach, and catch the same hands again."
+duration = 6.0
+single_hand = true
+anchor_first_body = true
+keys = Array[Dictionary]([{
+"time": 0.00000000, "centre": Vector2(640, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_position": Vector2(710, 390)
+}, {
+"time": 0.40000000, "centre": Vector2(640, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_position": Vector2(710, 390)
+}, {
+"time": 1.50000000, "centre": Vector2(570, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 1.00000000, "release_position": Vector2(710, 390)
+}, {
+"time": 2.60000000, "centre": Vector2(530, 290), "turn": 1.57079633, "partner_turn": 4.71238898, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 1.00000000, "release_position": Vector2(750, 390)
+}, {
+"time": 3.20000000, "centre": Vector2(530, 290), "turn": 1.57079633, "partner_turn": 4.71238898, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 1.00000000, "release_position": Vector2(750, 390)
+}, {
+"time": 4.40000000, "centre": Vector2(570, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 1.00000000, "release_position": Vector2(710, 390)
+}, {
+"time": 5.50000000, "centre": Vector2(640, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_position": Vector2(710, 390)
+}, {
+"time": 6.00000000, "centre": Vector2(640, 290), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_position": Vector2(710, 390)
+}])
+

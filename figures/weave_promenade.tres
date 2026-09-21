@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Weave from promenade"
+description = "Start in an open V with one hand joined. Travel through a flowing left turn, close to face each other, then continue diagonally. Waltz-inspired."
+duration = 6.0
+single_hand = true
+anchor_first_body = false
+keys = Array[Dictionary]([{
+"time": 0.00000000, "centre": Vector2(490, 285), "turn": -0.78539816, "partner_turn": 3.92699082, "flexion": 0.00000000, "partner_flexion": 0.00000000
+}, {
+"time": 0.50000000, "centre": Vector2(490, 285), "turn": -0.78539816, "partner_turn": 3.92699082, "flexion": 0.00000000, "partner_flexion": 0.00000000
+}, {
+"time": 1.70000000, "centre": Vector2(550, 345), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.00000000, "partner_flexion": 0.00000000
+}, {
+"time": 3.00000000, "centre": Vector2(640, 355), "turn": -3.14159265, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000
+}, {
+"time": 4.20000000, "centre": Vector2(710, 315), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
+}, {
+"time": 5.50000000, "centre": Vector2(770, 370), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
+}, {
+"time": 6.00000000, "centre": Vector2(770, 370), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
+}])
+

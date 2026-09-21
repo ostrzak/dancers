@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Mirror paths"
+description = "No hands. Travel along mirrored curves: drift toward each other, curve apart, then approach again while facing your partner."
+duration = 6.0
+no_hands = true
+keys = Array[Dictionary]([{
+"time": 0.00000000, "centre": Vector2(640, 330), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-150, -100), "position_b": Vector2(150, -100)
+}, {
+"time": 0.50000000, "centre": Vector2(640, 330), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-150, -100), "position_b": Vector2(150, -100), "arc_a": Vector2(-20, 0), "arc_b": Vector2(20, 0)
+}, {
+"time": 2.20000000, "centre": Vector2(640, 330), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-65, -30), "position_b": Vector2(65, -30), "arc_a": Vector2(20, 0), "arc_b": Vector2(-20, 0)
+}, {
+"time": 3.80000000, "centre": Vector2(640, 330), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-150, 45), "position_b": Vector2(150, 45), "arc_a": Vector2(-20, 0), "arc_b": Vector2(20, 0)
+}, {
+"time": 5.50000000, "centre": Vector2(640, 330), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-80, 115), "position_b": Vector2(80, 115)
+}, {
+"time": 6.00000000, "centre": Vector2(640, 330), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.85000000, "free_flexion": 0.85000000, "partner_flexion": 0.85000000, "partner_free_flexion": 0.85000000, "position_a": Vector2(-80, 115), "position_b": Vector2(80, 115)
+}])
+

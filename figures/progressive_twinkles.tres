@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Progressive twinkles"
+description = "Travel in a zigzag. The light dancer crosses in front from one side to the other; release and catch the opposite hands at each crossing. Waltz-inspired."
+duration = 6.0
+single_hand = true
+anchor_first_body = true
+keys = Array[Dictionary]([{
+"time": 0.00000000, "centre": Vector2(580, 250), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000, "free_flexion": 0.00000000, "release_position": Vector2(600, 395)
+}, {
+"time": 0.30000000, "centre": Vector2(580, 250), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000, "free_flexion": 0.00000000, "release_position": Vector2(600, 395)
+}, {
+"time": 1.50000000, "centre": Vector2(600, 285), "turn": 0.00000000, "partner_turn": 1.57079633, "flexion": 0.00000000, "partner_flexion": 0.30000000, "free_flexion": 0.00000000, "partner_free_flexion": 0.30000000, "release_weight": 1.00000000, "release_position": Vector2(600, 395), "hand_side": 1.00000000
+}, {
+"time": 2.65000000, "centre": Vector2(630, 325), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000, "free_flexion": 0.00000000, "hand_side": 1.00000000, "release_position": Vector2(600, 465)
+}, {
+"time": 2.70000000, "centre": Vector2(630, 325), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000, "free_flexion": 0.00000000, "hand_side": 1.00000000, "release_position": Vector2(600, 465)
+}, {
+"time": 3.90000000, "centre": Vector2(600, 355), "turn": 0.00000000, "partner_turn": -1.57079633, "flexion": 0.00000000, "partner_flexion": 0.30000000, "free_flexion": 0.00000000, "partner_free_flexion": 0.30000000, "release_weight": 1.00000000, "release_position": Vector2(600, 465), "hand_side": -1.00000000
+}, {
+"time": 5.20000000, "centre": Vector2(570, 385), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000, "free_flexion": 0.00000000, "release_position": Vector2(600, 465)
+}, {
+"time": 5.60000000, "centre": Vector2(590, 415), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000, "free_flexion": 0.00000000, "release_position": Vector2(600, 465)
+}, {
+"time": 6.00000000, "centre": Vector2(590, 415), "turn": 0.00000000, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000, "free_flexion": 0.00000000, "release_position": Vector2(600, 465)
+}])
+
