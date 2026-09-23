@@ -271,13 +271,3 @@ func _dancer_for_device(device: int) -> Dancer:
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	_select_gamepads()
-
-
-func _draw() -> void:
-	var arena := Rect2(20.0, 20.0, 1240.0, 680.0)
-	draw_rect(arena, Color("858585"), true)
-	draw_rect(arena, Color("555555"), false, 3.0)
-	for x in range(60, 1260, 50):
-		draw_line(Vector2(x, 20), Vector2(x, 700), Color(0.70, 0.70, 0.70, 0.34), 1.0)
-	for y in range(60, 700, 50):
-		draw_line(Vector2(20, y), Vector2(1260, y), Color(0.70, 0.70, 0.70, 0.34), 1.0)

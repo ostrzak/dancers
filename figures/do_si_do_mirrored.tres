@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://figures/do_si_do.tres" id="2_source"]
+
+[resource]
+script = ExtResource("1")
+variant_label = "Left shoulders"
+mirror_of = ExtResource("2_source")
+title = "Do-si-do"
+description = "No hand contact. Pass left shoulders, go behind each other and return to your own place. Keep your original facing throughout."
+duration = 7.0
+no_hands = true

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://figures/wing.tres" id="2_source"]
+
+[resource]
+script = ExtResource("1")
+variant_label = "Left to right"
+mirror_of = ExtResource("2_source")
+title = "Wing"
+description = "The lady crosses from left to right on the screen, tracing a semicircle in front of the gentleman. Release and change hands, then settle face-to-face. Waltz-inspired."
+duration = 10.0
+single_hand = true
+anchor_first_body = true

@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://pause_menu.gd" id="5_pause"]
 [ext_resource type="Script" path="res://telemetry_recorder.gd" id="6_telemetry"]
 [ext_resource type="Script" path="res://figure_demonstration.gd" id="7_figures"]
+[ext_resource type="Script" path="res://ballroom_floor.gd" id="8_floor"]
 
 [sub_resource type="CircleShape2D" id="CircleShape_dancer"]
 radius = 20.0
@@ -17,28 +18,15 @@ size = Vector2(1280, 20)
 [sub_resource type="RectangleShape2D" id="RectangleShape_vertical"]
 size = Vector2(20, 720)
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_debug"]
-content_margin_left = 28.0
-content_margin_top = 24.0
-content_margin_right = 28.0
-content_margin_bottom = 24.0
-bg_color = Color(0.12, 0.12, 0.12, 0.96)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.82, 0.82, 0.82, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_dancer"]
 friction = 0.0
 bounce = 0.0
 
 [node name="Prototype" type="Node2D"]
 script = ExtResource("1_controller")
+
+[node name="BallroomFloor" type="Node2D" parent="."]
+script = ExtResource("8_floor")
 
 [node name="FigureDemonstration" type="Node2D" parent="."]
 script = ExtResource("7_figures")
@@ -193,7 +181,6 @@ grow_vertical = 2
 [node name="Panel" type="PanelContainer" parent="PauseMenu/Center"]
 custom_minimum_size = Vector2(620, 600)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBox_debug")
 
 [node name="Menu" type="VBoxContainer" parent="PauseMenu/Center/Panel"]
 layout_mode = 2

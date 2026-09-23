@@ -4,8 +4,9 @@
 
 [resource]
 script = ExtResource("1")
+variant_label = "Clockwise"
 title = "Travelling turns"
-description = "No hands. Move across the floor together on parallel paths while each makes one full turn."
+description = "No hand contact. Travel together on parallel paths while each partner makes one full clockwise turn. Keep space between your paths."
 duration = 6.0
 no_hands = true
 keys = Array[Dictionary]([{

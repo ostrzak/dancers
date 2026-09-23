@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://figures/release_turn_catch.tres" id="2_source"]
+
+[ext_resource type="AudioStream" path="res://voiceover_samples/release_turn_catch_mirrored.wav" id="voiceover_dedicated"]
+
+[resource]
+narration = ExtResource("voiceover_dedicated")
+script = ExtResource("1")
+variant_label = "Right to left"
+mirror_of = ExtResource("2_source")
+title = "Release, turn, catch"
+description = "The lady starts on the right of the screen, turns counterclockwise and releases. She passes in front of the gentleman, completes her turn and catches the opposite hands on the left."
+duration = 10.0
+single_hand = true
+anchor_first_body = true

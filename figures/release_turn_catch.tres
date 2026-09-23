@@ -1,28 +1,33 @@
-[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://dance_figure.gd" id="1"]
 
+
+[ext_resource type="AudioStream" path="res://voiceover_samples/release_turn_catch.wav" id="voiceover_dedicated"]
+
 [resource]
+narration = ExtResource("voiceover_dedicated")
 script = ExtResource("1")
+variant_label = "Left to right"
 title = "Release, turn, catch"
-description = "Start to one side. The light dancer turns inward, releases, passes in front of the partner while completing the turn, then extends and catches the other hand on the opposite side."
-duration = 6.0
+description = "The lady starts on the left of the screen, turns clockwise and releases. She passes in front of the gentleman, completes her turn and catches the opposite hands on the right."
+duration = 10.0
 single_hand = true
 anchor_first_body = true
 keys = Array[Dictionary]([{
-"time": 0.0000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 0.00000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 0.0, "partner_free_flexion": 0.65, "release_weight": 0.0, "release_position": Vector2(610, 430), "hand_side": -1
+"time": 0.00000000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 0.00000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 0.0, "partner_free_flexion": 0.65, "release_weight": 0.0, "release_position": Vector2(610, 430), "hand_side": -1
 }, {
-"time": 0.5000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 0.00000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 0.0, "partner_free_flexion": 0.65, "release_weight": 0.0, "release_position": Vector2(610, 430), "hand_side": -1
+"time": 0.83333333, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 0.00000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 0.0, "partner_free_flexion": 0.65, "release_weight": 0.0, "release_position": Vector2(610, 430), "hand_side": -1
 }, {
-"time": 1.3000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 0.50000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.00, "release_weight": 0.0, "release_position": Vector2(610, 430), "hand_side": -1
+"time": 2.16666667, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 0.50000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.00, "release_weight": 0.0, "release_position": Vector2(610, 430), "hand_side": -1
 }, {
-"time": 1.9000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 1.20000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.00, "release_weight": 1.0, "release_position": Vector2(610, 430), "hand_side": -1
+"time": 3.16666667, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 1.20000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.00, "release_weight": 1.0, "release_position": Vector2(610, 430), "hand_side": -1
 }, {
-"time": 3.0000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 3.10000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.00, "release_weight": 1.0, "release_position": Vector2(690, 445), "hand_side": 1
+"time": 5.00000000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 3.10000000, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.00, "release_weight": 1.0, "release_position": Vector2(690, 445), "hand_side": 1
 }, {
-"time": 4.5000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 6.28318531, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.00, "release_weight": 1.0, "release_position": Vector2(780, 425), "hand_side": 1
+"time": 7.50000000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 6.28318531, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 1.0, "partner_free_flexion": 1.00, "release_weight": 1.0, "release_position": Vector2(780, 425), "hand_side": 1
 }, {
-"time": 5.5000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 6.28318531, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 0.0, "partner_free_flexion": 0.65, "release_weight": 0.0, "release_position": Vector2(780, 425), "hand_side": 1
+"time": 9.16666667, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 6.28318531, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 0.0, "partner_free_flexion": 0.65, "release_weight": 0.0, "release_position": Vector2(780, 425), "hand_side": 1
 }, {
-"time": 6.0000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 6.28318531, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 0.0, "partner_free_flexion": 0.65, "release_weight": 0.0, "release_position": Vector2(780, 425), "hand_side": 1
+"time": 10.00000000, "centre": Vector2(690, 330), "turn": 0.0, "partner_turn": 6.28318531, "flexion": 0.0, "free_flexion": 0.0, "partner_flexion": 0.0, "partner_free_flexion": 0.65, "release_weight": 0.0, "release_position": Vector2(780, 425), "hand_side": 1
 }])

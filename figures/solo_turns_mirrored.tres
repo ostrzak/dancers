@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://figures/solo_turns.tres" id="2_source"]
+
+[resource]
+script = ExtResource("1")
+variant_label = "Gentleman CCW / lady CW"
+mirror_of = ExtResource("2_source")
+title = "Solo turns and rejoin"
+description = "Release and step apart. Close both arms: the gentleman turns fully counterclockwise, the lady fully clockwise. Reach out and rejoin the same hands."
+duration = 9.5
+single_hand = true
+anchor_first_body = true

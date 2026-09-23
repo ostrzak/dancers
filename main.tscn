@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://prototype.tscn" id="1"]
+
+[node name="Dancers" instance=ExtResource("1")]
+
+[node name="PauseMenu" parent="." index="8"]
+start_on_title = true

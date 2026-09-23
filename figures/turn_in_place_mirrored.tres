@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://figures/turn_in_place.tres" id="2_source"]
+
+[ext_resource type="AudioStream" path="res://voiceover_samples/turn_in_place_mirrored.wav" id="3_narration"]
+
+[resource]
+script = ExtResource("1")
+variant_label = "Counterclockwise"
+mirror_of = ExtResource("2_source")
+title = "Turn in place"
+description = "Keep both hands joined. Complete a full counterclockwise turn around a fixed shared centre, without travelling across the floor."
+duration = 6.0
+narration = ExtResource("3_narration")

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://figures/away_together.tres" id="2_source"]
+
+[resource]
+script = ExtResource("1")
+variant_label = "Gentleman right / lady left"
+mirror_of = ExtResource("2_source")
+title = "Away and together"
+description = "Start with the gentleman's right hand joined to the lady's left. Release, turn outward and travel apart. Return face-to-face and catch the same hands again."
+duration = 8.0
+single_hand = true
+anchor_first_body = true

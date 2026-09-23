@@ -4,8 +4,9 @@
 
 [resource]
 script = ExtResource("1")
+variant_label = "Clockwise"
 title = "Synchronous spins"
-description = "No hands. Stay apart, close both arms, and turn once in the same direction at the same time."
+description = "No hand contact. Stay apart, draw both arms inward and make one full clockwise turn together, each in your own place."
 duration = 6.0
 no_hands = true
 keys = Array[Dictionary]([{

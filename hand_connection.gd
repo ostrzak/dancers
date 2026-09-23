@@ -64,6 +64,8 @@ var _secondary_catch_separation := 0.0
 var _double_hold_was_active := false
 var _double_hold_pose: Array = []
 var _newest_connection_slot := 1
+var _primary_glint_age := HandGlint.DURATION
+var _secondary_glint_age := HandGlint.DURATION
 
 const HAND_SIDES := [-1, 1]
 const DOUBLE_HOLD_CLEARANCE_MARGIN := 0.05
@@ -74,6 +76,8 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_primary_glint_age = minf(_primary_glint_age + delta, HandGlint.DURATION)
+	_secondary_glint_age = minf(_secondary_glint_age + delta, HandGlint.DURATION)
 	_update_cooldowns(delta)
 	_reset_diagnostics()
 	if not is_instance_valid(dancer_a) or not is_instance_valid(dancer_b):
@@ -277,6 +281,7 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 
 	if not is_connected:
 		_newest_connection_slot = 1
+		_primary_glint_age = 0.0
 		_connected_hand_a = signi(hand_a_side)
 		_connected_hand_b = signi(hand_b_side)
 		is_connected = true
@@ -287,6 +292,7 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 		primary_acquisition_progress = 0.0
 	elif not is_secondary_connected:
 		_newest_connection_slot = 2
+		_secondary_glint_age = 0.0
 		_secondary_hand_a = signi(hand_a_side)
 		_secondary_hand_b = signi(hand_b_side)
 		is_secondary_connected = true
@@ -1174,6 +1180,12 @@ func _draw() -> void:
 		return
 	_draw_waiting_grips(dancer_a, 1)
 	_draw_waiting_grips(dancer_b, 2)
+	if is_connected:
+		var midpoint := (dancer_a.get_hand_world_position(_connected_hand_a) + dancer_b.get_hand_world_position(_connected_hand_b)) * 0.5
+		HandGlint.paint(self, to_local(midpoint), _primary_glint_age)
+	if is_secondary_connected:
+		var midpoint := (dancer_a.get_hand_world_position(_secondary_hand_a) + dancer_b.get_hand_world_position(_secondary_hand_b)) * 0.5
+		HandGlint.paint(self, to_local(midpoint), _secondary_glint_age)
 
 
 func _draw_waiting_grips(dancer: Dancer, endpoint: int) -> void:

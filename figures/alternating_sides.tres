@@ -1,9 +1,13 @@
-[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://dance_figure.gd" id="1"]
 
+[ext_resource type="AudioStream" path="res://voiceover_samples/alternating_sides.wav" id="2_narration"]
+
 [resource]
 script = ExtResource("1")
+variant_label = ""
+narration = ExtResource("2_narration")
 title = "Alternating sides"
 description = "Keep both hands joined. Draw one joined side halfway inward, swap to the other, then swap back. Match your partner's trigger at each hand."
 duration = 6.0

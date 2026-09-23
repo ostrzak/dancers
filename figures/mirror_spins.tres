@@ -4,8 +4,9 @@
 
 [resource]
 script = ExtResource("1")
+variant_label = "Gentleman CW / lady CCW"
 title = "Mirror spins"
-description = "No hands. Stay in your own places and turn once in opposite directions, like two gears."
+description = "No hand contact. Stay in place: the gentleman makes one full clockwise turn and the lady one full counterclockwise turn."
 duration = 6.0
 no_hands = true
 keys = Array[Dictionary]([{

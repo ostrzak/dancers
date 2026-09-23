@@ -4,8 +4,9 @@
 
 [resource]
 script = ExtResource("1")
+variant_label = ""
 title = "Mirror paths"
-description = "No hands. Travel along mirrored curves: drift toward each other, curve apart, then approach again while facing your partner."
+description = "No hand contact. Follow mirrored curves: approach, curve apart, then draw near again while facing your partner throughout."
 duration = 6.0
 no_hands = true
 keys = Array[Dictionary]([{

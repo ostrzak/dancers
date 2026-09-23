@@ -1,0 +1,404 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="680" viewBox="0 0 1240 680">
+<defs><clipPath id="floor"><rect x="25" y="25" width="1190" height="630"/></clipPath>
+<radialGradient id="light"><stop stop-color="#fff1d0" stop-opacity=".07"/><stop offset="1" stop-color="#17120d" stop-opacity=".18"/></radialGradient></defs>
+<rect width="1240" height="680" fill="#463a2d"/>
+<rect x="10" y="10" width="1220" height="660" fill="#89785f"/>
+<g clip-path="url(#floor)">
+<rect x="-220" y="25" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-217.0 43.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-217.0 46.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="50" y="25" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M53.0 34.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M53.0 33.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="320" y="25" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M323.0 44.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M323.0 34.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="590" y="25" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M593.0 37.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M593.0 50.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="860" y="25" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M863.0 32.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M863.0 50.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1130" y="25" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1133.0 48.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1133.0 36.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-130" y="55" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-127.0 61.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-127.0 74.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="140" y="55" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M143.0 61.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M143.0 73.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="410" y="55" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M413.0 72.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M413.0 57.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="680" y="55" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M683.0 62.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M683.0 82.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="950" y="55" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M953.0 72.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M953.0 81.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1220" y="55" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1223.0 79.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1223.0 74.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-40" y="85" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-37.0 102.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-37.0 103.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="230" y="85" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M233.0 91.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M233.0 89.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="500" y="85" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M503.0 100.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M503.0 92.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="770" y="85" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M773.0 103.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M773.0 99.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1040" y="85" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1043.0 100.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1043.0 89.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-220" y="115" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-217.0 124.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-217.0 120.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="50" y="115" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M53.0 136.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M53.0 120.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="320" y="115" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M323.0 128.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M323.0 142.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="590" y="115" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M593.0 130.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M593.0 128.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="860" y="115" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M863.0 129.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M863.0 127.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1130" y="115" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1133.0 123.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1133.0 127.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-130" y="145" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-127.0 169.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-127.0 171.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="140" y="145" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M143.0 161.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M143.0 159.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="410" y="145" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M413.0 161.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M413.0 147.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="680" y="145" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M683.0 171.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M683.0 158.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="950" y="145" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M953.0 165.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M953.0 156.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1220" y="145" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1223.0 153.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1223.0 154.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-40" y="175" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-37.0 178.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-37.0 191.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="230" y="175" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M233.0 179.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M233.0 179.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="500" y="175" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M503.0 185.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M503.0 202.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="770" y="175" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M773.0 190.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M773.0 197.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1040" y="175" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1043.0 180.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1043.0 201.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-220" y="205" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-217.0 207.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-217.0 213.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="50" y="205" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M53.0 211.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M53.0 212.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="320" y="205" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M323.0 214.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M323.0 226.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="590" y="205" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M593.0 207.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M593.0 231.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="860" y="205" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M863.0 220.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M863.0 228.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1130" y="205" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1133.0 219.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1133.0 213.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-130" y="235" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-127.0 251.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-127.0 257.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="140" y="235" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M143.0 249.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M143.0 261.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="410" y="235" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M413.0 243.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M413.0 261.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="680" y="235" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M683.0 257.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M683.0 239.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="950" y="235" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M953.0 240.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M953.0 238.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1220" y="235" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1223.0 242.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1223.0 249.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-40" y="265" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-37.0 281.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-37.0 276.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="230" y="265" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M233.0 273.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M233.0 276.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="500" y="265" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M503.0 277.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M503.0 278.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="770" y="265" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M773.0 270.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M773.0 285.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1040" y="265" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1043.0 267.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1043.0 290.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-220" y="295" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-217.0 322.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-217.0 312.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="50" y="295" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M53.0 312.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M53.0 309.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="320" y="295" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M323.0 305.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M323.0 299.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="590" y="295" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M593.0 298.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M593.0 314.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="860" y="295" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M863.0 320.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M863.0 298.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1130" y="295" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1133.0 319.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1133.0 318.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-130" y="325" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-127.0 328.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-127.0 347.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="140" y="325" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M143.0 328.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M143.0 352.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="410" y="325" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M413.0 327.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M413.0 338.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="680" y="325" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M683.0 345.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M683.0 327.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="950" y="325" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M953.0 352.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M953.0 333.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1220" y="325" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1223.0 341.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1223.0 347.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-40" y="355" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-37.0 381.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-37.0 380.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="230" y="355" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M233.0 367.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M233.0 368.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="500" y="355" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M503.0 375.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M503.0 365.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="770" y="355" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M773.0 360.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M773.0 381.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1040" y="355" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1043.0 382.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1043.0 370.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-220" y="385" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-217.0 387.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-217.0 403.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="50" y="385" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M53.0 395.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M53.0 397.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="320" y="385" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M323.0 393.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M323.0 406.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="590" y="385" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M593.0 412.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M593.0 407.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="860" y="385" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M863.0 409.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M863.0 399.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1130" y="385" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1133.0 408.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1133.0 412.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-130" y="415" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-127.0 438.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-127.0 422.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="140" y="415" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M143.0 423.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M143.0 419.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="410" y="415" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M413.0 417.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M413.0 434.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="680" y="415" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M683.0 437.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M683.0 428.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="950" y="415" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M953.0 440.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M953.0 418.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1220" y="415" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1223.0 435.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1223.0 421.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-40" y="445" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-37.0 459.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-37.0 452.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="230" y="445" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M233.0 462.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M233.0 459.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="500" y="445" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M503.0 455.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M503.0 460.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="770" y="445" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M773.0 448.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M773.0 462.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1040" y="445" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1043.0 450.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1043.0 469.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-220" y="475" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-217.0 489.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-217.0 484.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="50" y="475" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M53.0 481.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M53.0 490.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="320" y="475" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M323.0 489.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M323.0 493.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="590" y="475" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M593.0 494.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M593.0 496.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="860" y="475" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M863.0 497.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M863.0 477.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1130" y="475" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1133.0 502.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1133.0 499.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-130" y="505" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-127.0 530.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-127.0 515.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="140" y="505" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M143.0 522.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M143.0 528.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="410" y="505" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M413.0 511.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M413.0 513.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="680" y="505" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M683.0 515.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M683.0 520.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="950" y="505" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M953.0 509.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M953.0 508.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1220" y="505" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1223.0 511.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1223.0 512.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-40" y="535" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-37.0 540.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-37.0 559.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="230" y="535" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M233.0 561.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M233.0 544.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="500" y="535" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M503.0 539.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M503.0 557.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="770" y="535" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M773.0 562.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M773.0 552.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1040" y="535" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1043.0 555.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1043.0 551.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-220" y="565" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-217.0 568.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-217.0 581.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="50" y="565" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M53.0 572.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M53.0 569.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="320" y="565" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M323.0 589.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M323.0 583.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="590" y="565" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M593.0 569.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M593.0 586.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="860" y="565" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M863.0 589.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M863.0 582.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1130" y="565" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1133.0 590.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1133.0 569.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-130" y="595" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-127.0 611.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-127.0 605.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="140" y="595" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M143.0 613.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M143.0 620.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="410" y="595" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M413.0 600.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M413.0 610.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="680" y="595" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M683.0 601.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M683.0 609.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="950" y="595" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M953.0 613.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M953.0 598.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1220" y="595" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1223.0 605.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1223.0 616.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-40" y="625" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-37.0 632.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-37.0 641.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="230" y="625" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M233.0 640.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M233.0 647.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="500" y="625" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M503.0 650.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M503.0 638.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="770" y="625" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M773.0 646.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M773.0 628.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1040" y="625" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1043.0 639.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1043.0 631.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-220" y="655" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-217.0 661.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-217.0 681.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="50" y="655" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M53.0 664.8 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M53.0 663.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="320" y="655" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M323.0 662.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M323.0 675.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="590" y="655" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M593.0 663.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M593.0 670.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="860" y="655" width="270" height="30" fill="#ad9b7d" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M863.0 662.3 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M863.0 662.6 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1130" y="655" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1133.0 659.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1133.0 662.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="-130" y="685" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M-127.0 706.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M-127.0 704.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="140" y="685" width="270" height="30" fill="#ab997b" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M143.0 687.9 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M143.0 694.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="410" y="685" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M413.0 692.7 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M413.0 712.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="680" y="685" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M683.0 688.4 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M683.0 694.2 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="950" y="685" width="270" height="30" fill="#b19f80" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M953.0 687.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M953.0 709.0 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<rect x="1220" y="685" width="270" height="30" fill="#b4a284" stroke="#302218" stroke-opacity=".17" stroke-width=".8"/>
+<path d="M1223.0 703.5 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+<path d="M1223.0 694.1 h264" stroke="#eee0c0" stroke-opacity=".055" fill="none"/>
+</g>
+<rect width="1240" height="680" fill="url(#light)"/>
+<rect x="11" y="11" width="1218" height="658" fill="none" stroke="#c0a577" stroke-opacity=".55"/>
+<rect x="24" y="24" width="1192" height="632" fill="none" stroke="#352b22" stroke-width="2"/>
+</svg>

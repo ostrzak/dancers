@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://figures/open_out_return.tres" id="2_source"]
+
+[ext_resource type="AudioStream" path="res://voiceover_samples/open_out_return_mirrored.wav" id="3_narration"]
+
+[resource]
+script = ExtResource("1")
+variant_label = "Gentleman right / lady left"
+mirror_of = ExtResource("2_source")
+title = "Open out and return"
+description = "Join the gentleman's right hand and the lady's left. Turn outward into an open position, pause, then return to face each other without releasing."
+duration = 6.0
+single_hand = true
+anchor_first_body = false
+narration = ExtResource("3_narration")

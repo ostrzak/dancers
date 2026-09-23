@@ -1,11 +1,15 @@
-[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://dance_figure.gd" id="1"]
 
+[ext_resource type="AudioStream" path="res://voiceover_samples/join_behind_back.wav" id="2_narration"]
+
 [resource]
 script = ExtResource("1")
+variant_label = ""
+narration = ExtResource("2_narration")
 title = "Join behind the back"
-description = "Start apart, back-to-back. Both hold D-pad down to sweep the arms backward, then approach and hold both bumpers to join hands. Stay still."
+description = "Start apart, back-to-back. Both partners hold D-pad down to sweep their arms backward, then approach and hold both bumpers to join hands. Stay still."
 duration = 6.0
 joined_from = 4.5
 separate_body_distance = 110.0

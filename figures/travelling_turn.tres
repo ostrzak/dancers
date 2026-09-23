@@ -1,11 +1,15 @@
-[gd_resource type="Resource" script_class="DanceFigure" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://dance_figure.gd" id="1"]
 
+[ext_resource type="AudioStream" path="res://voiceover_samples/travelling_turn.wav" id="2_narration"]
+
 [resource]
 script = ExtResource("1")
+variant_label = "Clockwise"
+narration = ExtResource("2_narration")
 title = "Travelling turn"
-description = "Keep both hands joined, draw one side halfway inward, and circle together while travelling."
+description = "With both hands joined, draw the gentleman's left and the lady's right arm halfway inward. Travel through a clockwise half-turn, then extend."
 duration = 6.0
 keys = Array[Dictionary]([{
 "time": 0.0, "centre": Vector2(530, 350), "turn": 0.0, "flexion": 0.0

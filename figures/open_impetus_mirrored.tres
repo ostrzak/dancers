@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DanceFigure" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://figures/open_impetus.tres" id="2_source"]
+
+[ext_resource type="AudioStream" path="res://voiceover_samples/open_impetus_mirrored.wav" id="voiceover_dedicated"]
+
+[resource]
+narration = ExtResource("voiceover_dedicated")
+script = ExtResource("1")
+variant_label = "Counterclockwise"
+mirror_of = ExtResource("2_source")
+title = "Open impetus"
+description = "Begin face-to-face with one hand joined. Turn counterclockwise around the gentleman, open into a V, then travel together. Waltz-inspired."
+duration = 6.5
+single_hand = true
+anchor_first_body = true

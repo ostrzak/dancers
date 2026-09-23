@@ -4,24 +4,25 @@
 
 [resource]
 script = ExtResource("1")
+variant_label = "Counterclockwise"
 title = "Weave from promenade"
-description = "Start in an open V with one hand joined. Travel through a flowing left turn, close to face each other, then continue diagonally. Waltz-inspired."
-duration = 6.0
+description = "Start in an open V with one hand joined. Travel through a flowing counterclockwise turn, close face-to-face, then continue diagonally. Waltz-inspired."
+duration = 9.5
 single_hand = true
 anchor_first_body = false
 keys = Array[Dictionary]([{
 "time": 0.00000000, "centre": Vector2(490, 285), "turn": -0.78539816, "partner_turn": 3.92699082, "flexion": 0.00000000, "partner_flexion": 0.00000000
 }, {
-"time": 0.50000000, "centre": Vector2(490, 285), "turn": -0.78539816, "partner_turn": 3.92699082, "flexion": 0.00000000, "partner_flexion": 0.00000000
+"time": 0.79166667, "centre": Vector2(490, 285), "turn": -0.78539816, "partner_turn": 3.92699082, "flexion": 0.00000000, "partner_flexion": 0.00000000
 }, {
-"time": 1.70000000, "centre": Vector2(550, 345), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.00000000, "partner_flexion": 0.00000000
+"time": 2.69166667, "centre": Vector2(550, 345), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.00000000, "partner_flexion": 0.00000000
 }, {
-"time": 3.00000000, "centre": Vector2(640, 355), "turn": -3.14159265, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000
+"time": 4.75000000, "centre": Vector2(640, 355), "turn": -3.14159265, "partner_turn": 0.00000000, "flexion": 0.00000000, "partner_flexion": 0.00000000
 }, {
-"time": 4.20000000, "centre": Vector2(710, 315), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
+"time": 6.65000000, "centre": Vector2(710, 315), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
 }, {
-"time": 5.50000000, "centre": Vector2(770, 370), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
+"time": 8.70833333, "centre": Vector2(770, 370), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
 }, {
-"time": 6.00000000, "centre": Vector2(770, 370), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
+"time": 9.50000000, "centre": Vector2(770, 370), "turn": -3.92699082, "partner_turn": -0.78539816, "flexion": 0.00000000, "partner_flexion": 0.00000000
 }])
 
