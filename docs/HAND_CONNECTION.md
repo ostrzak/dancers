@@ -95,10 +95,41 @@ Therefore, during both single and double holds:
 - Turns, pulls, orbits, under-arm motion, and releases emerge from player input
   and the two hand constraints rather than input averaging.
 
-When LS is neutral, its motor applies no force. When RS returns to the deadzone,
+While connected, LS retains the original force-driven movement: neutral LS
+applies no walking force, so the partner can guide the dancer through the grip.
+While free, LS requests a walking velocity through bounded ground forces;
+neutral LS brakes self-driven travel promptly. When RS returns to the deadzone,
 RS-driven rotation stops immediately and does not continue toward its previous
 angle. The handhold is still allowed to rotate the dancer physically, so a
 neutral partner is not an implicit orientation lock.
+
+RS-driven motion of a held hand contributes to the joint's velocity constraint,
+even though RS does not add free spin to its owner's body. Circling a partner
+therefore builds actual travelling velocity before release. Letting go removes
+the joint without adding a throw impulse or cutting the existing velocity.
+With LS centred, the released dancer retains a short partner-derived coast. LS along the
+travel direction sustains or increases it; opposite LS brakes and can eventually
+reverse it; sideways LS redirects it through force. Position locks still resist
+travel when explicitly enabled.
+
+The original RS heading response is retained. Both dancers can receive the
+joint's turning reaction, including while using RS; only an explicit rotation
+lock removes that freedom. Position and velocity solving use the same rotational
+freedom. RS alone still adds no physical spin, but a held partner can push back
+and cause physical rotation. Release preserves that existing spin too.
+
+Carry is attributed from actual joint velocity impulses, never from positional
+alignment. It is reconciled with the body's real travelling velocity, so a wall
+collision or a reaction opposing a blocked step cannot store a later kick.
+Solo walking does not replenish carry. The recorded carry decays at 3.5/s;
+double holds use 8/s, leaving less protected coast when the last hand releases.
+This bookkeeping does not change held movement forces. The decay rate blends
+over time when grips change. Neither a catch nor a release resets velocity or
+carry. Ground support blends between held and free behavior over 0.125 seconds.
+Held damping retains the original 2.2 plus the project's default damping; free
+movement uses motor resistance with zero linear damping in replacement mode.
+Physical spin damping, rigid hand constraints, trigger-driven arm poses, and
+double-hold geometry retain their original behavior.
 
 ## Physical axis locks
 

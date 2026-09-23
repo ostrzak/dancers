@@ -63,6 +63,7 @@ func _run() -> void:
 	var settled_joint_frames := 0
 	var maximum_relative_hand_speed := 0.0
 	var maximum_body_speed := 0.0
+	var maximum_body_speed_after_first_second := 0.0
 	var minimum_body_distance := INF
 	var maximum_position_correction := 0.0
 	var geometry_limited_frames := 0
@@ -80,7 +81,12 @@ func _run() -> void:
 	for sample_index in samples.size() - 1:
 		var sample: Dictionary = samples[sample_index]
 		var next_sample: Dictionary = samples[sample_index + 1]
+		var was_connected := _connection.has_any_connection()
 		_apply_recorded_input(sample)
+		if was_connected and not _connection.has_any_connection():
+			print("REPLAY RELEASE speeds=(%.2f, %.2f) carry=(%.2f, %.2f)" % [
+				_left.linear_velocity.length(), _right.linear_velocity.length(),
+				_left.partner_carry_velocity.length(), _right.partner_carry_velocity.length()])
 		var frame_count := maxi(
 			1,
 			int(next_sample["physics_frame"]) - int(sample["physics_frame"])
@@ -109,6 +115,9 @@ func _run() -> void:
 				maximum_body_speed,
 				maxf(_left.linear_velocity.length(), _right.linear_velocity.length())
 			)
+			if int(sample["physics_frame"]) - int(samples[0]["physics_frame"]) >= 120:
+				maximum_body_speed_after_first_second = maxf(maximum_body_speed_after_first_second,
+					maxf(_left.linear_velocity.length(), _right.linear_velocity.length()))
 			maximum_absolute_spin = maxf(
 				maximum_absolute_spin,
 				maxf(absf(_left.angular_velocity), absf(_right.angular_velocity))
@@ -151,6 +160,7 @@ func _run() -> void:
 		]
 	)
 	_expect(finite_state, "replay remains numerically finite")
+	print("REPLAY max_body_speed_after_first_second=%.2f" % maximum_body_speed_after_first_second)
 	if arguments.has("--check-pose-limits"):
 		print("POSE REPLAY minimum_distance=%.4f max_correction=%.4f limited_frames=%d changed_hold_side=%s" % [
 			minimum_body_distance, maximum_position_correction, geometry_limited_frames, changed_hold_side])
@@ -188,6 +198,7 @@ func _initialize_from_sample(sample: Dictionary) -> void:
 	_initialize_endpoint_state(_left, 1, sample["left_dancer"])
 	_initialize_endpoint_state(_right, 2, sample["right_dancer"])
 	_connection._update_dancer_collision_exception()
+	_connection._update_dancer_hold_state()
 	_left.freeze = false
 	_right.freeze = false
 	_apply_recorded_input(sample)
@@ -198,6 +209,7 @@ func _apply_dancer_state(dancer: Dancer, state: Dictionary) -> void:
 	dancer.global_rotation = float(state["rotation_radians"])
 	dancer._update_unwrapped_rotation()
 	dancer.linear_velocity = _vector_from_json(state["linear_velocity"])
+	dancer.partner_carry_velocity = _vector_from_json(state.get("partner_carry_velocity", [0.0, 0.0]))
 	dancer.angular_velocity = float(state["angular_velocity"])
 	var arms: Dictionary = state["arms"]
 	dancer.extended_elbow_flexion_degrees = float(

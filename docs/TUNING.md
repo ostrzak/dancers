@@ -38,6 +38,24 @@ LS force and physical lock authority also scale with weight, preserving the
 same self-controlled acceleration. Fit weight affects none of these quantities.
 Artwork bands never change the common skeleton or fixed 20 px body circles.
 
+## Walking and partner carry
+
+Free LS requests screen-space walking speed, with a proportional response of 22/s
+and maximum ground force of 3000 at 75 kg (scaled with weight). Full-input speed
+remains 360 px/s times the existing arm-dependent move scale. Neutral LS brakes
+walking promptly. The separate partner-carry vector is built only by handhold
+velocity impulses and is limited to motion the dancer actually has.
+
+Connected LS retains the original 900 force at 75 kg, scaled with weight and arm
+pose, and 2.2 linear damping plus the project's default damping. Neutral held LS
+applies no walking force. Ground support blends between held and free movement
+over 0.125 seconds. Free movement uses zero replacement damping and motor resistance.
+
+Recorded carry decay is 3.5/s normally and 8/s in double holds; the decay rate
+blends at 16/s on hold transitions. Carry affects free movement after release;
+it does not replace the original held forces. Opposite LS actively consumes carry.
+These authored parameters live in `dancer.gd`, not in the pause menu.
+
 ## Right-stick heading
 
 The current RS mode is main's `radial_heading_response`. Stick direction sets
@@ -46,7 +64,10 @@ braking, and response from 8% minimum authority to full authority. Engagement
 starts at 0.15 post-deadzone travel and releases at 0.08. Main's eased response
 uses acceleration 80 rad/s², braking 240 rad/s², and response rate 40; RS
 acceleration/braking scale by `75 / weight_kg`. The arm-dependent top turn rate
-remains 8-12 rad/s.
+remains 8-12 rad/s. The heading response uses the same parameters while held.
+RS-driven hand velocity contributes to the handhold, and both dancers remain
+free to receive physical turning reactions unless explicitly rotation-locked.
+There are no additional distance-dependent turn limits.
 
 Light travel gives smooth correction; full travel corrects quickly and supports
 continuous outer-ring circles. Overload uses the shortest heading error, with
@@ -80,6 +101,10 @@ Version `dancers-coop-telemetry-v11` records weights, fit weights, visual excess
 bands, derived mass/inertia, controller assignments, sensitivities, radial RS
 state and authority, achieved hand roll, and rigid-joint acquisition/correction
 metrics. Double holds include mutual flexion permissions and per-arm effort.
+Additive fields record `partner_carry_velocity` and `free_movement_blend` (zero
+when fully using held forces, one when fully using free movement). Configuration
+identifies `movement_mode` as `original_hold_partner_carry` and records the free
+response, carry decay, and original held force/damping parameters.
 The additive `double_hold_pose_limited` field identifies a pose request stopped
 by hand-span compatibility, torso clearance, or continuity of the connected frame.
 Arm tint uses the difference between partners' requests with a 10% quiet zone

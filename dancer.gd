@@ -12,9 +12,20 @@ extends RigidBody2D
 @export_range(40.0, 120.0, 5.0) var fit_weight_kg := 75.0
 
 @export_category("Movement")
-@export var movement_force := 900.0
-@export var movement_linear_damping := 2.2
+@export var movement_force := 3000.0
+@export var movement_linear_damping := 0.0
 @export var maximum_input_speed := 360.0
+@export var movement_response := 22.0
+@export var partner_carry_decay := 3.5
+@export var double_hold_carry_decay := 8.0
+@export var carry_transition_rate := 16.0
+@export var held_movement_force := 900.0
+@export var held_linear_damping := 2.2
+
+var partner_carry_velocity := Vector2.ZERO
+var hand_connection_count := 0
+var _carry_decay := 3.5
+var _free_movement_blend := 1.0
 
 @export_category("Facing")
 @export var spin_torque := 15000.0
@@ -116,6 +127,9 @@ func _ready() -> void:
 	set_physical_weight_kg(weight_kg)
 	set_fit_weight_kg(fit_weight_kg)
 	linear_damp = movement_linear_damping
+	linear_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
+	_carry_decay = partner_carry_decay
+	_free_movement_blend = 1.0
 	angular_damp = spin_angular_damping
 	_current_arm_lengths[-1] = maximum_arm_length
 	_current_arm_lengths[1] = maximum_arm_length
@@ -143,6 +157,9 @@ func reset_to_pose(new_position: Vector2, new_rotation: float) -> void:
 	global_rotation = new_rotation
 	linear_velocity = Vector2.ZERO
 	angular_velocity = 0.0
+	partner_carry_velocity = Vector2.ZERO
+	_carry_decay = partner_carry_decay
+	_free_movement_blend = 1.0 if hand_connection_count == 0 else 0.0
 	constant_force = Vector2.ZERO
 	constant_torque = 0.0
 	_unwrapped_rotation = new_rotation
@@ -173,6 +190,8 @@ func _physics_process(delta: float) -> void:
 			arm_interpolation_speed * delta
 		)
 	_update_effective_inertia()
+	_update_partner_carry(delta)
+	_update_movement_support(delta)
 	_apply_movement_force()
 	_apply_position_lock_force()
 	_apply_facing_torque(delta)
@@ -396,7 +415,17 @@ func get_hand_offset(side: int = 1) -> Vector2:
 
 func get_hand_velocity(side: int = 1) -> Vector2:
 	var offset := get_hand_offset(side)
-	return linear_velocity + Vector2(-offset.y, offset.x) * angular_velocity
+	return linear_velocity + Vector2(-offset.y, offset.x) * angular_velocity \
+		+ get_controlled_hand_velocity(side)
+
+
+func get_controlled_hand_velocity(side: int = 1) -> Vector2:
+	# RS turns the body directly, without adding free spin to its owner. A held
+	# hand still moves through space and must transmit that motion to a partner.
+	# Only the actual RS step contributes: never turn joint position corrections
+	# or catch alignment into a release impulse.
+	var offset := get_hand_offset(side)
+	return Vector2(-offset.y, offset.x) * target_angular_velocity
 
 
 func get_hand_local_position(side: int = 1) -> Vector2:
@@ -527,22 +556,56 @@ func get_effective_move_scale() -> float:
 
 func _apply_movement_force() -> void:
 	diagnostic_movement_force = Vector2.ZERO
-	if position_lock_active or movement_input.is_zero_approx():
+	if position_lock_active:
 		return
 	var effective_move_scale := get_effective_move_scale()
-	var force_scale := 1.0
-	if maximum_input_speed > 0.0:
-		var along_input := linear_velocity.dot(movement_input.normalized())
-		if along_input > maximum_input_speed * effective_move_scale:
-			force_scale = 0.0
-	diagnostic_movement_force = (
-		movement_input
-		* movement_force
-		* get_weight_scale()
-		* effective_move_scale
-		* force_scale
-	)
+	var walking_velocity := movement_input * maximum_input_speed * effective_move_scale
+	var desired_velocity := walking_velocity + partner_carry_velocity
+	var free_force := ((desired_velocity - linear_velocity)
+		* mass * movement_response).limit_length(movement_force * get_weight_scale())
+	# Preserve the original force-driven give-and-take while connected. A neutral
+	# partner yields to the joint rather than actively tracking a target speed.
+	var held_force := movement_input * held_movement_force * get_weight_scale() * effective_move_scale
+	if maximum_input_speed > 0.0 and not movement_input.is_zero_approx() \
+			and linear_velocity.dot(movement_input.normalized()) > maximum_input_speed * effective_move_scale:
+		held_force = Vector2.ZERO
+	diagnostic_movement_force = held_force.lerp(free_force, _free_movement_blend)
 	apply_central_force(diagnostic_movement_force)
+
+
+func _update_movement_support(delta: float) -> void:
+	# Change support forces smoothly on catches/releases, without editing velocity.
+	var target := 1.0 if hand_connection_count == 0 else 0.0
+	_free_movement_blend = move_toward(_free_movement_blend, target, 8.0 * delta)
+	var original_damping := held_linear_damping + float(ProjectSettings.get_setting("physics/2d/default_linear_damp", 0.1))
+	linear_damp = lerpf(original_damping, movement_linear_damping, _free_movement_blend)
+
+
+func record_partner_impulse(velocity_change: Vector2) -> void:
+	partner_carry_velocity += velocity_change
+
+
+func reconcile_partner_carry() -> void:
+	# A reaction opposing one's own walk must not bank a backwards launch.
+	# Wall/torso collisions likewise cannot leave carry larger than real motion.
+	var speed := linear_velocity.length()
+	if speed <= 0.001 or position_lock_active:
+		partner_carry_velocity = Vector2.ZERO
+		return
+	var direction := linear_velocity / speed
+	partner_carry_velocity = direction * clampf(partner_carry_velocity.dot(direction), 0.0, speed)
+
+
+func _update_partner_carry(delta: float) -> void:
+	reconcile_partner_carry()
+	var desired_decay := double_hold_carry_decay if hand_connection_count == 2 else partner_carry_decay
+	_carry_decay = lerpf(_carry_decay, desired_decay, 1.0 - exp(-carry_transition_rate * delta))
+	partner_carry_velocity *= exp(-_carry_decay * delta)
+	# Opposite LS spends the received carry as well as asking to walk back.
+	if not partner_carry_velocity.is_zero_approx():
+		var opposition := maxf(0.0, -movement_input.dot(partner_carry_velocity.normalized()))
+		partner_carry_velocity = partner_carry_velocity.move_toward(Vector2.ZERO,
+			opposition * movement_force * get_weight_scale() / mass * delta)
 
 
 func _apply_position_lock_force() -> void:

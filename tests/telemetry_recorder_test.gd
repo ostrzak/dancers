@@ -78,6 +78,9 @@ func _run() -> void:
 		"connection samples identify the all-rigid joint solver"
 	)
 	_expect(sample["left_dancer"]["input"]["movement"] == [0.25, -0.75], "effective LS input is recorded")
+	_expect(sample["left_dancer"].has("partner_carry_velocity")
+		and sample["left_dancer"].has("free_movement_blend"),
+		"samples distinguish partner carry and movement support during hold transitions")
 	_expect(sample["left_dancer"]["input"]["facing"] == [1.0, 0.0], "effective RS facing input is recorded")
 	_expect(sample["left_dancer"]["facing_dial"]["active"]
 		and sample["left_dancer"]["facing_dial"]["response_scale"] == 1.0

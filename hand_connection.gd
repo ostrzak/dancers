@@ -93,6 +93,9 @@ func _physics_process(delta: float) -> void:
 		secondary_snap_remaining = maxf(0.0, secondary_snap_remaining - delta)
 		secondary_acquisition_progress = _get_acquisition_progress(2)
 	_solve_active_hold_constraints(delta)
+	dancer_a.reconcile_partner_carry()
+	dancer_b.reconcile_partner_carry()
+	_update_dancer_hold_state()
 	_update_active_hold_metrics()
 	if double_hold_active:
 		_update_double_hold_metrics()
@@ -305,6 +308,7 @@ func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
 		return false
 
 	_consume_catch_input(hand_a_side, hand_b_side)
+	_update_dancer_hold_state()
 	_update_dancer_collision_exception()
 	connection_changed.emit(true)
 	grip_state_changed.emit()
@@ -331,11 +335,18 @@ func _release_pair(slot: int, hand_a_side: int, hand_b_side: int) -> void:
 		_secondary_catch_separation = 0.0
 	_set_cooldown(1, hand_a_side, release_cooldown)
 	_set_cooldown(2, hand_b_side, release_cooldown)
+	_update_dancer_hold_state()
 	_update_dancer_collision_exception()
 	_reset_diagnostics()
 	connection_changed.emit(has_any_connection())
 	grip_state_changed.emit()
 	queue_redraw()
+
+
+func _update_dancer_hold_state() -> void:
+	var count := get_active_connection_count()
+	for dancer in [dancer_a, dancer_b]:
+		dancer.hand_connection_count = count
 
 
 func _consume_catch_input(hand_a_side: int, hand_b_side: int) -> void:
@@ -896,6 +907,7 @@ func _get_predicted_hand_velocity(
 	return (
 		predicted_linear_velocity
 		+ Vector2(-offset.y, offset.x) * predicted_angular_velocity
+		+ dancer.get_controlled_hand_velocity(hand_side)
 	)
 
 
@@ -927,6 +939,8 @@ func _apply_pair_velocity_axis(
 	var inverse_inertia_b := (
 		0.0 if dancer_b.rotation_lock_active else 1.0 / maxf(dancer_b.inertia, 0.001)
 	)
+	# RS remains additive input, not an implicit rotation lock. Use the same
+	# rotational freedom as position solving so both dancers can yield to a grip.
 	var angular_axis_a := offset_a.cross(axis)
 	var angular_axis_b := offset_b.cross(axis)
 	var effective_inverse_mass := (
@@ -946,6 +960,8 @@ func _apply_pair_velocity_axis(
 	)
 	dancer_a.linear_velocity += axis * impulse * inverse_mass_a
 	dancer_b.linear_velocity -= axis * impulse * inverse_mass_b
+	dancer_a.record_partner_impulse(axis * impulse * inverse_mass_a)
+	dancer_b.record_partner_impulse(-axis * impulse * inverse_mass_b)
 	if inverse_inertia_a > 0.0:
 		dancer_a.angular_velocity += angular_axis_a * impulse * inverse_inertia_a
 	if inverse_inertia_b > 0.0:

@@ -234,7 +234,7 @@ func _run() -> void:
 	_left.set_control_input(Vector2.RIGHT, Vector2.UP, 0.0, 0.0)
 	await _wait_physics_frames(45)
 	_expect(_left.global_position.x > 380.0, "LS moves its dancer in screen space independently of facing")
-	_expect(_left.diagnostic_movement_force.x > 0.0, "LS right applies a rightward movement force")
+	_expect(_left.linear_velocity.x > 100.0, "LS right builds rightward walking velocity")
 
 	_left.global_position = Vector2(420.0, 260.0)
 	_left.global_rotation = 0.0
