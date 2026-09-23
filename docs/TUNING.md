@@ -1,5 +1,9 @@
 # Runtime tuning
 
+The title selects single-player or co-op. See [Play modes](PLAY_MODES.md) for
+single-player controls and its additional spin/move tuning. The co-op-specific
+heading and D-pad behavior below remains unchanged. Figures are co-op-only.
+
 The pause menu has `GENERAL`, `TUNING`, `DANCERS`, and `FIGURES` tabs. While paused, LB and
 RB switch tabs, directional input changes focus or a selected slider, A
 activates buttons, and B returns to play. Settings are session-local and reset

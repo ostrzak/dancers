@@ -1,0 +1,319 @@
+{
+  "source": "dancers-telemetry-2026-09-23T19-21-53-f6423.json",
+  "indices": [
+    65,
+    148,
+    614,
+    719
+  ],
+  "samples": [
+    {
+      "physics_frame": 4849,
+      "hand_connection": {
+        "left_dancer_hand_side": 1,
+        "right_dancer_hand_side": -1
+      },
+      "left_dancer": {
+        "position": [
+          708.046447753906,
+          387.9638671875
+        ],
+        "rotation_radians": 1.32204127311707,
+        "linear_velocity": [
+          3.60494947433472,
+          2.66950488090515
+        ],
+        "angular_velocity": -0.0717638432979584,
+        "input": {
+          "facing": [
+            0.0,
+            0.0
+          ],
+          "left_trigger": 0.0,
+          "movement": [
+            0.0,
+            0.0
+          ],
+          "position_lock": false,
+          "right_trigger": 0.0,
+          "rotation_lock": false
+        },
+        "intended_spin_direction": -1,
+        "stance": {
+          "elbow_flexion_degrees": 12.0,
+          "forward_sweep_degrees": -25.0
+        },
+        "arm_lengths": [
+          82.6,
+          82.6
+        ]
+      },
+      "right_dancer": {
+        "position": [
+          743.618225097656,
+          373.55224609375
+        ],
+        "rotation_radians": -1.93474745750427,
+        "linear_velocity": [
+          14.3460063934326,
+          -0.549467027187347
+        ],
+        "angular_velocity": 0.0774143040180206,
+        "input": {
+          "facing": [
+            0.0,
+            0.0
+          ],
+          "left_trigger": 0.0,
+          "movement": [
+            0.0,
+            0.0
+          ],
+          "position_lock": false,
+          "right_trigger": 0.0,
+          "rotation_lock": false
+        },
+        "intended_spin_direction": -1,
+        "stance": {
+          "elbow_flexion_degrees": 12.0,
+          "forward_sweep_degrees": -25.0
+        },
+        "arm_lengths": [
+          82.6,
+          82.6
+        ]
+      }
+    },
+    {
+      "physics_frame": 5015,
+      "hand_connection": {
+        "left_dancer_hand_side": -1,
+        "right_dancer_hand_side": 1
+      },
+      "left_dancer": {
+        "position": [
+          715.828796386719,
+          390.453216552734
+        ],
+        "rotation_radians": 0.795225918292999,
+        "linear_velocity": [
+          0.170744553208351,
+          0.208378449082375
+        ],
+        "angular_velocity": 0.00299487309530377,
+        "input": {
+          "facing": [
+            0.0,
+            0.0
+          ],
+          "left_trigger": 0.0,
+          "movement": [
+            0.0,
+            0.0
+          ],
+          "position_lock": false,
+          "right_trigger": 0.0,
+          "rotation_lock": false
+        },
+        "intended_spin_direction": -1,
+        "stance": {
+          "elbow_flexion_degrees": 12.0,
+          "forward_sweep_degrees": -25.0
+        },
+        "arm_lengths": [
+          82.6,
+          82.6
+        ]
+      },
+      "right_dancer": {
+        "position": [
+          743.182739257813,
+          371.930633544922
+        ],
+        "rotation_radians": -2.1703565120697,
+        "linear_velocity": [
+          0.551851272583008,
+          -0.12303963303566
+        ],
+        "angular_velocity": -0.00369356200098991,
+        "input": {
+          "facing": [
+            0.0,
+            0.0
+          ],
+          "left_trigger": 0.0,
+          "movement": [
+            0.0,
+            0.0
+          ],
+          "position_lock": false,
+          "right_trigger": 0.0,
+          "rotation_lock": false
+        },
+        "intended_spin_direction": -1,
+        "stance": {
+          "elbow_flexion_degrees": 12.0,
+          "forward_sweep_degrees": -25.0
+        },
+        "arm_lengths": [
+          82.6,
+          82.6
+        ]
+      }
+    },
+    {
+      "physics_frame": 5947,
+      "hand_connection": {
+        "left_dancer_hand_side": -1,
+        "right_dancer_hand_side": 1
+      },
+      "left_dancer": {
+        "position": [
+          745.654052734375,
+          401.750030517578
+        ],
+        "rotation_radians": 0.442163527011871,
+        "linear_velocity": [
+          0.0585633032023907,
+          0.0197974871844053
+        ],
+        "angular_velocity": 0.000175205466803163,
+        "input": {
+          "facing": [
+            0.0,
+            0.0
+          ],
+          "left_trigger": 0.0,
+          "movement": [
+            0.0,
+            0.0
+          ],
+          "position_lock": false,
+          "right_trigger": 0.0,
+          "rotation_lock": false
+        },
+        "intended_spin_direction": -1,
+        "stance": {
+          "elbow_flexion_degrees": 12.0,
+          "forward_sweep_degrees": -25.0
+        },
+        "arm_lengths": [
+          82.6,
+          82.6
+        ]
+      },
+      "right_dancer": {
+        "position": [
+          770.275756835938,
+          343.742065429688
+        ],
+        "rotation_radians": -2.87025785446167,
+        "linear_velocity": [
+          0.0671488046646118,
+          0.00957847665995359
+        ],
+        "angular_velocity": -2.58615364145953e-06,
+        "input": {
+          "facing": [
+            0.0,
+            0.0
+          ],
+          "left_trigger": 0.0,
+          "movement": [
+            0.0,
+            0.0
+          ],
+          "position_lock": false,
+          "right_trigger": 0.0,
+          "rotation_lock": false
+        },
+        "intended_spin_direction": -1,
+        "stance": {
+          "elbow_flexion_degrees": 12.0,
+          "forward_sweep_degrees": -25.0
+        },
+        "arm_lengths": [
+          82.6,
+          82.6
+        ]
+      }
+    },
+    {
+      "physics_frame": 6423,
+      "hand_connection": {
+        "left_dancer_hand_side": -1,
+        "right_dancer_hand_side": 1
+      },
+      "left_dancer": {
+        "position": [
+          759.419067382813,
+          388.387115478516
+        ],
+        "rotation_radians": -0.277247190475464,
+        "linear_velocity": [
+          4.73883867263794,
+          -0.320725172758102
+        ],
+        "angular_velocity": -0.351838946342468,
+        "input": {
+          "facing": [
+            0.0,
+            0.0
+          ],
+          "left_trigger": 0.0,
+          "movement": [
+            0.0,
+            0.0
+          ],
+          "position_lock": false,
+          "right_trigger": 0.0,
+          "rotation_lock": false
+        },
+        "intended_spin_direction": -1,
+        "stance": {
+          "elbow_flexion_degrees": 12.0,
+          "forward_sweep_degrees": -25.0
+        },
+        "arm_lengths": [
+          82.204012889795,
+          82.204012889795
+        ]
+      },
+      "right_dancer": {
+        "position": [
+          756.563720703125,
+          357.117248535156
+        ],
+        "rotation_radians": 3.04816651344299,
+        "linear_velocity": [
+          -4.73659420013428,
+          0.321249783039093
+        ],
+        "angular_velocity": -0.242065459489822,
+        "input": {
+          "facing": [
+            0.0,
+            0.0
+          ],
+          "left_trigger": 0.0,
+          "movement": [
+            0.0,
+            0.0
+          ],
+          "position_lock": false,
+          "right_trigger": 0.0,
+          "rotation_lock": false
+        },
+        "intended_spin_direction": -1,
+        "stance": {
+          "elbow_flexion_degrees": 12.0,
+          "forward_sweep_degrees": -25.0
+        },
+        "arm_lengths": [
+          69.7332494678653,
+          82.5995997563492
+        ]
+      }
+    }
+  ]
+}

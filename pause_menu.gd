@@ -57,6 +57,11 @@ var music_name: Label
 var music_volume: HSlider
 var music_volume_label: Label
 var music_status: Label
+var single_tuning_controls: Array[Control] = []
+var single_tuning_sliders: Array[HSlider] = []
+var single_tuning_values: Array[Label] = []
+var controls_help: Label
+var controls_tab := -1
 
 
 func _ready() -> void:
@@ -76,6 +81,7 @@ func _ready() -> void:
 		woman_fit_weight_slider,
 	]:
 		slider.value_changed.connect(_on_tuning_changed)
+	_build_single_tuning()
 	_sync_tuning_controls()
 	_build_figures_tab()
 	music = BallroomMusic.new()
@@ -91,10 +97,13 @@ func _ready() -> void:
 	add_child(entrance)
 	entrance.hide()
 	entrance.dance_requested.connect(_start_dancing)
+	entrance.single_player_requested.connect(_start_single_player)
 	entrance.ballroom_requested.connect(_open_ballroom)
 	entrance.settings_requested.connect(_open_settings)
 	entrance.music_requested.connect(_open_music)
 	entrance.quit_requested.connect(_quit)
+	controller.mode_changed.connect(_refresh_mode_controls)
+	_refresh_mode_controls()
 	if start_on_title:
 		_show_title()
 	if is_instance_valid(telemetry_recorder):
@@ -139,6 +148,7 @@ func _toggle_pause() -> void:
 
 
 func _pause() -> void:
+	controller.rearm_controls()
 	title_context = false
 	entrance.hide()
 	$Dim.show()
@@ -159,6 +169,7 @@ func _resume() -> void:
 	if title_context:
 		_show_title()
 		return
+	controller.rearm_controls()
 	get_tree().paused = false
 	visible = false
 
@@ -168,6 +179,7 @@ func _on_telemetry_toggled(is_enabled: bool) -> void:
 
 
 func _show_title() -> void:
+	controller.rearm_controls()
 	music.play_context(true)
 	title_context = true
 	visible = true
@@ -183,6 +195,15 @@ func _show_title() -> void:
 
 
 func _start_dancing() -> void:
+	_start_mode(PrototypeController.PlayMode.COOP)
+
+
+func _start_single_player() -> void:
+	_start_mode(PrototypeController.PlayMode.SINGLE)
+
+
+func _start_mode(mode: PrototypeController.PlayMode) -> void:
+	controller.start_session(mode)
 	music.play_context(false)
 	title_context = false
 	entrance_return_focus = null
@@ -369,6 +390,14 @@ func _style_menu() -> void:
 	back_button.custom_minimum_size.x = 90
 	var title_button := _figure_button(tabs.get_tab_control(0), "Return to title", _show_title)
 	tabs.get_tab_control(0).move_child(title_button, 1)
+	var controls_panel := VBoxContainer.new()
+	controls_panel.name = "Controls"
+	tabs.add_child(controls_panel)
+	controls_tab = tabs.get_tab_count() - 1
+	controls_help = Label.new()
+	controls_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	controls_help.add_theme_font_size_override("font_size", 16)
+	controls_panel.add_child(controls_help)
 	# All overlays use the body face, including diagnostic readouts.
 	for child in debug_overlay.get_children():
 		if child is Control:
@@ -388,6 +417,8 @@ func _sentence_case_labels(node: Node) -> void:
 
 func _switch_tab(direction: int) -> void:
 	tabs.current_tab = wrapi(tabs.current_tab + direction, 0, tabs.get_tab_count())
+	while tabs.is_tab_hidden(tabs.current_tab):
+		tabs.current_tab = wrapi(tabs.current_tab + (1 if direction >= 0 else -1), 0, tabs.get_tab_count())
 	if tabs.current_tab == 0:
 		resume_button.grab_focus()
 	elif tabs.current_tab == 1:
@@ -398,6 +429,8 @@ func _switch_tab(direction: int) -> void:
 		figure_toggle.grab_focus()
 	elif tabs.current_tab == music_tab:
 		music_previous.grab_focus()
+	elif tabs.current_tab == controls_tab:
+		back_button.grab_focus()
 	else:
 		floor_buttons[floor_art.selected_index].grab_focus()
 
@@ -508,6 +541,55 @@ func _set_figure_speed(speed: float) -> void:
 	demonstration.playback_speed = speed
 
 
+func _build_single_tuning() -> void:
+	var grid: GridContainer = $Center/Panel/Menu/Tabs/TUNING/TuningGrid
+	for index in 3:
+		var label := Label.new()
+		label.text = ["Spin speed", "Move speed", "Arm / move ratio"][index]
+		label.add_theme_font_size_override("font_size", 16)
+		grid.add_child(label)
+		var slider := HSlider.new()
+		slider.custom_minimum_size = Vector2(300, 42)
+		slider.min_value = 0.0 if index == 2 else 0.5
+		slider.max_value = 1.5 if index == 2 else 2.0
+		slider.step = 0.05
+		slider.value = 1.0
+		grid.add_child(slider)
+		var value := Label.new()
+		value.custom_minimum_size.x = 62
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		grid.add_child(value)
+		single_tuning_controls.append_array([label, slider, value])
+		single_tuning_sliders.append(slider)
+		single_tuning_values.append(value)
+		slider.value_changed.connect(_on_single_tuning_changed)
+
+
+func _on_single_tuning_changed(_value: float) -> void:
+	controller.set_single_player_tuning(single_tuning_sliders[0].value,
+		single_tuning_sliders[1].value, single_tuning_sliders[2].value)
+	_refresh_tuning_labels()
+
+
+func _refresh_mode_controls() -> void:
+	var single := controller.is_single_player()
+	tabs.set_tab_hidden(3, single)
+	if single and tabs.current_tab == 3:
+		tabs.current_tab = 0
+	figure_toggle.set_pressed_no_signal(demonstration.visible)
+	for control in single_tuning_controls:
+		control.visible = single
+	$Center/Panel/Menu/Tabs/TUNING/Description.text = (
+		"Sensitivity changes input response. Both sticks move dancers.\nTriggers contract arms and drive spin."
+		if single else "Sensitivity changes input response without changing its endpoints.\nStick sensitivity affects LS; RS travel controls heading correction."
+	)
+	controls_help.text = (
+		"Single player · One controller, both dancers\nLS / RS: move black / white · LT / RT: contract arms and spin\nL3 / R3: reverse black / white spin · D-pad: shared arm stance\nLB or RB: hold to catch; press again to release its connection.\nThe other bumper can catch the remaining hands.\nKeyboard: WASD / arrows move · Shift / Enter contract · Q / E catch"
+		if single else "Co-op · One controller per dancer\nLS: move · RS: turn · LT / RT: left / right arm\nLB / RB: prime left / right hand; press again to release\nL3 / R3: position / rotation lock\nBoth D-pads together: shared arm stance"
+	)
+	_sync_tuning_controls()
+
+
 func _sync_tuning_controls() -> void:
 	if not is_instance_valid(controller):
 		return
@@ -517,6 +599,10 @@ func _sync_tuning_controls() -> void:
 	woman_weight_slider.set_value_no_signal(controller.woman_weight_kg)
 	man_fit_weight_slider.set_value_no_signal(controller.man_fit_weight_kg)
 	woman_fit_weight_slider.set_value_no_signal(controller.woman_fit_weight_kg)
+	if single_tuning_sliders.size() == 3:
+		single_tuning_sliders[0].set_value_no_signal(controller.single_spin_speed_scale)
+		single_tuning_sliders[1].set_value_no_signal(controller.single_move_speed_scale)
+		single_tuning_sliders[2].set_value_no_signal(controller.single_spin_move_ratio)
 	_refresh_tuning_labels()
 
 
@@ -535,6 +621,8 @@ func _on_tuning_changed(_value: float) -> void:
 
 
 func _refresh_tuning_labels() -> void:
+	for index in single_tuning_sliders.size():
+		single_tuning_values[index].text = "%.2f" % single_tuning_sliders[index].value
 	trigger_sensitivity_value.text = "%.2fx" % trigger_sensitivity_slider.value
 	stick_sensitivity_value.text = "%.2fx" % stick_sensitivity_slider.value
 	man_weight_value.text = "%d kg" % int(man_weight_slider.value)

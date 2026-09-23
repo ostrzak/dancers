@@ -60,6 +60,7 @@ var _narrator: AudioStreamPlayer
 var _narration_pending := false
 var _caption: CanvasLayer
 var _caption_label: Label
+var demonstrations_enabled := true
 
 
 func _ready() -> void:
@@ -175,6 +176,7 @@ func select_variant(index: int) -> void:
 
 
 func set_demonstration_visible(enabled: bool) -> void:
+	enabled = enabled and demonstrations_enabled
 	visible = enabled
 	if enabled:
 		restart()

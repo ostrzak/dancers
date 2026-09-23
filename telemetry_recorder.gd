@@ -121,6 +121,7 @@ func save_capture(reason: String = "manual") -> String:
 func build_capture_payload(reason: String = "manual") -> Dictionary:
 	return {
 		"schema": "dancers-coop-telemetry-v11",
+		"play_mode": "single" if is_instance_valid(controller) and controller.is_single_player() else "coop",
 		"reason": reason,
 		"captured_at": Time.get_datetime_string_from_system(),
 		"captured_at_utc": Time.get_datetime_string_from_system(true),
@@ -147,6 +148,8 @@ func _build_current_sample() -> Dictionary:
 	return {
 		"ticks_msec": Time.get_ticks_msec(),
 		"physics_frame": Engine.get_physics_frames(),
+		"play_mode": "single" if is_instance_valid(controller) and controller.is_single_player() else "coop",
+		"bumper_connections": controller.single_controls.owned_slots.duplicate() if is_instance_valid(controller) and controller.is_single_player() else [],
 		"left_dancer": _build_dancer_sample(left_dancer),
 		"right_dancer": _build_dancer_sample(right_dancer),
 		"pair": {
@@ -172,6 +175,7 @@ func _build_dancer_sample(dancer: Dancer) -> Dictionary:
 		"free_movement_blend": dancer._free_movement_blend,
 		"speed": _float_for_json(dancer.linear_velocity.length()),
 		"angular_velocity": _float_for_json(dancer.angular_velocity),
+		"intended_spin_direction": dancer.intended_spin_direction,
 		"target_angular_velocity": _float_for_json(dancer.target_angular_velocity),
 		"heading_error": _float_for_json(dancer.heading_error),
 		"weight_kg": dancer.weight_kg,
@@ -365,6 +369,10 @@ func _build_configuration() -> Dictionary:
 	}
 	if is_instance_valid(controller):
 		configuration["controller"] = {
+			"play_mode": "single" if controller.is_single_player() else "coop",
+			"single_spin_speed_scale": controller.single_spin_speed_scale,
+			"single_move_speed_scale": controller.single_move_speed_scale,
+			"single_spin_move_ratio": controller.single_spin_move_ratio,
 			"preferred_player_one_device": controller.preferred_player_one_device,
 			"preferred_player_two_device": controller.preferred_player_two_device,
 			"assigned_player_one_device": controller.get_player_one_device(),
@@ -400,10 +408,11 @@ func _build_dancer_configuration(dancer: Dancer) -> Dictionary:
 		"held_movement_force": dancer.held_movement_force,
 		"held_linear_damping": dancer.held_linear_damping,
 		"maximum_input_speed": dancer.maximum_input_speed,
+		"single_free_speed_scale": dancer.single_free_speed_scale,
 		"spin_torque": dancer.spin_torque,
 		"spin_response_gain": dancer.spin_response_gain,
 		"facing_response_rate": dancer.facing_response_rate,
-		"facing_mode": "radial_heading_response",
+		"facing_mode": "trigger_spin" if dancer.single_player_spin else "radial_heading_response",
 		"facing_dial_engage_threshold": dancer.facing_dial_engage_threshold,
 		"facing_dial_release_threshold": dancer.facing_dial_release_threshold,
 		"facing_dial_minimum_response": dancer.facing_dial_minimum_response,

@@ -1,5 +1,9 @@
 # Co-op hand connection
 
+For single-player bumper ownership and shared two-hand physics, see
+[Play modes](PLAY_MODES.md). The per-hand, two-controller input rules below
+describe co-op.
+
 Each controller owns one dancer. Controller one drives the black dancer and
 controller two drives the white dancer. LB always refers to that dancer's left
 hand and RB to the right hand.

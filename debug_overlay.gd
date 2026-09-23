@@ -40,7 +40,7 @@ func set_telemetry_visible(is_visible: bool) -> void:
 
 
 func _format_dancer(dancer: Dancer) -> String:
-	return "weight       %7.0f kg\nspeed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nheading err  %+7.2f deg\nlocks L3/R3  %6s / %6s\narm flex/fwd %6.1f / %+6.1f deg\nmove scale   %7.2fx\ntrigger L/R  %6.2f / %6.2f\neffort L/R   %6.2f / %6.2f\nreach L/R    %6.2f / %6.2f px\nupper L/R    %6.2f / %6.2f px\nfore L/R     %6.2f / %6.2f px\nhand L/R     %6.2f / %6.2f px/s" % [
+	return "weight       %7.0f kg\nspeed        %7.2f px/s\nangular      %7.2f rad/s\ntarget       %7.2f rad/s\nheading err  %+7.2f deg\nlocks pos/rot %5s / %5s\narm flex/fwd %6.1f / %+6.1f deg\nmove scale   %7.2fx\ntrigger L/R  %6.2f / %6.2f\neffort L/R   %6.2f / %6.2f\nreach L/R    %6.2f / %6.2f px\nupper L/R    %6.2f / %6.2f px\nfore L/R     %6.2f / %6.2f px\nhand L/R     %6.2f / %6.2f px/s" % [
 		dancer.weight_kg,
 		dancer.linear_velocity.length(),
 		dancer.angular_velocity,

@@ -66,6 +66,7 @@ var _double_hold_pose: Array = []
 var _newest_connection_slot := 1
 var _primary_glint_age := HandGlint.DURATION
 var _secondary_glint_age := HandGlint.DURATION
+var shared_catch_waiting := false
 
 const HAND_SIDES := [-1, 1]
 const DOUBLE_HOLD_CLEARANCE_MARGIN := 0.05
@@ -156,6 +157,10 @@ func is_hand_primed(dancer: Dancer, hand_side: int) -> bool:
 	var endpoint := _endpoint_for_dancer(dancer)
 	if endpoint == 0:
 		return false
+	if shared_catch_waiting:
+		var pair := _nearest_shared_pair(false)
+		if not pair.is_empty() and pair[endpoint - 1] == signi(hand_side):
+			return true
 	return _get_grip(endpoint, signi(hand_side))
 
 
@@ -273,12 +278,55 @@ func _try_connect_for_endpoint(endpoint: int, side: int) -> bool:
 	return _connect_pair(catch_hand_a, catch_hand_b)
 
 
-func _connect_pair(hand_a_side: int, hand_b_side: int) -> bool:
+func try_connect_shared_pair() -> int:
+	var pair := _nearest_shared_pair(true)
+	if pair.is_empty():
+		return 0
+	var slot := 1 if not is_connected else 2
+	return slot if _connect_pair(pair[0], pair[1], false) else 0
+
+
+func _nearest_shared_pair(require_catch_limits: bool) -> Array[int]:
+	var best: Array[int] = []
+	var best_distance := INF
+	for side_a in HAND_SIDES:
+		if _connection_slot_for_endpoint(1, side_a) != 0 or _get_cooldown(1, side_a) > 0.0:
+			continue
+		for side_b in HAND_SIDES:
+			if _connection_slot_for_endpoint(2, side_b) != 0 or _get_cooldown(2, side_b) > 0.0:
+				continue
+			var distance := dancer_a.get_hand_world_position(side_a).distance_to(dancer_b.get_hand_world_position(side_b))
+			var speed := (dancer_b.get_hand_velocity(side_b) - dancer_a.get_hand_velocity(side_a)).length()
+			if require_catch_limits and (distance > catch_radius or speed > maximum_relative_catch_velocity):
+				continue
+			if distance < best_distance:
+				best_distance = distance
+				best.assign([side_a, side_b])
+	return best
+
+
+func reset_connections() -> void:
+	release_secondary_hands()
+	release_hands()
+	shared_catch_waiting = false
+	for endpoint in [1, 2]:
+		for side in HAND_SIDES:
+			_set_grip(endpoint, side, false)
+			_set_button_down(endpoint, side, false)
+			_set_button_consumed(endpoint, side, false)
+			_set_release_tap_armed(endpoint, side, false)
+			_set_cooldown(endpoint, side, 0.0)
+	_primary_glint_age = HandGlint.DURATION
+	_secondary_glint_age = HandGlint.DURATION
+	_update_dancer_hold_state()
+	queue_redraw()
+
+
+func _connect_pair(hand_a_side: int, hand_b_side: int, require_mutual_grip: bool = true) -> bool:
 	if (
 		_connection_slot_for_endpoint(1, hand_a_side) != 0
 		or _connection_slot_for_endpoint(2, hand_b_side) != 0
-		or not _get_grip(1, hand_a_side)
-		or not _get_grip(2, hand_b_side)
+		or (require_mutual_grip and (not _get_grip(1, hand_a_side) or not _get_grip(2, hand_b_side)))
 	):
 		return false
 
@@ -475,11 +523,8 @@ func _update_double_hold_arm_frame(active: bool, delta: float) -> void:
 	)
 	if not _double_hold_was_active:
 		var initial := _read_double_hold_pose()
-		var flexions := initial.slice(0, 4)
-		_project_double_hold_spans(flexions)
-		var offset := _get_double_hold_body_offset()
 		var current_offset := (dancer_b.global_position - dancer_a.global_position).rotated(-dancer_a.global_rotation)
-		if not _double_hold_geometry_is_valid() or offset.dot(current_offset) <= 0.0:
+		if not _fit_initial_double_hold_pose(initial, current_offset):
 			# An incompatible second catch must not pull bodies through each other.
 			_apply_double_hold_pose(initial, false)
 			if _newest_connection_slot == 1:
@@ -515,6 +560,43 @@ func _update_double_hold_arm_frame(active: bool, delta: float) -> void:
 			dancer_b.get_double_hold_arm_effort(_secondary_hand_b)
 		)
 	)
+
+
+func _fit_initial_double_hold_pose(initial: Array, current_offset: Vector2) -> bool:
+	var initial_span_error := _get_double_hold_span_error()
+	var flexions := initial.slice(0, 4)
+	_project_double_hold_spans(flexions)
+	if _double_hold_geometry_is_valid() and _get_double_hold_body_offset().dot(current_offset) > 0.0:
+		return true
+	if absf(initial_span_error) <= rigid_span_tolerance:
+		return false
+	# Rear-swept arms initially widen as they flex, then narrow. With unequal
+	# arm lengths the local projection can stall at that maximum span. Search
+	# the other branch at acquisition only, then use the same constrained fit.
+	# Keep the closest compatible pose; never relax torso clearance or flip
+	# the partners from a rear hold to a front hold to make a catch succeed.
+	var best_pose: Array = []
+	var best_cost := INF
+	for endpoint in 2:
+		for step in range(1, 11):
+			_apply_double_hold_pose(initial, false)
+			var candidate := initial.slice(0, 4)
+			for index in [endpoint, endpoint + 2]:
+				candidate[index] = minf(1.0, float(candidate[index]) + float(step) * 0.1)
+			_project_double_hold_spans(candidate)
+			if not _double_hold_geometry_is_valid() or _get_double_hold_body_offset().dot(current_offset) <= 0.0:
+				continue
+			var cost := 0.0
+			for index in 4:
+				cost += pow(float(candidate[index]) - float(initial[index]), 2.0)
+			if cost < best_cost:
+				best_cost = cost
+				best_pose = _read_double_hold_pose()
+	if best_pose.is_empty():
+		_apply_double_hold_pose(initial, false)
+		return false
+	_apply_double_hold_pose(best_pose, false)
+	return true
 
 
 func _read_double_hold_pose() -> Array:
@@ -595,6 +677,16 @@ func _advance_double_hold_pose(target: Array) -> void:
 
 func _project_double_hold_spans(flexions: Array, project_clearance: bool = true) -> void:
 	const SAMPLE_STEP := 0.01
+	# A single-player trigger controls both arms of its dancer. Solve those
+	# arms as one variable, rather than allowing the primary-hand clearance
+	# gradient to bend one elbow independently and skew the whole frame.
+	var groups: Array = [[0], [1], [2], [3]]
+	if dancer_a.single_player_spin and dancer_b.single_player_spin:
+		groups = [[0, 2], [1, 3]]
+		for group in groups:
+			var average := (float(flexions[group[0]]) + float(flexions[group[1]])) * 0.5
+			for index in group:
+				flexions[index] = average
 	var minimum_body_distance := _get_body_contact_distance() + DOUBLE_HOLD_CLEARANCE_MARGIN if project_clearance else 0.0
 	for _iteration in rigid_span_projection_iterations:
 		_apply_double_hold_flexions(flexions, false)
@@ -616,24 +708,27 @@ func _project_double_hold_spans(flexions: Array, project_clearance: bool = true)
 		var denominator := 0.0
 		var clearance_denominator := 0.0
 		var cross_denominator := 0.0
-		for index in 4:
-			var original: float = flexions[index]
+		for variable in groups.size():
+			var group: Array = groups[variable]
+			var original: float = flexions[group[0]]
 			var sample := clampf(original + SAMPLE_STEP, 0.0, 1.0)
 			if is_equal_approx(sample, original):
 				sample = clampf(original - SAMPLE_STEP, 0.0, 1.0)
 			if is_equal_approx(sample, original):
 				continue
-			flexions[index] = sample
+			for index in group:
+				flexions[index] = sample
 			_apply_double_hold_flexions(flexions, false)
-			gradient[index] = (_get_double_hold_span_error() - error) / (sample - original)
-			denominator += gradient[index] * gradient[index]
+			gradient[variable] = (_get_double_hold_span_error() - error) / (sample - original)
+			denominator += gradient[variable] * gradient[variable]
 			if clearance_error < 0.0:
-				clearance_gradient[index] = (
+				clearance_gradient[variable] = (
 					(_get_double_hold_body_offset() - body_offset).dot(clearance_axis)
 				) / (sample - original)
-				clearance_denominator += clearance_gradient[index] * clearance_gradient[index]
-				cross_denominator += gradient[index] * clearance_gradient[index]
-			flexions[index] = original
+				clearance_denominator += clearance_gradient[variable] * clearance_gradient[variable]
+				cross_denominator += gradient[variable] * clearance_gradient[variable]
+			for index in group:
+				flexions[index] = original
 		if denominator <= 0.000001 and clearance_denominator <= 0.000001:
 			break
 		# Project only incompatible arm geometry. Match both hand spans while
@@ -649,14 +744,15 @@ func _project_double_hold_spans(flexions: Array, project_clearance: bool = true)
 				clearance_scale = (-clearance_error * denominator + error * cross_denominator) / determinant
 			else:
 				clearance_scale = -clearance_error / maxf(clearance_denominator, 0.000001)
-		for index in 4:
-			flexions[index] = clampf(
-				float(flexions[index]) + clampf(
-					span_scale * float(gradient[index]) + clearance_scale * float(clearance_gradient[index]),
-					-0.25, 0.25),
-				0.0,
-				1.0
-			)
+		for variable in groups.size():
+			for index in groups[variable]:
+				flexions[index] = clampf(
+					float(flexions[index]) + clampf(
+						span_scale * float(gradient[variable]) + clearance_scale * float(clearance_gradient[variable]),
+						-0.25, 0.25),
+					0.0,
+					1.0
+				)
 	_apply_double_hold_flexions(flexions, false)
 
 
@@ -1206,7 +1302,7 @@ func _draw() -> void:
 
 func _draw_waiting_grips(dancer: Dancer, endpoint: int) -> void:
 	for side in HAND_SIDES:
-		if not _get_grip(endpoint, side):
+		if not is_hand_primed(dancer, side):
 			continue
 		if _connection_slot_for_endpoint(endpoint, side) != 0:
 			continue

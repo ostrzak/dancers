@@ -14,6 +14,18 @@ func _run() -> void:
 	get_root().add_child(scene)
 	if arguments.size() > 1:
 		match arguments[1]:
+			"single_menu":
+				var pause_menu: PauseMenu = scene.get_node("PauseMenu")
+				pause_menu._start_single_player()
+				pause_menu._pause()
+				pause_menu._switch_tab(int(arguments[2]) if arguments.size() > 2 else 0)
+			"single_hold":
+				scene.start_session(PrototypeController.PlayMode.SINGLE)
+				scene.set_physics_process(false)
+				scene.left_dancer.reset_to_pose(Vector2(590, 350), 0.0)
+				scene.right_dancer.reset_to_pose(scene.left_dancer.position + scene.left_dancer.get_hand_local_position(1) - scene.right_dancer.get_hand_local_position(-1).rotated(PI), PI)
+				scene.single_controls.update_hands(scene.hand_connection, false, false)
+				scene.single_controls.update_hands(scene.hand_connection, true, true)
 			"title":
 				var pause_menu: PauseMenu = scene.get_node("PauseMenu")
 				pause_menu._show_title()

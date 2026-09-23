@@ -15,6 +15,7 @@ extends RigidBody2D
 @export var movement_force := 3000.0
 @export var movement_linear_damping := 0.0
 @export var maximum_input_speed := 360.0
+@export_range(0.1, 1.0, 0.05) var single_free_speed_scale := 0.65
 @export var movement_response := 22.0
 @export var partner_carry_decay := 3.5
 @export var double_hold_carry_decay := 8.0
@@ -104,6 +105,11 @@ var _unwrapped_rotation := 0.0
 var _previous_wrapped_rotation := 0.0
 var _desired_facing_rotation := 0.0
 var _facing_dial_velocity := 0.0
+var single_player_spin := false
+var intended_spin_direction := 1
+var spin_speed_scale := 1.0
+var move_speed_scale := 1.0
+var spin_move_ratio := 1.0
 
 const HAND_RADIUS := 9.0
 const ELBOW_RADIUS := 5.0
@@ -194,7 +200,10 @@ func _physics_process(delta: float) -> void:
 	_update_movement_support(delta)
 	_apply_movement_force()
 	_apply_position_lock_force()
-	_apply_facing_torque(delta)
+	if single_player_spin:
+		_apply_single_player_spin_torque()
+	else:
+		_apply_facing_torque(delta)
 	_apply_rotation_lock_torque()
 	queue_redraw()
 
@@ -394,6 +403,11 @@ func get_average_arm_flexion() -> float:
 
 
 func get_turn_speed_limit() -> float:
+	if single_player_spin:
+		# Constraint compatibility may require bent arms even at neutral input.
+		# That geometric correction is not a request to spin the dancer.
+		var requested_flexion := (left_trigger_value + right_trigger_value) * 0.5
+		return maximum_target_angular_velocity * minf(get_average_arm_flexion(), requested_flexion) * spin_speed_scale
 	return lerpf(
 		minimum_target_angular_velocity,
 		maximum_target_angular_velocity,
@@ -420,6 +434,9 @@ func get_hand_velocity(side: int = 1) -> Vector2:
 
 
 func get_controlled_hand_velocity(side: int = 1) -> Vector2:
+	# Single-player spin is already present in physical angular_velocity.
+	if single_player_spin:
+		return Vector2.ZERO
 	# RS turns the body directly, without adding free spin to its owner. A held
 	# hand still moves through space and must transmit that motion to a partner.
 	# Only the actual RS step contributes: never turn joint position corrections
@@ -551,6 +568,8 @@ func get_spin_move_scale() -> float:
 
 
 func get_effective_move_scale() -> float:
+	if single_player_spin:
+		return move_speed_scale * (1.0 + (get_spin_move_scale() - 1.0) * spin_move_ratio)
 	return get_spin_move_scale()
 
 
@@ -560,6 +579,8 @@ func _apply_movement_force() -> void:
 		return
 	var effective_move_scale := get_effective_move_scale()
 	var walking_velocity := movement_input * maximum_input_speed * effective_move_scale
+	if single_player_spin:
+		walking_velocity *= single_free_speed_scale
 	var desired_velocity := walking_velocity + partner_carry_velocity
 	var free_force := ((desired_velocity - linear_velocity)
 		* mass * movement_response).limit_length(movement_force * get_weight_scale())
@@ -619,6 +640,23 @@ func _apply_position_lock_force() -> void:
 		maximum_position_lock_force * get_weight_scale()
 	)
 	apply_central_force(diagnostic_position_lock_force)
+
+
+func reverse_spin() -> void:
+	intended_spin_direction *= -1
+
+
+func _apply_single_player_spin_torque() -> void:
+	target_angular_velocity = get_turn_speed_limit() * float(intended_spin_direction)
+	heading_error = 0.0
+	diagnostic_spin_torque = 0.0
+	if rotation_lock_active:
+		return
+	diagnostic_spin_torque = clampf(
+		(target_angular_velocity - angular_velocity) * spin_response_gain,
+		-spin_torque, spin_torque
+	)
+	apply_torque(diagnostic_spin_torque)
 
 
 func _apply_facing_torque(delta: float = 1.0 / 120.0) -> void:

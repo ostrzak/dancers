@@ -2,6 +2,7 @@ class_name EntranceScreen
 extends Control
 
 signal dance_requested
+signal single_player_requested
 signal ballroom_requested
 signal settings_requested
 signal music_requested
@@ -10,6 +11,7 @@ signal quit_requested
 var controller: PrototypeController
 var floor_art: BallroomFloor
 var dance_button: Button
+var single_player_button: Button
 var ballroom_button: Button
 var settings_button: Button
 var music_button: Button
@@ -47,18 +49,19 @@ func _ready() -> void:
 	for side in ["left", "right"]:
 		margin.add_theme_constant_override("margin_" + side, 64)
 	for side in ["top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 36)
+		margin.add_theme_constant_override("margin_" + side, 32)
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 70)
 	margin.add_child(columns)
 	var menu := VBoxContainer.new()
 	menu.custom_minimum_size.x = 340
-	menu.add_theme_constant_override("separation", 9)
+	menu.add_theme_constant_override("separation", 6)
 	columns.add_child(menu)
-	var title := _label(menu, "Embody\nDancers", 96)
+	var title := _label(menu, "Embody\nDancers", 88)
 	title.add_theme_font_override("font", BallroomTheme.HEADING)
-	_space(menu, 24)
-	dance_button = _button(menu, "Dance", dance_requested.emit)
+	_space(menu, 12)
+	single_player_button = _button(menu, "Single player", single_player_requested.emit)
+	dance_button = _button(menu, "Co-op", dance_requested.emit)
 	ballroom_button = _button(menu, "Ballroom", ballroom_requested.emit)
 	music_button = _button(menu, "Music", music_requested.emit)
 	settings_button = _button(menu, "Settings", settings_requested.emit)
@@ -96,9 +99,9 @@ func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 
 
 func _refresh_connections() -> void:
-	connection_label.text = "Partner 1  ·  %s\nPartner 2  ·  %s" % [
+	connection_label.text = "Controller 1  ·  %s\nController 2  ·  %s" % [
 		"Connected" if controller.get_player_one_device() >= 0 else "Connect a controller",
-		"Connected" if controller.get_player_two_device() >= 0 else "Connect a controller",
+		"Connected" if controller.get_player_two_device() >= 0 else "For co-op",
 	]
 
 
@@ -115,7 +118,7 @@ func _button(parent: Node, text: String, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.custom_minimum_size.y = 52
+	button.custom_minimum_size.y = 46
 	button.pressed.connect(action)
 	parent.add_child(button)
 	return button

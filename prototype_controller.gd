@@ -1,6 +1,18 @@
 class_name PrototypeController
 extends Node2D
 
+signal mode_changed
+
+enum PlayMode { COOP, SINGLE }
+var play_mode := PlayMode.COOP
+var single_controls := SinglePlayerControls.new()
+var single_spin_speed_scale := 1.0
+var single_move_speed_scale := 1.0
+var single_spin_move_ratio := 1.0
+var _coop_profiles: Array[Dictionary] = []
+var _blocked_buttons: Dictionary = {}
+var _blocked_keys: Dictionary = {}
+
 @export_category("Input")
 @export var preferred_player_one_device := 0
 @export var preferred_player_two_device := 1
@@ -24,6 +36,19 @@ var _player_two_device := -1
 
 
 func _ready() -> void:
+	for dancer in [left_dancer, right_dancer]:
+		var collider: CollisionShape2D = dancer.get_node("CollisionShape2D")
+		collider.shape = collider.shape.duplicate()
+		_coop_profiles.append({
+			"minimum_target_angular_velocity": dancer.minimum_target_angular_velocity,
+			"maximum_target_angular_velocity": dancer.maximum_target_angular_velocity,
+			"shoulder_half_width": dancer.shoulder_half_width,
+			"upper_arm_length": dancer.upper_arm_length,
+			"forearm_length": dancer.forearm_length,
+			"extended_elbow_flexion_degrees": dancer.extended_elbow_flexion_degrees,
+			"extended_forward_sweep_degrees": dancer.extended_forward_sweep_degrees,
+			"collider_radius": collider.shape.radius,
+		})
 	_select_gamepads()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	_apply_runtime_tuning()
@@ -32,17 +57,110 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_select_gamepads_if_needed()
+	if is_single_player():
+		_apply_single_player_input(delta)
+		return
 	_apply_player_input(left_dancer, _player_one_device, delta)
 	_apply_player_input(right_dancer, _player_two_device, delta)
 	_apply_arm_pose_inputs(_read_dpad(_player_one_device), _read_dpad(_player_two_device), delta)
 
 
-func reset_players_to_corners() -> void:
-	hand_connection.release_secondary_hands()
-	hand_connection.release_hands()
+func is_single_player() -> bool:
+	return play_mode == PlayMode.SINGLE
+
+
+func start_session(mode: PlayMode) -> void:
+	play_mode = mode
+	hand_connection.reset_connections()
+	single_controls.reset()
+	figure_demonstration.set_demonstration_visible(false)
+	figure_demonstration.demonstrations_enabled = not is_single_player()
+	for index in 2:
+		var dancer: Dancer = left_dancer if index == 0 else right_dancer
+		var profile := _coop_profiles[index]
+		for key in profile:
+			if key != "collider_radius":
+				dancer.set(key, profile[key])
+		dancer.single_player_spin = is_single_player()
+		dancer.intended_spin_direction = 1 if index == 0 else -1
+		var collider: CollisionShape2D = dancer.get_node("CollisionShape2D")
+		collider.shape.radius = 12.0 if is_single_player() else profile["collider_radius"]
+		if is_single_player():
+			dancer.minimum_target_angular_velocity = 2.2
+			dancer.maximum_target_angular_velocity = 5.0
+			if index == 1:
+				dancer.shoulder_half_width = 16.0
+				dancer.upper_arm_length = 38.5
+				dancer.forearm_length = 38.5
+	_apply_runtime_tuning()
+	reset_players_to_corners()
+	$TelemetryRecorder.clear()
+	rearm_controls()
+	mode_changed.emit()
+
+
+func rearm_controls() -> void:
+	# Child menus become ready before this controller's onready references.
+	if not is_instance_valid(hand_connection):
+		return
+	# Suppress buttons held across pause/title/device changes until released.
+	single_controls.suspend(hand_connection)
+	_blocked_buttons.clear()
+	_blocked_keys.clear()
+	for key in [KEY_Q, KEY_E, KEY_ENTER]:
+		if Input.is_physical_key_pressed(key):
+			_blocked_keys[key] = true
+	for device in Input.get_connected_joypads():
+		for button in [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER, JOY_BUTTON_LEFT_STICK, JOY_BUTTON_RIGHT_STICK]:
+			if Input.is_joy_button_pressed(device, button):
+				_blocked_buttons[Vector2i(device, button)] = true
 	for dancer in [left_dancer, right_dancer]:
 		for side in [-1, 1]:
 			hand_connection.set_grip_button_state(dancer, side, false)
+
+
+func _apply_single_player_input(delta: float) -> void:
+	var device := _player_one_device
+	var left_move := (_read_stick(device, JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y)
+		+ _read_keyboard_vector(KEY_A, KEY_D, KEY_W, KEY_S)).limit_length(1.0)
+	var right_move := (_read_stick(device, JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y)
+		+ _read_keyboard_vector(KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN)).limit_length(1.0)
+	var lt := maxf(_read_trigger(device, JOY_AXIS_TRIGGER_LEFT), float(Input.is_physical_key_pressed(KEY_SHIFT)))
+	var rt := maxf(_read_trigger(device, JOY_AXIS_TRIGGER_RIGHT), float(_read_gameplay_key(KEY_ENTER)))
+	single_controls.apply_steering(left_dancer, right_dancer, left_move, right_move, lt, rt)
+	var dpad := _read_dpad(device)
+	_apply_arm_pose_inputs(dpad, dpad, delta)
+	single_controls.update_hands(hand_connection,
+		_read_button(device, JOY_BUTTON_LEFT_SHOULDER) or _read_gameplay_key(KEY_Q),
+		_read_button(device, JOY_BUTTON_RIGHT_SHOULDER) or _read_gameplay_key(KEY_E))
+
+
+func _read_gameplay_key(key: Key) -> bool:
+	var pressed := Input.is_physical_key_pressed(key)
+	if _blocked_keys.has(key):
+		if not pressed:
+			_blocked_keys.erase(key)
+		return false
+	return pressed
+
+
+func _read_keyboard_vector(left: Key, right: Key, up: Key, down: Key) -> Vector2:
+	return Vector2(
+		float(Input.is_physical_key_pressed(right)) - float(Input.is_physical_key_pressed(left)),
+		float(Input.is_physical_key_pressed(down)) - float(Input.is_physical_key_pressed(up))
+	).limit_length(1.0)
+
+
+func set_single_player_tuning(spin_scale: float, move_scale: float, arm_move_ratio: float) -> void:
+	single_spin_speed_scale = clampf(spin_scale, 0.5, 2.0)
+	single_move_speed_scale = clampf(move_scale, 0.5, 2.0)
+	single_spin_move_ratio = clampf(arm_move_ratio, 0.0, 1.5)
+	_apply_runtime_tuning()
+
+
+func reset_players_to_corners() -> void:
+	hand_connection.reset_connections()
+	single_controls.reset()
 	left_dancer.reset_to_pose(Vector2(150, 570), -PI * 0.75)
 	right_dancer.reset_to_pose(Vector2(1130, 570), PI * 0.75)
 
@@ -81,6 +199,18 @@ func _input(event: InputEvent) -> void:
 	if get_tree() != null and get_tree().paused:
 		return
 	if not (event is InputEventJoypadButton):
+		return
+	var button_key := Vector2i(event.device, event.button_index)
+	if _blocked_buttons.has(button_key):
+		if not event.pressed:
+			_blocked_buttons.erase(button_key)
+		return
+	if is_single_player():
+		if event.device == _player_one_device and event.pressed:
+			if event.button_index == JOY_BUTTON_LEFT_STICK:
+				left_dancer.reverse_spin()
+			elif event.button_index == JOY_BUTTON_RIGHT_STICK:
+				right_dancer.reverse_spin()
 		return
 
 	var dancer := _dancer_for_device(event.device)
@@ -161,7 +291,13 @@ func _read_trigger(device: int, axis: int) -> float:
 
 
 func _read_button(device: int, button: int) -> bool:
-	return device >= 0 and Input.is_joy_button_pressed(device, button)
+	var pressed := device >= 0 and Input.is_joy_button_pressed(device, button)
+	var key := Vector2i(device, button)
+	if _blocked_buttons.has(key):
+		if not pressed:
+			_blocked_buttons.erase(key)
+		return false
+	return pressed
 
 
 func _read_dpad(device: int) -> Vector2:
@@ -207,6 +343,10 @@ func get_player_two_device() -> int:
 
 
 func _apply_runtime_tuning() -> void:
+	for dancer in [left_dancer, right_dancer]:
+		dancer.spin_speed_scale = single_spin_speed_scale
+		dancer.move_speed_scale = single_move_speed_scale
+		dancer.spin_move_ratio = single_spin_move_ratio
 	left_dancer.set_physical_weight_kg(man_weight_kg)
 	right_dancer.set_physical_weight_kg(woman_weight_kg)
 	left_dancer.set_fit_weight_kg(man_fit_weight_kg)
@@ -271,3 +411,4 @@ func _dancer_for_device(device: int) -> Dancer:
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	_select_gamepads()
+	rearm_controls()

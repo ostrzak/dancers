@@ -60,7 +60,7 @@ func _run() -> void:
 	menu._input(_button(JOY_BUTTON_START))
 	_expect(paused and menu.visible and not menu.title_context, "Start during gameplay opens pause")
 	menu._input(_button(JOY_BUTTON_LEFT_SHOULDER))
-	_expect(menu.tabs.current_tab == menu.ballroom_tab, "shoulder navigation wraps to ballroom")
+	_expect(menu.tabs.current_tab == menu.controls_tab, "shoulder navigation wraps to controls")
 	menu._input(_key(KEY_ESCAPE))
 	_expect(not paused and not menu.visible, "Escape from gameplay settings resumes gameplay")
 	menu._pause()
