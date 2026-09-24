@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://prototype_controller.gd" id="1_controller"]
 [ext_resource type="Script" path="res://dancer.gd" id="2_dancer"]
@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://telemetry_recorder.gd" id="6_telemetry"]
 [ext_resource type="Script" path="res://figure_demonstration.gd" id="7_figures"]
 [ext_resource type="Script" path="res://ballroom_floor.gd" id="8_floor"]
+
+[ext_resource type="Script" path="res://single_figure_demonstration.gd" id="9_single_figures"]
 
 [sub_resource type="CircleShape2D" id="CircleShape_dancer"]
 radius = 20.0
@@ -30,6 +32,9 @@ script = ExtResource("8_floor")
 
 [node name="FigureDemonstration" type="Node2D" parent="."]
 script = ExtResource("7_figures")
+
+[node name="SingleFigureDemonstration" type="Node2D" parent="."]
+script = ExtResource("9_single_figures")
 
 [node name="LeftDancer" type="RigidBody2D" parent="."]
 position = Vector2(150, 570)

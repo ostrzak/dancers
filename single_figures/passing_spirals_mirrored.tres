@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/passing_spirals.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Passing spirals"
+variant_label = "Gentleman above / reverse travel"
+description = "No hold. Reverse the approach: gentleman passes above, turning counterclockwise; lady turns clockwise. Pulse triggers, then separate."
+narration_text = "Approach from the reversed sides, with the gentleman above the lady on the floor. As the partners pass, add a gentle trigger pulse: the gentleman turns counterclockwise and the lady clockwise. Continue apart, then release the triggers. Leave enough space for both sets of arms."
+requirement = ""
+duration = 10.00000000
+no_hands = true
+single_hand = false
+mirror_of = ExtResource("2")

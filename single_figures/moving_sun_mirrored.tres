@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/moving_sun.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Moving sun"
+variant_label = "Counterclockwise"
+description = "One joined pair. Lady takes the wide counterclockwise path first; gradually exchange roles so the gentleman travels farther."
+narration_text = "Keep one pair of hands joined. The gentleman first takes the smaller path while the lady travels counterclockwise around him. Gradually exchange roles so the gentleman takes the wider path. Guide both bodies with the sticks. Neither dancer is fixed to the floor."
+requirement = ""
+duration = 18.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

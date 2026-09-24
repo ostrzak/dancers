@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/two_planets.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Two planets"
+variant_label = "Counterclockwise"
+description = "No hold. Use both sticks to orbit counterclockwise around a shared midpoint. Keep triggers released and body facing steady."
+narration_text = "The partners remain opposite each other and travel counterclockwise around a shared midpoint. Keep the triggers released. Guide the gentleman with the left stick and the lady with the right stick. Their floor paths circle while their bodies keep the same facing."
+requirement = ""
+duration = 14.00000000
+no_hands = true
+single_hand = false
+mirror_of = ExtResource("2")

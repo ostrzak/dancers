@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/pendulum.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Pendulum"
+variant_label = "Counterclockwise first"
+description = "One joined pair. With triggers released, steer a broad swing counterclockwise, reverse, and return. The sticks control each reversal."
+narration_text = "Catch one pair of hands by holding one bumper as the hands approach. Let that bumper up after the catch. With the triggers released, guide a broad swing counterclockwise, then reverse the path and return. Use the sticks to make the reversal; the hold does not bounce automatically."
+requirement = ""
+duration = 14.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

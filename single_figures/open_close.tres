@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Open and close"
+variant_label = ""
+description = "Two-hand hold. Draw both arms inward, pause, then extend together. Explore the arm contraction while maintaining the hold."
+narration_text = "Catch the first pair with one bumper and the second pair with the other. The partners face each other with both pairs joined. Draw both arms inward, pause, then extend together. This reference shows the inward and outward arm phrase; trigger pressure also requests spin. Each bumper remains assigned to the pair it caught."
+requirement = "Use the other bumper to catch the second pair; each bumper releases its own pair."
+duration = 11.00000000
+no_hands = false
+single_hand = false
+keys = Array[Dictionary]([{"time": 0.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 1.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 5.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.50000000, "partner_flexion": 0.00000000},
+{"time": 6.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.50000000, "partner_flexion": 0.00000000},
+{"time": 10.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 11.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000}])

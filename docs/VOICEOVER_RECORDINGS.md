@@ -1,33 +1,27 @@
 # Voiceover status and next batch
 
-Updated 2026-09-23. **Start with `wing_mirrored`.**
+Updated 2026-09-24. **Start with `mirror_spins_mirrored`.**
 
 - Catalogue: 21 figures, 38 prepared scripts.
-- Recordings: 18 WAVs attached; 20 missing (listed below).
-- Last run: 12 new recordings, stopped on Gemini HTTP 429 daily free-tier quota.
-- Existing six recordings preserved. No retries or paid fallback.
-- Validation: all 18 WAVs passed format, duration and non-silence checks;
-  Godot import and 20/20 narration checks passed.
-- Listening review: the original Travelling turn was user-approved. The new
-  batch passed technical checks only; accent, wording and delivery need listening review.
+- Recordings: 28 WAVs attached; 10 missing.
+- This batch: 10 new recordings. Stopped at `mirror_spins_mirrored`: daily free-tier quota (HTTP 429). No retry.
+- All 18 pre-existing WAVs preserved byte-for-byte. No retries or paid fallback.
+- Audio validation: mono, 24 kHz, 16-bit PCM, non-silent, duration 1–120 seconds.
+- Godot import and focused narration checks passed; all 28 WAV references verified.
+- Listening review: original Travelling turn user-approved; new recordings are
+  technically validated only and still need listening review.
 
-Use [VOICEOVER_GENERATION.md](VOICEOVER_GENERATION.md) for the continuation procedure.
-Use [FIGURE_VOICEOVERS.md](FIGURE_VOICEOVERS.md) for the exact spoken scripts.
-Revalidate the catalogue and files before resuming; this list is a snapshot.
+Model: `gemini-2.5-flash-preview-tts`. Voice: Charon, established British RP direction.
+Exact scripts from [FIGURE_VOICEOVERS.md](FIGURE_VOICEOVERS.md) used unchanged.
+Follow [VOICEOVER_GENERATION.md](VOICEOVER_GENERATION.md) to continue; revalidate files first.
+
+Listening priority: compare `weave_promenade` (10.17 s) with its mirrored variant
+(19.13 s). Both are valid audio; the duration difference warrants checking pace
+and completeness by ear before treating delivery as approved.
 
 ## Remaining IDs, in order
 
 ```text
-wing_mirrored
-weave_promenade
-weave_promenade_mirrored
-away_together
-away_together_mirrored
-solo_turns
-solo_turns_mirrored
-synchronous_spins
-synchronous_spins_mirrored
-mirror_spins
 mirror_spins_mirrored
 two_planets
 two_planets_mirrored

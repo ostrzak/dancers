@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Release, spin, catch"
+variant_label = "Lady clockwise"
+description = "Catch once, let that bumper up, then tap it to release. Separate, turn the lady with RT, approach slowly and hold one free bumper to recatch."
+narration_text = "Begin with one joined pair of hands. Let the catching bumper up, then tap it again to release. Steer apart and use the right trigger to turn the lady clockwise. Release the trigger, approach slowly, and hold one free bumper for a fresh catch. The catch depends on the hands meeting, not on finishing the turn."
+requirement = ""
+duration = 17.00000000
+no_hands = false
+single_hand = true
+keys = Array[Dictionary]([{"time": 0.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 0.00000000, "release_position": Vector2(880.00000000, 320.00000000), "anchor_weight": 0.00000000},
+{"time": 1.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 0.00000000, "release_position": Vector2(880.00000000, 320.00000000), "anchor_weight": 0.00000000},
+{"time": 5.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 1.00000000, "release_position": Vector2(880.00000000, 320.00000000), "anchor_weight": 0.00000000},
+{"time": 11.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 9.42477796, "flexion": 0.00000000, "partner_flexion": 0.30000000, "release_weight": 1.00000000, "release_position": Vector2(880.00000000, 320.00000000), "anchor_weight": 0.00000000},
+{"time": 12.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 9.42477796, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 1.00000000, "release_position": Vector2(880.00000000, 320.00000000), "anchor_weight": 0.00000000},
+{"time": 16.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 9.42477796, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 0.00000000, "release_position": Vector2(880.00000000, 320.00000000), "anchor_weight": 0.00000000},
+{"time": 17.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 9.42477796, "flexion": 0.00000000, "partner_flexion": 0.00000000, "release_weight": 0.00000000, "release_position": Vector2(880.00000000, 320.00000000), "anchor_weight": 0.00000000}])

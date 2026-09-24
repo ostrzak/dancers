@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/alternating_catches.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Alternating-side catches"
+variant_label = "Right hand first"
+description = "Start on the gentleman's right, release, pass around, then catch on his left. One free bumper primes the nearest eligible pair."
+narration_text = "Start with the gentleman's right hand joined to the lady's left. Release with a fresh press of the catching bumper. Guide the lady around the gentleman on a clear outside path, then approach for a catch using the other pair. Hold one free bumper near the new meeting point. The nearest eligible hands determine the catch."
+requirement = ""
+duration = 17.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

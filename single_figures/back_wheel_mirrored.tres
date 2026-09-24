@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/back_wheel.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Back-to-back wheel"
+variant_label = "Counterclockwise"
+description = "One rear hand pair. With arms swept backward, steer a broad counterclockwise wheel. Start with triggers released."
+narration_text = "Begin with one rear pair of hands joined and both dancers' arms swept backward. Guide a broad counterclockwise wheel using both sticks. Keep the triggers released on the first attempt. Maintain space between the bodies as the rear connection travels around the midpoint."
+requirement = ""
+duration = 14.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

@@ -1,7 +1,7 @@
 class_name FigureDemonstration
 extends Node2D
 
-const FIGURES: Array[DanceFigure] = [
+var FIGURES: Array[DanceFigure] = [
 	preload("res://figures/travelling_turn.tres"),
 	preload("res://figures/turn_in_place.tres"),
 	preload("res://figures/alternating_sides.tres"),
@@ -24,7 +24,7 @@ const FIGURES: Array[DanceFigure] = [
 	preload("res://figures/travelling_turns.tres"),
 	preload("res://figures/mirror_paths.tres"),
 ]
-const VARIANTS := {
+var VARIANTS := {
 	"travelling_turn": [preload("res://figures/travelling_turn_mirrored.tres")],
 	"turn_in_place": [preload("res://figures/turn_in_place_mirrored.tres")],
 	"connected_turn": [preload("res://figures/connected_turn_reverse.tres")],

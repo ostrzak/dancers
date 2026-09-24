@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Two hands to one, open out"
+variant_label = "Keep gentleman left"
+description = "Two-hand hold. Release one pair, open around the remaining hand, return and restore the second pair. Release only the bumper-owned pair you want to open."
+narration_text = "Use one bumper to catch the first pair, then the other bumper to catch the remaining hands. Begin with both pairs joined. Release the gentleman's right and the lady's left hand, keeping the other pair connected. Open around the remaining connection, return, and restore the second pair. Press the bumper assigned to the released pair again when its hands meet."
+requirement = "Use the other bumper to catch the second pair; each bumper releases its own pair."
+duration = 14.00000000
+no_hands = false
+single_hand = true
+keys = Array[Dictionary]([{"time": 0.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.20000000, "partner_flexion": 0.20000000, "double_weight": 1.00000000},
+{"time": 1.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.20000000, "partner_flexion": 0.20000000, "double_weight": 1.00000000},
+{"time": 3.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.20000000, "partner_flexion": 0.20000000, "double_weight": 0.00000000},
+{"time": 7.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": -0.60000000, "partner_turn": 3.74159265, "flexion": 0.20000000, "partner_flexion": 0.20000000, "double_weight": 0.00000000},
+{"time": 11.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.20000000, "partner_flexion": 0.20000000, "double_weight": 0.00000000},
+{"time": 13.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.20000000, "partner_flexion": 0.20000000, "double_weight": 1.00000000},
+{"time": 14.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.20000000, "partner_flexion": 0.20000000, "double_weight": 1.00000000}])

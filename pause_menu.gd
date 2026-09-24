@@ -444,7 +444,7 @@ func _build_figures_tab() -> void:
 	figure_toggle.text = "SHOW DEMONSTRATION"
 	figure_toggle.custom_minimum_size.y = 44
 	figure_toggle.button_pressed = demonstration.visible
-	figure_toggle.toggled.connect(demonstration.set_demonstration_visible)
+	figure_toggle.toggled.connect(_set_demonstration_visible)
 	panel.add_child(figure_toggle)
 	var selection := HBoxContainer.new()
 	panel.add_child(selection)
@@ -487,7 +487,7 @@ func _build_figures_tab() -> void:
 		button.button_pressed = is_equal_approx(speed, demonstration.playback_speed)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		figure_speed_buttons.append(button)
-	figure_restart = _figure_button(panel, "RESTART DEMONSTRATION", demonstration.restart)
+	figure_restart = _figure_button(panel, "RESTART DEMONSTRATION", _restart_demonstration)
 	figure_reset_players = _figure_button(panel, "RESET PLAYERS TO CORNERS", controller.reset_players_to_corners)
 	var hint := Label.new()
 	hint.text = "Movement loops; narration plays once when available. Restart to hear it again."
@@ -573,9 +573,11 @@ func _on_single_tuning_changed(_value: float) -> void:
 
 func _refresh_mode_controls() -> void:
 	var single := controller.is_single_player()
-	tabs.set_tab_hidden(3, single)
-	if single and tabs.current_tab == 3:
-		tabs.current_tab = 0
+	demonstration = controller.get_node("SingleFigureDemonstration" if single else "FigureDemonstration")
+	tabs.set_tab_hidden(3, false)
+	_refresh_figure_labels()
+	for index in figure_speed_buttons.size():
+		figure_speed_buttons[index].set_pressed_no_signal(is_equal_approx(demonstration.playback_speed, [0.5, 0.75, 1.0][index]))
 	figure_toggle.set_pressed_no_signal(demonstration.visible)
 	for control in single_tuning_controls:
 		control.visible = single
@@ -664,3 +666,11 @@ func _on_capture_failed(message: String) -> void:
 
 func _quit() -> void:
 	get_tree().quit()
+
+
+func _set_demonstration_visible(enabled: bool) -> void:
+	demonstration.set_demonstration_visible(enabled)
+
+
+func _restart_demonstration() -> void:
+	demonstration.restart()

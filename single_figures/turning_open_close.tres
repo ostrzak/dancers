@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Turning open and close"
+variant_label = "Clockwise"
+description = "Two-hand hold. Close while the pair turns clockwise, then open. Try opposite selected spins and steer the shared turn."
+narration_text = "Catch the first pair with one bumper and the second pair with the other. The partners draw their arms inward while turning clockwise as a pair, then open again. Try opposite selected spin directions and steer the pair; the hold determines the physical response. This demonstration shows the intended phrase."
+requirement = "Use the other bumper to catch the second pair; each bumper releases its own pair."
+duration = 14.00000000
+no_hands = false
+single_hand = false
+keys = Array[Dictionary]([{"time": 0.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 1.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 7.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 3.14159265, "partner_turn": 3.14159265, "flexion": 0.50000000, "partner_flexion": 0.00000000},
+{"time": 13.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 6.28318531, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 14.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 6.28318531, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000}])

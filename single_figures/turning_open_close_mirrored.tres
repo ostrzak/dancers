@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/turning_open_close.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Turning open and close"
+variant_label = "Counterclockwise"
+description = "Two-hand hold. Close while the pair turns counterclockwise, then open. Try opposite selected spins and steer the shared turn."
+narration_text = "Catch the first pair with one bumper and the second pair with the other. The partners draw their arms inward while turning counterclockwise as a pair, then open again. Try opposite selected spin directions and steer the pair; the hold determines the physical response. This demonstration shows the intended phrase."
+requirement = "Use the other bumper to catch the second pair; each bumper releases its own pair."
+duration = 14.00000000
+no_hands = false
+single_hand = false
+mirror_of = ExtResource("2")

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Travelling wheel"
+variant_label = "Clockwise / travel right"
+description = "One joined pair. Steer a clockwise orbit while moving its centre right across the floor. Start with triggers released."
+narration_text = "Keep one pair of hands joined and travel toward the right side of the floor. At the same time, guide a clockwise orbit around the space between the partners. Combine the travel and circular motion with both sticks. Begin with the triggers released and keep the path broad."
+requirement = ""
+duration = 14.00000000
+no_hands = false
+single_hand = true
+keys = Array[Dictionary]([{"time": 0.00000000, "centre": Vector2(430.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 1.00000000, "centre": Vector2(430.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 13.00000000, "centre": Vector2(850.00000000, 320.00000000), "turn": 6.28318531, "partner_turn": 9.42477796, "flexion": 0.00000000, "partner_flexion": 0.00000000},
+{"time": 14.00000000, "centre": Vector2(850.00000000, 320.00000000), "turn": 6.28318531, "partner_turn": 9.42477796, "flexion": 0.00000000, "partner_flexion": 0.00000000}])

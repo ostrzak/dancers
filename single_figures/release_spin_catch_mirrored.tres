@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/release_spin_catch.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Release, spin, catch"
+variant_label = "Lady counterclockwise"
+description = "Catch, release with a fresh tap of its bumper, then turn the lady counterclockwise with RT. Approach slowly and hold one free bumper to recatch."
+narration_text = "Begin with one joined pair of hands. Let the catching bumper up, then tap it again to release. Steer apart and use the right trigger to turn the lady counterclockwise. Release the trigger, approach slowly, and hold one free bumper for a fresh catch. The catch depends on the hands meeting, not on finishing the turn."
+requirement = ""
+duration = 17.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

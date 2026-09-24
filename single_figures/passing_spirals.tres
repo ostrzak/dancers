@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Passing spirals"
+variant_label = "Gentleman above"
+description = "No hold. Approach on offset lanes, add a short opposite-spin trigger pulse, then travel apart. Gentleman passes above the lady."
+narration_text = "Approach on separate lanes, with the gentleman above the lady on the floor. As the partners pass, add a gentle trigger pulse: the gentleman turns clockwise and the lady counterclockwise. Continue apart, then release the triggers. Leave enough space for both sets of arms."
+requirement = ""
+duration = 10.00000000
+no_hands = true
+single_hand = false
+keys = Array[Dictionary]([{"time": 0.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.00000000, "partner_flexion": 0.00000000, "position_a": Vector2(-210.00000000, -85.00000000), "position_b": Vector2(210.00000000, 85.00000000)},
+{"time": 1.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": -1.57079633, "partner_turn": 1.57079633, "flexion": 0.00000000, "partner_flexion": 0.00000000, "position_a": Vector2(-210.00000000, -85.00000000), "position_b": Vector2(210.00000000, 85.00000000)},
+{"time": 5.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 1.57079633, "partner_turn": -1.57079633, "flexion": 0.30000000, "partner_flexion": 0.30000000, "position_a": Vector2(0.00000000, -95.00000000), "position_b": Vector2(0.00000000, 95.00000000)},
+{"time": 9.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 4.71238898, "partner_turn": -4.71238898, "flexion": 0.00000000, "partner_flexion": 0.00000000, "position_a": Vector2(210.00000000, -85.00000000), "position_b": Vector2(-210.00000000, 85.00000000)},
+{"time": 10.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 4.71238898, "partner_turn": -4.71238898, "flexion": 0.00000000, "partner_flexion": 0.00000000, "position_a": Vector2(210.00000000, -85.00000000), "position_b": Vector2(-210.00000000, 85.00000000)}])

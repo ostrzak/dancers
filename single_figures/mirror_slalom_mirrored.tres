@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/mirror_slalom.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Mirror slalom"
+variant_label = "Travel left"
+description = "No hold. Steer left together, widening and narrowing the gap in mirrored curves. Leave triggers released."
+narration_text = "The partners travel toward the left side of the floor. Guide them along mirrored curves, widening their separation and then bringing them closer. Keep the triggers released and preserve room between the bodies. Let the two sticks trace the changing lanes together."
+requirement = ""
+duration = 14.00000000
+no_hands = true
+single_hand = false
+mirror_of = ExtResource("2")

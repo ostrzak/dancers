@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Back-to-back promenade"
+variant_label = "Travel right"
+description = "One rear hand pair. Use D-pad down for rearward arms, catch, then steer right together with triggers released."
+narration_text = "Sweep both dancers' extended arms backward with the D-pad. Approach back to back and catch one rear pair of hands using one bumper. Once joined, let the bumpers up and travel gently toward the right. Keep the triggers released and preserve the rear connection with both sticks."
+requirement = ""
+duration = 12.00000000
+no_hands = false
+single_hand = true
+keys = Array[Dictionary]([{"time": 0.00000000, "centre": Vector2(450.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "forward_sweep": -25.00000000},
+{"time": 1.00000000, "centre": Vector2(450.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "forward_sweep": -25.00000000},
+{"time": 6.00000000, "centre": Vector2(640.00000000, 270.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "forward_sweep": -25.00000000},
+{"time": 11.00000000, "centre": Vector2(830.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "forward_sweep": -25.00000000},
+{"time": 12.00000000, "centre": Vector2(830.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "forward_sweep": -25.00000000}])

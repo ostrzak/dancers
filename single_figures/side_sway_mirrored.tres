@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/side_sway.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Side-to-side sway"
+variant_label = "Left first"
+description = "Two-hand hold. Travel left, then right, and return to centre. Add a small inward arm pulse at each reversal."
+narration_text = "Catch the first pair with one bumper and the second pair with the other. Travel together to the left, then to the right, and return to the centre. Add a small inward arm pulse near each reversal. Let the lateral travel and the arm movement form one gentle phrase."
+requirement = "Use the other bumper to catch the second pair; each bumper releases its own pair."
+duration = 18.00000000
+no_hands = false
+single_hand = false
+mirror_of = ExtResource("2")

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/back_face_catch.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Behind, release, face, catch"
+variant_label = "Gentleman CCW / lady CW"
+description = "Release the rear hold and separate. Gentleman turns CCW, lady CW; restore forward arms, then approach for a front catch."
+narration_text = "Begin with a rear hand connection. Let the catching bumper up, then tap it again to release. Move apart and turn toward each other: the gentleman counterclockwise and the lady clockwise. Sweep the extended arms forward again with the D-pad. Approach slowly and hold one free bumper for a new front catch."
+requirement = ""
+duration = 24.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

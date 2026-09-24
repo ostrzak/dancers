@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/open_out_return.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Open out and return"
+variant_label = "Gentleman CCW / lady CW"
+description = "One joined pair. Gentleman opens counterclockwise, lady clockwise; steer back together. Gentle trigger pressure also requests spin."
+narration_text = "From one joined pair of hands, open into a small opposing turn. The gentleman turns counterclockwise and the lady clockwise. Use gentle trigger pressure, remembering that it contracts both arms and requests spin. Reverse the selected spin directions if needed, and guide the partners back together with the sticks."
+requirement = ""
+duration = 11.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Alternating-side catches"
+variant_label = "Left hand first"
+description = "Join, release, pass around your partner, then approach for a catch on the other side. One free bumper primes the nearest eligible pair."
+narration_text = "Start with the gentleman's left hand joined to the lady's right. Release with a fresh press of the catching bumper. Guide the lady around the gentleman on a clear outside path, then approach for a catch using the other pair. Hold one free bumper near the new meeting point. The nearest eligible hands determine the catch."
+requirement = ""
+duration = 17.00000000
+no_hands = false
+single_hand = true
+keys = Array[Dictionary]([{"time": 0.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "anchor_weight": 0.00000000, "hand_side": -1.00000000, "release_weight": 0.00000000, "release_position": Vector2(440.00000000, 320.00000000)},
+{"time": 1.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "anchor_weight": 0.00000000, "hand_side": -1.00000000, "release_weight": 0.00000000, "release_position": Vector2(440.00000000, 320.00000000)},
+{"time": 4.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "anchor_weight": 0.00000000, "hand_side": -1.00000000, "release_weight": 1.00000000, "release_position": Vector2(440.00000000, 320.00000000)},
+{"time": 8.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "anchor_weight": 0.00000000, "hand_side": -1.00000000, "release_weight": 1.00000000, "release_position": Vector2(640.00000000, 130.00000000)},
+{"time": 9.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "anchor_weight": 0.00000000, "hand_side": 1.00000000, "release_weight": 1.00000000, "release_position": Vector2(640.00000000, 130.00000000)},
+{"time": 13.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "anchor_weight": 0.00000000, "hand_side": 1.00000000, "release_weight": 1.00000000, "release_position": Vector2(840.00000000, 320.00000000)},
+{"time": 16.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "anchor_weight": 0.00000000, "hand_side": 1.00000000, "release_weight": 0.00000000, "release_position": Vector2(840.00000000, 320.00000000)},
+{"time": 17.00000000, "centre": Vector2(640.00000000, 320.00000000), "turn": 0.00000000, "partner_turn": 3.14159265, "flexion": 0.00000000, "partner_flexion": 0.00000000, "anchor_weight": 0.00000000, "hand_side": 1.00000000, "release_weight": 0.00000000, "release_position": Vector2(840.00000000, 320.00000000)}])

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/do_si_do.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Do-si-do"
+variant_label = "Left shoulders"
+description = "No hold. Pass left shoulders, go behind each other, then return. Keep triggers released to preserve facing."
+narration_text = "Start facing your partner with no hand contact. Pass left shoulders on separate lanes, travel behind one another, and return to your original places. Use the two sticks for the floor path and leave the triggers released. Keep your original facing throughout."
+requirement = ""
+duration = 14.00000000
+no_hands = true
+single_hand = false
+mirror_of = ExtResource("2")

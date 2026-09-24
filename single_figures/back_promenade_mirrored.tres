@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/back_promenade.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Back-to-back promenade"
+variant_label = "Travel left"
+description = "One rear hand pair. Use D-pad down for rearward arms, catch, then steer left together with triggers released."
+narration_text = "Sweep both dancers' extended arms backward with the D-pad. Approach back to back and catch one rear pair of hands using one bumper. Once joined, let the bumpers up and travel gently toward the left. Keep the triggers released and preserve the rear connection with both sticks."
+requirement = ""
+duration = 12.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

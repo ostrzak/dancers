@@ -74,7 +74,8 @@ func start_session(mode: PlayMode) -> void:
 	hand_connection.reset_connections()
 	single_controls.reset()
 	figure_demonstration.set_demonstration_visible(false)
-	figure_demonstration.demonstrations_enabled = not is_single_player()
+	figure_demonstration = $SingleFigureDemonstration if is_single_player() else $FigureDemonstration
+	figure_demonstration.set_demonstration_visible(false)
 	for index in 2:
 		var dancer: Dancer = left_dancer if index == 0 else right_dancer
 		var profile := _coop_profiles[index]

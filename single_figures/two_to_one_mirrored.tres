@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/two_to_one.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Two hands to one, open out"
+variant_label = "Keep gentleman right"
+description = "Two-hand hold. Keep gentleman right / lady left joined, open out, return and restore the other pair. Release only the bumper-owned pair you want to open."
+narration_text = "Use one bumper to catch the first pair, then the other bumper to catch the remaining hands. Begin with both pairs joined. Release the gentleman's left and the lady's right hand, keeping the other pair connected. Open around the remaining connection, return, and restore the second pair. Press the bumper assigned to the released pair again when its hands meet."
+requirement = "Use the other bumper to catch the second pair; each bumper releases its own pair."
+duration = 14.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

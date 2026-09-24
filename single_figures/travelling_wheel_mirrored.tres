@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/travelling_wheel.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Travelling wheel"
+variant_label = "Counterclockwise / travel left"
+description = "One joined pair. Steer a counterclockwise orbit while moving its centre left across the floor. Start with triggers released."
+narration_text = "Keep one pair of hands joined and travel toward the left side of the floor. At the same time, guide a counterclockwise orbit around the space between the partners. Combine the travel and circular motion with both sticks. Begin with the triggers released and keep the path broad."
+requirement = ""
+duration = 14.00000000
+no_hands = false
+single_hand = true
+mirror_of = ExtResource("2")

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SingleDanceFigure" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://single_dance_figure.gd" id="1"]
+[ext_resource type="Resource" path="res://single_figures/spinning_planets_reverse_spins.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+title = "Spinning planets"
+variant_label = "Orbit CCW / Both spin clockwise"
+description = "No hold. Orbit counterclockwise. Use triggers to spin: gentleman clockwise, lady clockwise. L3/R3 reverse spins."
+narration_text = "Both partners travel counterclockwise around their shared midpoint. Add gentle trigger pressure: the gentleman spins clockwise, and the lady spins clockwise. The left and right stick clicks reverse their respective spin directions. Keep the orbital path broad as the bodies turn."
+requirement = ""
+duration = 14.00000000
+no_hands = true
+single_hand = false
+mirror_of = ExtResource("2")

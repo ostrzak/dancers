@@ -40,15 +40,15 @@ func _run() -> void:
 	_check(a.intended_spin_direction == 1 and b.intended_spin_direction == -1, "original opposite spin defaults")
 	_check(a.get_node("CollisionShape2D").shape.radius == 12.0 and b.get_node("CollisionShape2D").shape.radius == 12.0, "single colliders preserved")
 	_check(b.shoulder_half_width == 16.0 and b.upper_arm_length == 38.5, "single partner dimensions preserved")
-	_check(menu.tabs.is_tab_hidden(3) and menu.single_tuning_sliders[0].visible, "single UI exposes its tuning and hides figures")
+	_check(not menu.tabs.is_tab_hidden(3) and menu.single_tuning_sliders[0].visible, "single UI exposes its tuning and figures")
 	scene.figure_demonstration.set_demonstration_visible(true)
-	_check(not scene.figure_demonstration.visible, "single mode cannot activate doubles demonstrations")
+	_check(scene.figure_demonstration.visible and scene.figure_demonstration is SingleFigureDemonstration, "single mode activates its own demonstrations")
 	menu._pause()
 	menu.tabs.current_tab = 2
 	menu._switch_tab(1)
-	_check(menu.tabs.current_tab == menu.music_tab, "forward tab navigation skips figures")
+	_check(menu.tabs.current_tab == 3, "forward tab navigation reaches figures")
 	menu._switch_tab(-1)
-	_check(menu.tabs.current_tab == 2, "reverse tab navigation skips figures")
+	_check(menu.tabs.current_tab == 2, "reverse tab navigation returns from figures")
 	var fits := true
 	for index in menu.tabs.get_tab_count():
 		if menu.tabs.is_tab_hidden(index):

@@ -20,7 +20,7 @@ Prepared text: [FIGURE_VOICEOVERS.md](FIGURE_VOICEOVERS.md).
 4. Try the first missing ID once. Continue sequentially only if successful:
 
    ```powershell
-   python tools/generate_figure_voiceover.py --figure wing_mirrored --generate
+   python tools/generate_figure_voiceover.py --figure mirror_spins_mirrored --generate
    ```
 
    Substitute each subsequent missing ID. Each invocation sends one request.
